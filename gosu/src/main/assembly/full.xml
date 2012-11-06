@@ -11,10 +11,10 @@
   <dependencySets>
     <dependencySet>
       <excludes>
+        <exclude>org.gosu-lang.gosu:gosu-process</exclude>
         <exclude>org.gosu-lang.gosu:gosu-servlet</exclude>
         <exclude>org.gosu-lang.gosu:gosu-xml</exclude>
         <exclude>org.gosu-lang.gosu:gosu-webservices</exclude>
-        <exclude>org.gosu-lang.gosu.managed:*</exclude>
       </excludes>
       <useProjectArtifact>false</useProjectArtifact>
       <outputDirectory>lib</outputDirectory>
@@ -22,6 +22,7 @@
     </dependencySet>
     <dependencySet>
       <includes>
+        <include>org.gosu-lang.gosu:gosu-process</include>
         <include>org.gosu-lang.gosu:gosu-servlet</include>
         <include>org.gosu-lang.gosu:gosu-xml</include>
         <include>org.gosu-lang.gosu:gosu-webservices</include>
@@ -34,18 +35,18 @@
 
   <files>
     <file>
-      <source>bin/gosu</source>
+      <source>${project.build.scriptSourceDirectory}/gosu</source>
       <outputDirectory>bin</outputDirectory>
       <fileMode>0775</fileMode>
       <filtered>true</filtered>
     </file>
     <file>
-      <source>bin/gosu.cmd</source>
+      <source>${project.build.scriptSourceDirectory}/gosu.cmd</source>
       <outputDirectory>bin</outputDirectory>
       <filtered>true</filtered>
     </file>
     <file>
-      <source>bin/full.gosulaunch.properties</source>
+      <source>${project.build.scriptSourceDirectory}/full.gosulaunch.properties</source>
       <outputDirectory>bin</outputDirectory>
       <destName>gosulaunch.properties</destName>
       <filtered>true</filtered>
@@ -53,7 +54,7 @@
   </files>
   <fileSets>
     <fileSet>
-      <directory>text</directory>
+      <directory>${project.build.textDirectory}</directory>
       <outputDirectory/>
       <filtered>true</filtered>
     </fileSet>

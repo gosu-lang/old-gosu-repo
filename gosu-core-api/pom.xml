@@ -8,12 +8,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>gosu-core-api</artifactId>
-  <packaging>bundle</packaging>
 
   <name>Gosu :: Core API</name>
 
   <properties>
-    <gosu.version.properties>generated/gw/lang/gosu-version.properties</gosu.version.properties>
+    <generated.version.dir>${project.build.directory}/generated-sources/version</generated.version.dir>
+    <gosu.version.properties>${generated.version.dir}/gw/lang/gosu-version.properties</gosu.version.properties>
   </properties>
 
   <dependencies>
@@ -30,7 +30,6 @@
       <groupId>org.gosu-lang.gosu.managed</groupId>
       <artifactId>gw-commons-cli</artifactId>
       <version>1.0-2</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -96,6 +95,39 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Contains-Sources>gs,gsx</Contains-Sources>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>1.5</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <createSourcesJar>true</createSourcesJar>
+          <artifactSet>
+            <excludes>
+              <exclude>org.gosu-lang.gosu:gosu-launcher-api</exclude>
+              <exclude>org.gosu-lang.gosu:gosu-launcher-impl</exclude>
+            </excludes>
+          </artifactSet>
+        </configuration>
       </plugin>
     </plugins>
   </build>

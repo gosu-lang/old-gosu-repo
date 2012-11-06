@@ -155,7 +155,7 @@ public class RunGosuITCase {
   @Test
   public void with_submodules_fromGosuHome() {
     GosuRunner gosu = new GosuRunner()
-            .run("testProjects" + File.separator + "with submodules" + File.separator + "runfoo.gsp");
+            .run("src" + File.separator + "test" + File.separator + "test-projects" + File.separator + "with submodules" + File.separator + "runfoo.gsp");
     assertThat(gosu)
             .hasZeroExitCode()
             .hasNoStderr()
@@ -211,7 +211,7 @@ public class RunGosuITCase {
     private GosuRunner() {
       _pom = ITCaseUtils.findPom(getClass());
       _workingDir = _pom.getParentFile();
-      _testProjectsDir = new File(_pom.getParentFile(), "testProjects");
+      _testProjectsDir = new File(_pom.getParentFile(), "src" + File.separator + "test" + File.separator + "test-projects");
     }
 
     GosuRunner withWorkingDir(String workingDirName) {

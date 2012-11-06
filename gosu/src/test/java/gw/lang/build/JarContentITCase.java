@@ -70,7 +70,7 @@ public class JarContentITCase extends Assert {
   @Test
   public void testGosuCoreJar() {
     IDirectory dir = getGosuCoreJar();
-    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "OSGI-INF", "gw");
+    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "gw");
     assertGosuCoreApiShades(dir, false);
     assertGosuCoreShades(dir, true);
     assertGosuCoreApiFiles(dir, false);
@@ -228,8 +228,8 @@ public class JarContentITCase extends Assert {
   }
 
   private void assertManifestImplementationEntries(Manifest mf) {
-    assertTrue(mf.getMainAttributes().getValue("Bundle-SymbolicName").startsWith("org.gosu-lang.gosu."));
-    assertEquals(getOsgiVersion(), mf.getMainAttributes().getValue("Bundle-Version"));
+    assertTrue(mf.getMainAttributes().getValue("Implementation-Vendor-Id").startsWith("org.gosu-lang.gosu"));
+    assertEquals(getVersion(), mf.getMainAttributes().getValue("Implementation-Version"));
   }
 
   private static void assertManifestContainsSourcesEntry(IDirectory dir, Manifest mf, String expectedSources) {
@@ -258,16 +258,9 @@ public class JarContentITCase extends Assert {
     }
   }
 
-  private static String getOsgiVersion() {
+  private static String getVersion() {
     GosuVersion version = GosuVersion.parse(_assembly.getGosuVersion());
-    String osgiVersion = version.getMajor() + "." + version.getMinor() + "." + version.getIncremental();
-    if (version.getBuildNum() > 0) {
-      osgiVersion += "." + version.getBuildNum();
-    }
-    else if (version.getQualifier() != null) {
-      osgiVersion += "." + version.getQualifier();
-    }
-    return osgiVersion;
+    return version.toString();
   }
 
   private IDirectory getJar(String name) {

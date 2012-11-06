@@ -241,10 +241,6 @@ public class FileSystemImpl extends BaseService implements IFileSystem {
         return null;
       }
 
-      if ( _url.getProtocol().equals("bundleresource")) {
-        _url = EquinoxURLResolver.resolveBundleResource(_url);
-      }
-
       if ( _url.getProtocol().equals( "file" ) ) {
         return getIResourceFromJavaFile(_url);
       }

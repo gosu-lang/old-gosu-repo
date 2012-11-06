@@ -1,3 +1,0 @@
-Bundle-SymbolicName=com.guidewire.gosu-test-api
-Fragment-Host=org.gosu-lang.gosu.core-api
-Export-Package=gw.test.*,gw.testharness.*,gw.util.*

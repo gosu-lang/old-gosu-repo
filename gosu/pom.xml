@@ -15,6 +15,8 @@
   <properties>
     <full.launcher.path>gosu-core-api-${project.parent.version}.jar,gosu-core-${project.parent.version}.jar,gosu-interactive-${project.parent.version}.jar,jline-${jline.version}.jar</full.launcher.path>
     <thin.launcher.path>remote:releases:gosu-lang.org-releases:http://gosu-lang.org/nexus/content/repositories/gosu,org.gosu-lang.gosu:gosu-interactive:${project.parent.version}</thin.launcher.path>
+    <project.build.assemblyDescriptorDirectory>src/main/assembly</project.build.assemblyDescriptorDirectory>
+    <project.build.textDirectory>src/main/text</project.build.textDirectory>
   </properties>
 
   <dependencies>
@@ -38,6 +40,13 @@
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-interactive</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-process</artifactId>
       <version>${project.parent.version}</version>
       <scope>runtime</scope>
       <optional>true</optional>
@@ -92,7 +101,7 @@
         <version>2.3</version>
         <configuration>
           <descriptors>
-            <descriptor>assembly/full.xml</descriptor>
+            <descriptor>${project.build.assemblyDescriptorDirectory}/full.xml</descriptor>
 <!--
             <descriptor>assembly/thin.xml</descriptor>
 -->

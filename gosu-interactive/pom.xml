@@ -8,7 +8,6 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>gosu-interactive</artifactId>
-  <packaging>bundle</packaging>
 
   <name>Gosu :: Interactive Shell Extension</name>
 

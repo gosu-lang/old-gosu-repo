@@ -51,12 +51,14 @@ public class GosuClassPathThing {
   }
 
   private static boolean isOSGi(ClassLoader loader) {
+/*
     while (loader != null) {
       if (loader.getClass().getName().equals("org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader") ) {
         return true;
       }
       loader = loader.getParent();
     }
+*/
     return false;
   }
 

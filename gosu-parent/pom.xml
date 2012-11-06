@@ -49,6 +49,20 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+    
+    <!-- Guidewire Nexus proxy for SpringSource EBR -->
+    <repository>
+      <id>springsource.external</id>
+      <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
+      <url>http://repository.springsource.com/maven/bundles/external/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
+    
   </repositories>
 
   <distributionManagement>
@@ -90,6 +104,15 @@
     </testResources>
     <pluginManagement>
       <plugins>
+        <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-compiler-plugin</artifactId>
+         <configuration>
+           <source>1.7</source>
+           <target>1.7</target>
+         </configuration>
+       </plugin>
+                                                                                                                                  
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>

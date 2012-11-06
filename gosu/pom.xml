@@ -1,0 +1,135 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.gosu-lang.gosu</groupId>
+    <artifactId>gosu-parent</artifactId>
+    <version>0.10-beta04-SNAPSHOT</version>
+    <relativePath>../gosu-parent/pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>gosu</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Gosu :: Distribution POM</name>
+
+  <properties>
+    <full.launcher.path>gosu-core-api-${project.parent.version}.jar,gosu-core-${project.parent.version}.jar,gosu-interactive-${project.parent.version}.jar,jline-${jline.version}.jar</full.launcher.path>
+    <thin.launcher.path>remote:releases:gosu-lang.org-releases:http://gosu-lang.org/nexus/content/repositories/gosu,org.gosu-lang.gosu:gosu-interactive:${project.parent.version}</thin.launcher.path>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-core-api</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-core</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-launcher-aether</artifactId>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-interactive</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-servlet</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-xml</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>runtime</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-webservices</artifactId>
+      <version>${project.parent.version}</version>
+      <optional>true</optional>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-itcase-utils</artifactId>
+      <version>${project.parent.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.3</version>
+        <configuration>
+          <descriptors>
+            <descriptor>assembly/full.xml</descriptor>
+<!--
+            <descriptor>assembly/thin.xml</descriptor>
+-->
+          </descriptors>
+          <encoding>UTF-8</encoding>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <!-- Fixes issue with wrong permissions set in zips (http://jira.codehaus.org/browse/MASSEMBLY-449) -->
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-archiver</artifactId>
+            <version>2.2</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.12</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

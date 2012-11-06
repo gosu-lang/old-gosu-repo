@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <groupId>org.gosu-lang.gosu</groupId>
+    <artifactId>gosu-parent</artifactId>
+    <version>0.10-beta04-SNAPSHOT</version>
+    <relativePath>../gosu-parent/pom.xml</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>gosu-core</artifactId>
+  <packaging>bundle</packaging>
+
+  <name>Gosu :: Core Impl</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-core-api</artifactId>
+      <version>0.10-beta04-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-antlr-runtime</artifactId>
+      <version>3.4-2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm</artifactId>
+      <version>3.1-2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-analysis</artifactId>
+      <version>3.1-2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-commons</artifactId>
+      <version>3.1-2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-tree</artifactId>
+      <version>3.1-2</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-util</artifactId>
+      <version>3.1-2</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>4.3.0</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>biz.aQute</groupId>
+      <artifactId>bndlib</artifactId>
+      <version>1.50.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.equinox</groupId>
+      <artifactId>org.eclipse.equinox.common</artifactId>
+      <version>3.6.0.v20100503</version>
+      <optional>true</optional>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.osgi</groupId>
+          <artifactId>org.eclipse.osgi</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+</project>

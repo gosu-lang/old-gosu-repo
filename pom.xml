@@ -1,0 +1,42 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.gosu-lang.gosu</groupId>
+    <artifactId>gosu-parent</artifactId>
+    <version>0.10-beta04-SNAPSHOT</version>
+    <relativePath>../gosu-parent</relativePath>
+  </parent>
+  <artifactId>gosu-proj</artifactId>
+  <packaging>pom</packaging>
+
+  <name>Gosu :: Project Aggregator</name>
+
+  <modules>
+    <module>../gosu</module>
+    <module>../gosu-core</module>
+    <module>../gosu-core-api</module>
+    <module>../gosu-interactive</module>
+    <module>../gosu-itcase-utils</module>
+    <module>../gosu-parent</module>
+    <module>../gosu-process</module>
+    <module>../gosu-servlet</module>
+    <module>../gosu-test-api</module>
+    <module>../webservices</module>
+    <module>../ij-editor</module>
+    <module>../xml</module>
+  </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -1,0 +1,2 @@
+Fragment-Host=org.gosu-lang.gosu.core-api
+Export-Package=gw.util.servlet.*

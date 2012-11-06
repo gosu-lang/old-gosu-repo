@@ -1,0 +1,18 @@
+Fragment-Host=org.gosu-lang.gosu.core-api
+Export-Package=\
+ gw.internal.ext.org.antlr.*,\
+ gw.internal.ext.org.objectweb.asm.*;-split-package:=merge-first,\
+ !gw.internal.ext.*,\
+ gw.*
+Private-Package=gw.internal.gosu.compiler.protocols.gosuclass.osgi
+DynamicImport-Package=*
+Import-Package=sun.*;resolution:=optional,\
+ !antlr.*,\
+ !org.antlr.*,\
+ !org.objectweb.asm.*,\
+ com.sun.*;resolution:=optional,\
+ org.eclipse.core.runtime.*;resolution:=optional,\
+ *
+Service-Component=*
+-failok
+Embed-Dependency=*;groupId=org.gosu-lang.gosu.managed;artifactId=gw-antlr-runtime|gw-asm*;inline=true

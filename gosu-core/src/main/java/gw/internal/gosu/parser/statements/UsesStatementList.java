@@ -1,0 +1,62 @@
+/*
+ * Copyright 2012. Guidewire Software, Inc.
+ */
+
+package gw.internal.gosu.parser.statements;
+
+import java.util.List;
+
+import gw.internal.gosu.parser.Statement;
+import gw.lang.parser.statements.IUsesStatement;
+import gw.lang.parser.statements.IUsesStatementList;
+import gw.lang.parser.statements.ITerminalStatement;
+
+public class UsesStatementList extends Statement implements IUsesStatementList
+{
+  private List<IUsesStatement> _stmts;
+
+  public UsesStatementList()
+  {
+  }
+
+  public List<IUsesStatement> getUsesStatements()
+  {
+    return _stmts;
+  }
+
+  public void setUsesStatements( List<IUsesStatement> stmts )
+  {
+    _stmts = stmts;
+  }
+
+  public Object execute()
+  {
+    // no-op
+    return Statement.VOID_RETURN_VALUE;
+  }
+
+  @Override
+  public ITerminalStatement getLeastSignificantTerminalStatement()
+  {
+    return null;
+  }
+
+  @Override
+  public boolean isNoOp()
+  {
+    return true;
+  }
+
+  @Override
+  public String toString()
+  {
+    StringBuilder sb = new StringBuilder();
+    if( _stmts != null ) {
+      for( IUsesStatement stmt : _stmts ) {
+        sb.append( stmt.toString() + "\n" );
+      }
+    }
+    return sb.toString();
+  }
+
+}

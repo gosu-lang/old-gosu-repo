@@ -6,11 +6,10 @@ import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.IJavaBackedType;
+import junit.framework.TestCase;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @UnstableAPI
 public class TestSpec implements Comparable<TestSpec> {
@@ -75,16 +74,11 @@ public class TestSpec implements Comparable<TestSpec> {
     return result;
   }
 
+  @SuppressWarnings("unchecked")
   public static String[] extractTestMethods(IType testType) {
-    ArrayList<String> methodNames = new ArrayList<String>();
+    List<String> methodNames = new ArrayList<String>();
     if (testType instanceof IJavaBackedType) {
-      Method[] methods = ((IJavaBackedType) testType).getBackingClass().getMethods();
-      for (Method methodInfo : methods) {
-        // TODO - AHK
-        if (isTestMethod(methodInfo) /*&& shouldIncludeTestMethod(methodInfo)*/) {
-          methodNames.add(methodInfo.getName());
-        }
-      }
+      methodNames = extractTestMethods(((IJavaBackedType) testType).getBackingClass());
     } else {
       List<? extends IMethodInfo> methodInfos = testType.getTypeInfo().getMethods();
       for (IMethodInfo methodInfo : methodInfos) {
@@ -96,7 +90,31 @@ public class TestSpec implements Comparable<TestSpec> {
     return methodNames.toArray(new String[methodNames.size()]);
   }
 
-  private static boolean isTestMethod(Method method) {
+  public static List<String> extractTestMethods(Class<? extends TestCase> testClass) {
+    Set<String> methodNames = new HashSet<String>();
+    for (Method methodInfo : testClass.getMethods()) {
+      if (TestSpec.isTestMethod(methodInfo) /*&& shouldIncludeTestMethod(methodInfo)*/) {
+        methodNames.add(methodInfo.getName());
+      }
+    }
+    return sortMethodsAccordingToSourceOrder(methodNames, testClass);
+  }
+
+  private static List<String> sortMethodsAccordingToSourceOrder(Set<String> testMethods, Class<? extends TestCase> clazz) {
+    List<String> sortedMethods = new ArrayList<String>();
+    for (org.apache.bcel.classfile.Method method : TestClassHelper.getMethodsSorted(clazz)) {
+      if (method.getArgumentTypes().length == 0 && testMethods.remove(method.getName())) {
+        sortedMethods.add(method.getName());
+      }
+    }
+
+    if (testMethods.size() != 0) {
+      throw new IllegalArgumentException("Cannot find " + testMethods + " in the byte code of " + clazz.getName());
+    }
+    return sortedMethods;
+  }
+
+  static boolean isTestMethod(Method method) {
     return Modifier.isPublic(method.getModifiers()) && method.getParameterTypes().length == 0 &&
         !Modifier.isStatic(method.getModifiers()) && method.getName().startsWith("test");
   }

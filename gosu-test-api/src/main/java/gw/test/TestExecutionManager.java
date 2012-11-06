@@ -272,7 +272,7 @@ public class TestExecutionManager {
 
   private boolean isLastTestClassInSuite(TestClass test) {
     return _testWrappers == null ||
-           (_testWrappers.size() > 0 && test.getClass().getName().equals(_testWrappers.get(_testWrappers.size() - 1).getName()));
+           (_testWrappers.size() > 0 && test.getTypeName().equals(_testWrappers.get(_testWrappers.size() - 1).getName()));
   }
 
   public final boolean hasTimeOut() {

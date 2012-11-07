@@ -117,7 +117,7 @@ public class RunGosuITCase {
             .hasZeroExitCode()
             .hasStdOut(
                     "Type \"help\" to see available commands\n" +
-                    "gs> help\n" +
+                    "gs> " /* + "help\n" */ +
                     "The following commands are available:\n" +
                     "\n" +
                     "  help - show this message\n" +
@@ -127,7 +127,7 @@ public class RunGosuITCase {
                     "  clear - clears all local variables and functions\n" +
                     "  rm [var_name] - clears the given variable\n" +
                     "\n" +
-                    "gs> quit");
+                    "gs> " /* + "quit" */);
   }
 
   @Test
@@ -225,6 +225,10 @@ public class RunGosuITCase {
     }
 
     GosuRunner run(String... args) {
+      // when running tests in Windows, jline by default would choose jline.WindowsTerminal,
+      // which can hang due to there not actually being a physical terminal
+      _runner.withArg("-Djline.terminal=jline.UnsupportedTerminal");
+
       for (String arg : args) {
         _runner.withArg(arg);
       }

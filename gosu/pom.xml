@@ -60,20 +60,6 @@
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
-      <artifactId>gosu-xml</artifactId>
-      <version>${project.parent.version}</version>
-      <scope>runtime</scope>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu</groupId>
-      <artifactId>gosu-webservices</artifactId>
-      <version>${project.parent.version}</version>
-      <optional>true</optional>
-      <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-itcase-utils</artifactId>
       <version>${project.parent.version}</version>
       <scope>test</scope>

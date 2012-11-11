@@ -66,9 +66,7 @@ public class GosuAssemblyITCase extends Assertions {
     IDirectory dir = FileFactory.instance().getIDirectory(_assembly.getExtDir());
     assertThat(fileNames(dir)).isEqualTo(Arrays.asList(
             "gosu-process-" + _assembly.getGosuVersion() + ".jar",
-            "gosu-servlet-" + _assembly.getGosuVersion() + ".jar",
-            "gosu-webservices-" + _assembly.getGosuVersion() + ".jar",
-            "gosu-xml-" + _assembly.getGosuVersion() + ".jar"
+            "gosu-servlet-" + _assembly.getGosuVersion() + ".jar"
     ));
   }
 

@@ -13,8 +13,6 @@
       <excludes>
         <exclude>org.gosu-lang.gosu:gosu-process</exclude>
         <exclude>org.gosu-lang.gosu:gosu-servlet</exclude>
-        <exclude>org.gosu-lang.gosu:gosu-xml</exclude>
-        <exclude>org.gosu-lang.gosu:gosu-webservices</exclude>
       </excludes>
       <useProjectArtifact>false</useProjectArtifact>
       <outputDirectory>lib</outputDirectory>
@@ -24,8 +22,6 @@
       <includes>
         <include>org.gosu-lang.gosu:gosu-process</include>
         <include>org.gosu-lang.gosu:gosu-servlet</include>
-        <include>org.gosu-lang.gosu:gosu-xml</include>
-        <include>org.gosu-lang.gosu:gosu-webservices</include>
       </includes>
       <useProjectArtifact>false</useProjectArtifact>
       <outputDirectory>ext</outputDirectory>

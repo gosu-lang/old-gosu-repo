@@ -62,14 +62,7 @@ public class DistAssemblyUtil extends ITCaseUtils {
   }
 
   public File getJar(String name) {
-    File dir;
-    if (name.equals("gosu-xml") || name.equals("gosu-webservices")) {
-      dir = _assemblyExtDir;
-    }
-    else {
-      dir = _assemblyLibDir;
-    }
-    return new File(dir, name + "-" + _gosuVersion + ".jar");
+    return new File(_assemblyLibDir, name + "-" + _gosuVersion + ".jar");
   }
 
 }

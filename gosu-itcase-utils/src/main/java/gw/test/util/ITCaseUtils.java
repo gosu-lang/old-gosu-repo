@@ -28,8 +28,7 @@ public class ITCaseUtils {
     try {
       URL location = clazz.getProtectionDomain().getCodeSource().getLocation();
       File classFile = new File(location.toURI());
-      String fixedPath = classFile.getPath().replaceFirst("[\\\\/]projects[\\\\/][^\\\\/]+([\\\\/])", "$1");
-      File root = findPomRoot(new File(fixedPath));
+      File root = findPomRoot(classFile);
       return root != null ? new File(root, "pom.xml") : null;
     } catch (URISyntaxException e) {
       throw new RuntimeException(e);

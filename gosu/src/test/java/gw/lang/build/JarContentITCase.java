@@ -57,14 +57,6 @@ public class JarContentITCase extends Assert {
   }
 
   @Test
-  public void testGosuCoreApiSourcesJar() {
-    IDirectory dir = new JarFileDirectoryImpl(_gosuCoreApiSourcesJar);
-    assertTrue(dir.file("gw/lang/reflect/TypeSystem.java").exists());
-    assertTrue(dir.file("gw/lang/enhancements/CoreStringEnhancement.gsx").exists());
-    assertTrue(dir.file("gw/lang/IDisposable.gs").exists());
-  }
-
-  @Test
   public void testGosuCoreJar() {
     IDirectory dir = getGosuCoreJar();
     Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "gw");

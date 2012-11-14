@@ -106,7 +106,6 @@
           </execution>
         </executions>
         <configuration>
-          <createSourcesJar>true</createSourcesJar>
           <artifactSet>
             <excludes>
               <exclude>org.gosu-lang.gosu:gosu-launcher-api</exclude>

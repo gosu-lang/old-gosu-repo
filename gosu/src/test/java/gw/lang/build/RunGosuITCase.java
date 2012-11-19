@@ -162,6 +162,17 @@ public class RunGosuITCase {
             .hasStdOut("baz");
   }
 
+  @Test
+  public void withCLA() {
+    GosuRunner gosu = new GosuRunner()
+            .withWorkingDir(_name.getMethodName().replace('_', ' '))
+            .run("runwithcla.gsp", "-foo", "baz", "-bar");
+    assertThat(gosu)
+            .hasZeroExitCode()
+            .hasNoStderr()
+            .hasStdOut("TestOptions.Foo: baz\nTestOptions.Bar: true");
+  }
+
   private static GosuAssert assertThat(GosuRunner gosu) {
     return new GosuAssert(gosu);
   }

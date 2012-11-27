@@ -63,4 +63,21 @@ public class ITCaseUtils {
     }
     return versionNode != null ? versionNode.getText() : null;
   }
+
+  public static String getPomArtifactId(File pom) {
+    SimpleXmlNode node = SimpleXmlNode.parse(pom);
+    SimpleXmlNode artifactIdNode = getChild(node, "artifactId");
+    return artifactIdNode.getText();
+  }
+
+  public static File findJar(File pom) {
+    String artifactId = getPomArtifactId(pom);
+    File targetDir = new File(pom.getParentFile(), "target");
+    for (File file : targetDir.listFiles()) {
+      if (file.getName().startsWith(artifactId) && file.getName().endsWith(".jar")) {
+        return file;
+      }
+    }
+    throw new IllegalStateException("couldn't find " + artifactId + " jar under " + targetDir);
+  }
 }

@@ -8,24 +8,17 @@ import gw.fs.jar.JarFileDirectoryImpl;
 import gw.lang.Gosu;
 import gw.lang.GosuVersion;
 import gw.test.util.ITCaseUtils;
-import gw.util.DynamicArray;
-import gw.util.StreamUtil;
+import gw.test.util.ManifestVerifyUtil;
 import org.fest.assertions.Assertions;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.jar.Manifest;
 
 /**
  * @author Brian Chang
@@ -47,9 +40,9 @@ public class JarContentITCase extends Assert {
     Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "gw");
     assertGosuCoreApiShades(dir, true);
     assertGosuCoreApiFiles(dir, true);
-    Manifest mf = readManifest(dir);
-    assertManifestImplementationEntries(mf);
-    assertManifestContainsSourcesEntry(dir, mf, "gs,gsx");
+    ManifestVerifyUtil manifestUtil = new ManifestVerifyUtil(dir, getVersion());
+    manifestUtil.assertManifestImplementationEntries();
+    manifestUtil.assertManifestContainsSourcesEntry(dir, "gs,gsx");
   }
 
   private IDirectory getGosuCoreApiJar() {
@@ -64,9 +57,9 @@ public class JarContentITCase extends Assert {
     assertGosuCoreShades(dir, true);
     assertGosuCoreApiFiles(dir, false);
     assertGosuCoreFiles(dir, true);
-    Manifest mf = readManifest(dir);
-    assertManifestImplementationEntries(mf);
-    assertManifestContainsSourcesEntry(dir, mf, null);
+    ManifestVerifyUtil manifestUtil = new ManifestVerifyUtil(dir, getVersion());
+    manifestUtil.assertManifestImplementationEntries();
+    manifestUtil.assertManifestContainsSourcesEntry(dir, null);
   }
 
   private IDirectory getGosuCoreJar() {
@@ -129,55 +122,6 @@ public class JarContentITCase extends Assert {
   private void assertGosuCoreShades(IDirectory dir, boolean expected) {
     assertEquals(expected, dir.dir("gw/internal/ext/org/antlr").exists());
     assertEquals(expected, dir.dir("gw/internal/ext/org/objectweb/asm").exists());
-  }
-
-  private Manifest readManifest(IDirectory dir) {
-    InputStream in = null;
-    try {
-      in = dir.file("META-INF/MANIFEST.MF").openInputStream();
-      return new Manifest(in);
-    }
-    catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    finally {
-      try {
-        StreamUtil.close(in);
-      } catch (IOException e) {
-        // ignore
-      }
-    }
-  }
-
-  private void assertManifestImplementationEntries(Manifest mf) {
-    assertTrue(mf.getMainAttributes().getValue("Implementation-Vendor-Id").startsWith("org.gosu-lang.gosu"));
-    assertEquals(getVersion(), mf.getMainAttributes().getValue("Implementation-Version"));
-  }
-
-  private static void assertManifestContainsSourcesEntry(IDirectory dir, Manifest mf, String expectedSources) {
-    HashSet<String> found = new HashSet<String>();
-    DynamicArray<? extends IFile> files = IDirectoryUtil.allContainedFilesExcludingIgnored(dir);
-    for (IFile file : files) {
-      String extension = file.getExtension();
-      if (extension.equals("gs") || extension.equals("gsx") || extension.equals("xsd")) {
-        found.add(extension);
-      }
-    }
-    List<String> foundExtensions = new ArrayList<String>(found);
-    Collections.sort(foundExtensions);
-
-    if (expectedSources != null) {
-      List<String> expectedSourceExtensions = Arrays.asList(expectedSources.split(","));
-      Assertions.assertThat(foundExtensions)
-              .as("the set of extensions in the manifest (Contains-Sources) don't match the set found in the jar")
-              .isEqualTo(expectedSourceExtensions);
-
-      assertEquals(expectedSources, mf.getMainAttributes().getValue("Contains-Sources"));
-    }
-    else {
-      Assertions.assertThat(foundExtensions).isEmpty();
-      assertNull(mf.getMainAttributes().getValue("Contains-Sources"));
-    }
   }
 
   private static String getVersion() {

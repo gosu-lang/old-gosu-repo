@@ -18,8 +18,8 @@
 
   <properties>
     <launcher.api.version>2</launcher.api.version>
-    <launcher.impl.version>2.0</launcher.impl.version>
-    <launcher.aether.version>2.0</launcher.aether.version>
+    <launcher.impl.version>2.1</launcher.impl.version>
+    <launcher.aether.version>2.1</launcher.aether.version>
     <jline.version>0.9.94</jline.version>
     <dist.man.repo.url>http://gosu-lang.org/nexus/content/repositories/gosu</dist.man.repo.url>
     <dist.man.snapshotrepo.url>http://gosu-lang.org/nexus/content/repositories/snapshots</dist.man.snapshotrepo.url>

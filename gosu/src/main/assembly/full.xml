@@ -38,11 +38,13 @@
       <outputDirectory>bin</outputDirectory>
       <fileMode>0775</fileMode>
       <filtered>true</filtered>
+      <lineEnding>unix</lineEnding>
     </file>
     <file>
       <source>bin/gosu.cmd</source>
       <outputDirectory>bin</outputDirectory>
       <filtered>true</filtered>
+      <lineEnding>dos</lineEnding>
     </file>
     <file>
       <source>bin/full.gosulaunch.properties</source>

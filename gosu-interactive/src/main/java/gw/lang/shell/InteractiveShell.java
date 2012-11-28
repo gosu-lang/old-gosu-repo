@@ -1,23 +1,11 @@
 package gw.lang.shell;
 
 import gw.config.CommonServices;
-import gw.lang.parser.ExternalSymbolMapSymbolTableWrapper;
-import gw.lang.parser.GosuParserFactory;
-import gw.lang.parser.IDynamicFunctionSymbol;
-import gw.lang.parser.IGosuParser;
-import gw.lang.parser.IGosuProgramParser;
-import gw.lang.parser.IParseResult;
-import gw.lang.parser.IParseTree;
-import gw.lang.parser.IParsedElement;
-import gw.lang.parser.ISourceCodeTokenizer;
-import gw.lang.parser.ISymbol;
-import gw.lang.parser.ISymbolTable;
-import gw.lang.parser.ITypeUsesMap;
-import gw.lang.parser.ParserOptions;
-import gw.lang.parser.StandardSymbolTable;
+import gw.lang.parser.*;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.IMemberAccessExpression;
+import gw.lang.parser.expressions.INotAWordExpression;
 import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.parser.statements.IStatementList;
 import gw.lang.parser.statements.IUsesStatement;
@@ -143,7 +131,10 @@ class InteractiveShell implements Runnable
     IProgramInstance instance = gosuProgram.getProgramInstance();
     Object val = instance.evaluate( new ExternalSymbolMapSymbolTableWrapper( _interactiveSymbolTable, true ) );
     processProgram( gosuProgram, instance );
-    boolean noReturnValue = gosuProgram.getExpression() == null || JavaTypes.pVOID().equals(gosuProgram.getExpression().getType());
+    IExpression expression = gosuProgram.getExpression();
+    boolean noReturnValue = expression == null ||
+            JavaTypes.pVOID().equals(expression.getType()) ||
+            expression instanceof INotAWordExpression;
     if (!noReturnValue && _logOutput ) {
       _cr.printString( OUTPUT_PREFIX + StandardSymbolTable.toString( val ) );
       _cr.printNewline();
@@ -403,7 +394,6 @@ class InteractiveShell implements Runnable
     {
       return null;
     }
-    int blankLines = 0;
     while( eatMore( s ) )
     {
       cr.setDefaultPrompt( MORE_PROMPT );
@@ -411,15 +401,8 @@ class InteractiveShell implements Runnable
 
       if ( additionalInput.trim().length() == 0 )
       {
-        if (++blankLines >= 2) {
-          break;
-        }
+        break;
       }
-      else
-      {
-        blankLines = 0;
-      }
-
       s = s + additionalInput + "\n";
     }
     cr.setDefaultPrompt( GOSU_PROMPT );

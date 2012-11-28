@@ -26,11 +26,13 @@
       <outputDirectory>bin</outputDirectory>
       <fileMode>0755</fileMode>
       <filtered>true</filtered>
+      <lineEnding>unix</lineEnding>
     </file>
     <file>
       <source>${project.build.scriptSourceDirectory}/gosu.cmd</source>
       <outputDirectory>bin</outputDirectory>
       <filtered>true</filtered>
+      <lineEnding>dos</lineEnding>
     </file>
     <file>
       <source>${project.build.scriptSourceDirectory}/thin.gosulaunch.properties</source>

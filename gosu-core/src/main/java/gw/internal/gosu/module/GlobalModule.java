@@ -15,6 +15,7 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.IGosuClassRepository;
+import gw.lang.reflect.module.Dependency;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IGlobalModule;
 import gw.lang.reflect.module.IModule;
@@ -98,6 +99,20 @@ public class GlobalModule extends Module implements IGlobalModule
       srcs.addAll(m.getSourcePath());
     }
     return srcs.toArray(new IDirectory[srcs.size()]);
+  }
+
+  /**
+   * In global module, all dependencies should be traversed, even non-exported.
+   */
+  @Override
+  protected void buildTraversalList(final IModule theModule, List<IModule> traversalList) {
+    traversalList.add(theModule);
+    for (Dependency dependency : theModule.getDependencies()) {
+      IModule dependencyModule = dependency.getModule();
+      if (!traversalList.contains(dependencyModule)) {
+        buildTraversalList(dependencyModule, traversalList);
+      }
+    }
   }
 
   protected static ITypeLoader createTypeLoader(

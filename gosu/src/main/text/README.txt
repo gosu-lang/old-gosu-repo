@@ -4,14 +4,14 @@ Thanks for downloading Gosu.  You are using version ${project.version}.
 
 QUICK INSTALL
 
-1. Confirm that you have Java version 1.5 (Sun/Oracle J2SE release 5) or 
+1. Confirm that you have Java version 1.6 (Sun/Oracle J2SE release 6) or
 later on your computer. Gosu works with both the JRE version and the 
 SDK version of Java. For Java downloads, visit http://java.com 
 
 2. Expand the gosu.zip download file into its own directory.
 
 3. Run the platform-specific launch scripts in the /bin directory of the 
-Gosu directory. For example, gosu.bat for Windows users. 
+Gosu directory. For example, gosu.cmd for Windows users.
 
 For complete installation instructions and important information 
 about Apache Eclipse and IntelliJ IDEA plugins, refer to:
@@ -40,8 +40,6 @@ The latest Gosu language documentation is at:
   http://www.gosu-lang.org/
 
 You can browse the latest documentation on the web site. To use the documentation locally,
-download the latest Gosu software, which includes the documentation.  
-  
-Various Gosu examples are in the Gosu /examples subdirectory.
+download the latest Gosu software, which includes the documentation.
 
 Enjoy!

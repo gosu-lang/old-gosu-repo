@@ -415,7 +415,7 @@ public class Module implements IModule
     return _traversalList;
   }
 
-  private void buildTraversalList(final IModule theModule, List<IModule> traversalList) {
+  protected void buildTraversalList(final IModule theModule, List<IModule> traversalList) {
     traversalList.add(theModule);
     for (Dependency dependency : theModule.getDependencies()) {
       IModule dependencyModule = dependency.getModule();

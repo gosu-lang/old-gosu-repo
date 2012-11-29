@@ -4,6 +4,7 @@ import gw.fs.IResource;
 import gw.xml.simple.SimpleXmlNode;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -70,14 +71,13 @@ public class ITCaseUtils {
     return artifactIdNode.getText();
   }
 
-  public static File findJar(File pom) {
+  public static File findJar(File pom, String version) {
     String artifactId = getPomArtifactId(pom);
     File targetDir = new File(pom.getParentFile(), "target");
-    for (File file : targetDir.listFiles()) {
-      if (file.getName().startsWith(artifactId) && file.getName().endsWith(".jar")) {
-        return file;
-      }
+    File jar = new File(targetDir, artifactId + "-" + version + ".jar");
+    if (!jar.exists()) {
+      throw new RuntimeException(new FileNotFoundException("couldn't find " + artifactId + " jar under " + targetDir));
     }
-    throw new IllegalStateException("couldn't find " + artifactId + " jar under " + targetDir);
+    return jar;
   }
 }

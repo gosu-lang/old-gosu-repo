@@ -7,8 +7,8 @@ package gw.lang.reflect.java;
 import gw.lang.Autoinsert;
 import gw.lang.IAnnotation;
 import gw.lang.IDimension;
+import gw.lang.InternalAPI;
 import gw.lang.Param;
-import gw.lang.Scriptable;
 import gw.lang.Throws;
 import gw.lang.annotation.AnnotationUsage;
 import gw.lang.annotation.AnnotationUsages;
@@ -292,8 +292,8 @@ public class JavaTypes {
     return getGosuType(IAnnotation.class);
   }
 
-  public static IJavaType SCRIPTABLE() {
-    return getGosuType(Scriptable.class);
+  public static IJavaType INTERNAL_API() {
+    return getGosuType(InternalAPI.class);
   }
 
   public static IJavaType ITYPE() {

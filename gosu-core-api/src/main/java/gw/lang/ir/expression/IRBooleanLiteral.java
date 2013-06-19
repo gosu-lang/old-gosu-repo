@@ -23,6 +23,6 @@ public class IRBooleanLiteral extends IRExpression {
 
   @Override
   public IRType getType() {
-    return IRTypeConstants.pBOOLEAN;
+    return IRTypeConstants.pBOOLEAN();
   }
 }

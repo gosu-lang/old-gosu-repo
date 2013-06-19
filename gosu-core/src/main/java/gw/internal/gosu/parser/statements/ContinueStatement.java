@@ -5,6 +5,7 @@ package gw.internal.gosu.parser.statements;
 
 import gw.lang.parser.statements.IContinueStatement;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.TerminalType;
 
 
 /**
@@ -25,8 +26,14 @@ public final class ContinueStatement extends TerminalStatement implements IConti
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  public TerminalType getTerminalType() {
+    return TerminalType.Continue;
+  }
+
+  @Override
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = true;
     return this;
   }
 

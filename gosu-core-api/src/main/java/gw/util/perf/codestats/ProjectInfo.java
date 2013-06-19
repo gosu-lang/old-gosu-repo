@@ -62,9 +62,6 @@ public class ProjectInfo {
 
   public static void main(String[] args) {
     String[] extensions = {".java", ".gs", ".gsx"};
-    new ProjectInfo("C:\\dev\\emerald\\studio\\platform\\pl-test", extensions).printInfo();
-    new ProjectInfo("C:\\dev\\emerald\\studio\\app-pc\\pc-test", extensions).printInfo();
-    new ProjectInfo("C:\\dev\\emerald\\studio\\app-cc\\cc-test", extensions).printInfo();
-    new ProjectInfo("C:\\dev\\emerald\\studio\\app-bc\\bc-test", extensions).printInfo();
+    new ProjectInfo("C:\\dev\\emerald\\studio\\platform\\ij-studio\\src", extensions).printInfo();
   }
 }

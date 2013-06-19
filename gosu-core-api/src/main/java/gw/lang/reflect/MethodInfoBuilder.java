@@ -4,6 +4,8 @@
 
 package gw.lang.reflect;
 
+import gw.config.CommonServices;
+import gw.fs.IFile;
 import gw.lang.UnstableAPI;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.TypeVarToTypeMap;
@@ -35,6 +37,7 @@ public class MethodInfoBuilder {
   private String _returnDescription;
   private IGenericTypeVariable[] _typeVars;
   private boolean _hidden;
+  private LocationInfo _locationInfo;
 
   public MethodInfoBuilder withName(String name) {
     this._name = name;
@@ -138,6 +141,10 @@ public class MethodInfoBuilder {
       exceptions[idx++] = new ExceptionInfoBuilder().like(info);
     }
     withExceptions(exceptions);
+    if ( method instanceof ILocationAwareFeature ) {
+      ILocationAwareFeature locationAwareFeature = (ILocationAwareFeature) method;
+      _locationInfo = locationAwareFeature.getLocationInfo();
+    }
     return this;
   }
 
@@ -145,7 +152,12 @@ public class MethodInfoBuilder {
     return _typeVars == null ? new BuiltMethodInfo(this, container) : new BuiltGenericMethodInfo(this, container);
   }
 
-  private static class BuiltMethodInfo implements IMethodInfo, IOptionalParamCapable {
+  public MethodInfoBuilder withLocation( LocationInfo locationInfo ) {
+    _locationInfo = locationInfo;
+    return this;
+  }
+
+  private static class BuiltMethodInfo implements IMethodInfo, IOptionalParamCapable, ILocationAwareFeature {
 
     private final IFeatureInfo _container;
     private final String _name;
@@ -159,6 +171,7 @@ public class MethodInfoBuilder {
     private final String _description;
     private final String _returnDescription;
     private final boolean _hidden;
+    private final LocationInfo _locationInfo;
 
     public BuiltMethodInfo(MethodInfoBuilder builder, IFeatureInfo container) {
       assert container != null;
@@ -181,7 +194,8 @@ public class MethodInfoBuilder {
       this._description = builder._description;
       this._returnDescription = builder._returnDescription;
       this._hidden = builder._hidden;
-      _signature = makeSignature();
+      this._signature = makeSignature();
+      this._locationInfo = builder._locationInfo;
     }
 
     public IParameterInfo[] getParameters() {
@@ -335,6 +349,11 @@ public class MethodInfoBuilder {
 
     public String getDescription() {
       return _description;
+    }
+
+    @Override
+    public LocationInfo getLocationInfo() {
+      return _locationInfo;
     }
 
     @Override

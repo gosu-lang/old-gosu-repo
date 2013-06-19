@@ -8,8 +8,6 @@ import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.Symbol;
 
 
-
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.statements.ICatchClause;
 import gw.lang.parser.statements.ITerminalStatement;
 import gw.lang.reflect.IType;
@@ -74,9 +72,9 @@ public final class CatchClause extends Statement implements ICatchClause
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    return _catchStmt.getLeastSignificantTerminalStatement();
+    return _catchStmt.getLeastSignificantTerminalStatement( bAbsolute );
   }
 
   @Override
@@ -89,21 +87,21 @@ public final class CatchClause extends Statement implements ICatchClause
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return _iOffset;
   }
 
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _iOffset = iOffset;
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
     return _symbol != null &&
-           GosuObjectUtil.equals( identifierName, _symbol.getCaseInsensitiveName() );
+           GosuObjectUtil.equals( identifierName, _symbol.getName() );
   }
 
   public String[] getDeclarations()

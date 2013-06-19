@@ -34,7 +34,12 @@ import gw.lang.reflect.java.JavaTypes;
 import gw.util.OSPlatform;
 import gw.util.StreamUtil;
 
-import java.io.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.io.Reader;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -373,7 +378,7 @@ public class Gosu implements IGosuLaunch
   }
 
   static void showHelp() {
-    showHelp(new PrintWriter(System.out));
+    showHelp(new PrintWriter(StreamUtil.getOutputStreamWriter(System.out)));
   }
 
   static void showHelp(PrintWriter out)

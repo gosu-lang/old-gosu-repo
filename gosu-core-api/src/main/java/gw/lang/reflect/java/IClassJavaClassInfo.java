@@ -6,4 +6,5 @@ package gw.lang.reflect.java;
 
 public interface IClassJavaClassInfo extends IJavaClassInfo {
   Class getJavaClass();
+  boolean isTypeGosuClassInstance();
 }

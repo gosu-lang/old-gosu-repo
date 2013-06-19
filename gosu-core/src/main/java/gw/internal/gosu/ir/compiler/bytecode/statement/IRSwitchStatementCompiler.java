@@ -30,7 +30,7 @@ public class IRSwitchStatementCompiler extends AbstractBytecodeCompiler {
 
     Label endSwitchLabel = new Label();
 
-    int iCaseMatchedIndex = context.makeTempVar( IRTypeConstants.pBOOLEAN ).getIndex();
+    int iCaseMatchedIndex = context.makeTempVar(IRTypeConstants.pBOOLEAN()).getIndex();
     mv.visitInsn( Opcodes.ICONST_0 );
     mv.visitVarInsn( Opcodes.ISTORE, iCaseMatchedIndex );
 

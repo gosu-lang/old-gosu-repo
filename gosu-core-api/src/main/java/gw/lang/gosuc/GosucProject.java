@@ -5,6 +5,7 @@
 package gw.lang.gosuc;
 
 import gw.config.CommonServices;
+import gw.config.IMemoryMonitor;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
 import gw.lang.parser.ISourceCodeTokenizer;
@@ -88,7 +89,8 @@ public class GosucProject implements IProject {
     _globalLoaders = globalLoaders;
   }
 
-  public GosucProject( IExecutionEnvironment execEnv ) {
+  public GosucProject( ) {
+    IExecutionEnvironment execEnv = TypeSystem.getExecutionEnvironment();
     _name = makeLegalName( execEnv.getProject().getName() );
     assignSdk( execEnv );
     assignModules( execEnv );
@@ -134,7 +136,7 @@ public class GosucProject implements IProject {
     final IDirectory outputPath = module.getOutputPath();
     return new GosucModule( module.getName(),
                             GosucUtil.makeStringPaths( module.getSourcePath() ),
-                            new ArrayList<String>( module.getJavaClassPath() ),
+                            GosucUtil.makeStringPaths( module.getJavaClassPath() ),
                             outputPath != null ? outputPath.getPath().getPathString() : null,
                             makeDependencies( module.getDependencies() ) );
   }
@@ -150,7 +152,7 @@ public class GosucProject implements IProject {
   }
 
   private void assignSdk( IExecutionEnvironment execEnv ) {
-    List<String> classpath = execEnv.getJreModule().getJavaClassPath();
+    List<String> classpath = GosucUtil.makeStringPaths( execEnv.getJreModule().getJavaClassPath() );
     _sdk = new GosucSdk( classpath );
   }
 
@@ -257,7 +259,6 @@ public class GosucProject implements IProject {
         break;
       }
     }
-    GosucGlobalLoaderProvider.setLoaderClass( paths );
     return paths;
   }
 
@@ -342,5 +343,14 @@ public class GosucProject implements IProject {
         }
       }
     }
+  }
+
+  public IMemoryMonitor getMemoryMonitor() {
+    return null;
+  }
+
+  @Override
+  public boolean isShadowMode() {
+    return false;
   }
 }

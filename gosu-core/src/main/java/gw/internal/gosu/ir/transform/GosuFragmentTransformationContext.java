@@ -98,6 +98,12 @@ public class GosuFragmentTransformationContext extends TransformationContextBase
     return true;
   }
 
+  @Override
+  public void addAssertionsStaticField()
+  {
+    throw new UnsupportedOperationException();
+  }
+
   // --------------------- Overrides of methods that reference the underlying context
 
   @Override

@@ -23,7 +23,9 @@ public class JavaSourceUtil {
     if (isProxy(aClass)) {
       return loader.getJavaClassInfo( aClass, gosuModule );
     } else if (aClass.isArray()) {
-      return loader.getJavaClassInfo( aClass, getClassInfo( aClass.getComponentType(), gosuModule ).getModule() );
+      IJavaClassInfo classInfo = getClassInfo(aClass.getComponentType(), gosuModule);
+      IModule module = classInfo.getModule();
+      return loader.getJavaClassInfo(aClass, module);
     } else {
       if( !CommonServices.getPlatformHelper().isInIDE() ) {
         // Don't try to load from source unless we have to, this saves a load of time esp. for case

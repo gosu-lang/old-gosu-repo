@@ -6,18 +6,16 @@ package gw.util;
 
 import gw.config.CommonServices;
 import gw.fs.IDirectory;
+import gw.fs.IFile;
+import gw.fs.ResourcePath;
 import gw.lang.reflect.module.IModule;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.Attributes;
-import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 /**
@@ -26,56 +24,27 @@ import java.util.jar.Manifest;
 public final class Extensions {
   public static final String CONTAINS_SOURCES = "Contains-Sources";
 
-  public static List<String> getExtensions(File path, String headerName) {
+  public static List<String> getExtensions(IDirectory dir, String headerName) {
     List<String> extensions = new ArrayList<String>();
-    getExtensions(extensions, path, headerName);
+    getExtensions(extensions, dir, headerName);
     return extensions;
   }
 
-  public static void getExtensions(Collection<String> result, File path, String headerName) {
-    if (path.getName().endsWith(".jar")) {
-      getExtensionsForJar(result, path, headerName);
-    } else {
-      getExtensionsForDirectory(result, path, headerName);
-    }
-  }
-
-  private static void getExtensionsForJar(Collection<String> result, File locationFile, String headerName) {
-    if (!locationFile.exists()) {
-      return;
-    }
-    JarFile jar = null;
-    try {
-      jar = new JarFile(locationFile);
-      Manifest manifest = jar.getManifest();
-      if (manifest != null) {
-        scanManifest(result, manifest, headerName);
-      }
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    } finally {
-      if (jar != null) {
-        try {
-          jar.close();
-        } catch (IOException e) {
-          // Ignore
-        }
-      }
-    }
-  }
-
-  private static void getExtensionsForDirectory(Collection<String> result, File locationFile, String headerName) {
-    File manifestFile = new File(locationFile, "META-INF/MANIFEST.MF");
-    if (!manifestFile.exists()) {
+  public static void getExtensions(Collection<String> result, IDirectory dir, String headerName) {
+    IFile manifestFile = dir.file( "META-INF/MANIFEST.MF" );
+    if (manifestFile == null || !manifestFile.exists()) {
       return;
     }
     InputStream in = null;
     try {
-      in = new FileInputStream(manifestFile);
+      in = manifestFile.openInputStream();
       Manifest manifest = new Manifest(in);
       scanManifest(result, manifest, headerName);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      // FIXME: For some reason, WebSphere changes JARs in WEB-INF/lib, breaking signatures. So ignore errors.
+      ResourcePath path = dir.getPath();
+      String str = path != null ? path.getFileSystemPathString() : dir.toString();
+      CommonServices.getEntityAccess().getLogger().warn("Cannot read manifest from jar " + str + ", ignoring");
     } finally {
       if (in != null) {
         try {
@@ -99,17 +68,12 @@ public final class Extensions {
 
   public static List<IDirectory> getJarsWithSources(List<String> fileExtensions, IModule module) {
     List<IDirectory> jars = new ArrayList<IDirectory>();
-    for (String cpEntry : module.getJavaClassPath()) {
-      try {
-        IDirectory root = CommonServices.getFileSystem().getIDirectory(new File(cpEntry).toURI().toURL());
-        List<String> extensions = new ArrayList<String>();
-        Extensions.getExtensions(extensions, root.toJavaFile(), CONTAINS_SOURCES);
-        extensions.retainAll(fileExtensions);
-        if (!extensions.isEmpty()) {
-          jars.add(root);
-        }
-      } catch (MalformedURLException e) {
-        throw new RuntimeException(e);
+    for (IDirectory root : module.getJavaClassPath()) {
+      List<String> extensions = new ArrayList<String>();
+      Extensions.getExtensions(extensions, root, CONTAINS_SOURCES);
+      extensions.retainAll(fileExtensions);
+      if (!extensions.isEmpty()) {
+        jars.add(root);
       }
     }
     return jars;

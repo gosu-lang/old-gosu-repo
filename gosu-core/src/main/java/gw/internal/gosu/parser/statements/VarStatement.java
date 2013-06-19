@@ -12,7 +12,6 @@ import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
 
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IScriptPartId;
@@ -42,7 +41,7 @@ import java.util.List;
  */
 public class VarStatement extends Statement implements IVarStatement
 {
-  private CaseInsensitiveCharSequence _strPropertyName;
+  private String _strPropertyName;
   protected Expression _expression;
   protected TypeLiteral _typeLiteral;
   protected boolean _hasProperty = false;
@@ -58,9 +57,9 @@ public class VarStatement extends Statement implements IVarStatement
   {
   }
 
-  public CaseInsensitiveCharSequence getIdentifierName()
+  public String getIdentifierName()
   {
-    return _symbol.getCaseInsensitiveName();
+    return _symbol.getName();
   }
 
   public ISymbol getSymbol()
@@ -73,11 +72,11 @@ public class VarStatement extends Statement implements IVarStatement
     _symbol = symbol;
   }
 
-  public CaseInsensitiveCharSequence getPropertyName()
+  public String getPropertyName()
   {
     return _strPropertyName;
   }
-  public void setPropertyName( CaseInsensitiveCharSequence strPropertyName )
+  public void setPropertyName( String strPropertyName )
   {
     _strPropertyName = strPropertyName;
   }
@@ -254,8 +253,9 @@ public class VarStatement extends Statement implements IVarStatement
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 
@@ -281,7 +281,7 @@ public class VarStatement extends Statement implements IVarStatement
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return identifierName == null || identifierName.equals( getIdentifierName() ) 
            ? _iNameOffset
@@ -290,7 +290,7 @@ public class VarStatement extends Statement implements IVarStatement
              : -1;
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     if( identifierName != null && getPropertyName() != null && identifierName.equals( getPropertyName() ) )
     {
@@ -302,7 +302,7 @@ public class VarStatement extends Statement implements IVarStatement
     }
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
     return GosuObjectUtil.equals(getIdentifierName(), identifierName ) ||
            GosuObjectUtil.equals(getPropertyName(), identifierName );
@@ -316,7 +316,7 @@ public class VarStatement extends Statement implements IVarStatement
     }
   }
 
-  private IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols(CaseInsensitiveCharSequence identifierName)
+  private IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols( String identifierName)
   {
     // sct: The only cases that I know of:
     // 1. var has no enclosing type, or

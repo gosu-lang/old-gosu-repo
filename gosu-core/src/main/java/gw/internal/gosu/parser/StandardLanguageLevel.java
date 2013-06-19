@@ -63,12 +63,6 @@ public class StandardLanguageLevel implements ILanguageLevel
   }
 
   @Override
-  public boolean allowsFeatureLiterals()
-  {
-    return true;
-  }
-
-  @Override
   public boolean shouldVerifyPackageRelativeImport( String parsedNameSpace, String actualNameSpace )
   {
     return true;

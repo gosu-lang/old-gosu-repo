@@ -13,9 +13,8 @@ import gw.lang.reflect.module.IModule;
 import java.net.URL;
 import java.util.List;
 import java.util.Set;
-import java.io.File;
 
-public interface ITypeLoader extends ITypeLoaderListener, IService
+public interface ITypeLoader extends IService
 {
   public static final String[] NO_TYPES = new String[0];
 
@@ -83,22 +82,6 @@ public interface ITypeLoader extends ITypeLoaderListener, IService
    */
   URL getResource( String name );
 
-  /**
-   * @deprecated use {@link #getResource(String)} instead.
-   * @param name
-   * @return
-   */
-  @Deprecated
-  File getResourceFile( String name );
-
-  /**
-   * Refreshes this loader's pool of types. Types loaded subsequent to this call
-   * are guarenteed to include any changes made to types prior to this call.  This
-   * call should be relatively inexpensive, as it is called frequently in development
-   * mode.
-   */
-  void refresh( boolean clearCachedTypes );
-
   boolean isCaseSensitive();
 
   List<String> getHandledPrefixes();
@@ -113,7 +96,6 @@ public interface ITypeLoader extends ITypeLoaderListener, IService
    * Type loading should NOT be used in the implementation of this method.
    *
    * @param file The file in question
-   *
    * @return All known types derived from that file
    */
   String[] getTypesForFile(IFile file);
@@ -121,18 +103,25 @@ public interface ITypeLoader extends ITypeLoaderListener, IService
   /**
    * Notifies the type loader that a file has been refreshed.  The type loader should return all
    * types that it knows need to be refreshed based on the given file.
-   *
-   *
-   *
-   *
+
    * @param file The file that was refreshed
-   *
    * @param types
-   *@param kind  @return All known types affected by the file change
+   * @param kind  @return All known types affected by the file change
    */
-  void refreshedFile(IFile file, String[] types, RefreshKind kind);
+  RefreshKind refreshedFile(IFile file, String[] types, RefreshKind kind);
 
   void refreshedNamespace(String namespace, IDirectory dir, RefreshKind kind);
+
+  /**
+   * Fired when an existing type is refreshed, i.e. there are potential changes
+   * @param request
+   */
+  public void refreshedTypes(RefreshRequest request);
+
+  /**
+   * Fired when the typesystem is fully refreshed
+   */
+  public void refreshed();
 
   boolean handlesDirectory(IDirectory dir);
 
@@ -141,4 +130,8 @@ public interface ITypeLoader extends ITypeLoaderListener, IService
   boolean hasNamespace(String namespace);
 
   Set<TypeName> getTypeNames(String namespace);
+
+  Set<String> computeTypeNames();
+
+  void shutdown();
 }

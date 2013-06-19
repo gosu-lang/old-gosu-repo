@@ -11,17 +11,12 @@ import gw.lang.reflect.gs.IGosuClass;
  */
 public class DefaultReducedSymbol implements IReducedSymbol
 {
-  private CaseInsensitiveCharSequence _caseInsensitiveName;
+  private String _name;
   private IType _type;
 
   public DefaultReducedSymbol( String name, IType type ) {
     _type = type;
-    _caseInsensitiveName = CaseInsensitiveCharSequence.get( name );
-  }
-
-  public DefaultReducedSymbol( CaseInsensitiveCharSequence name, IType type ) {
-    _type = type;
-    _caseInsensitiveName = name;
+    _name = name;
   }
 
   @Override
@@ -36,7 +31,7 @@ public class DefaultReducedSymbol implements IReducedSymbol
 
   @Override
   public String getName() {
-    return _caseInsensitiveName == null ? null : _caseInsensitiveName.toString();
+    return _name;
   }
 
   @Override
@@ -82,11 +77,6 @@ public class DefaultReducedSymbol implements IReducedSymbol
   @Override
   public IType getType() {
     return _type;
-  }
-
-  @Override
-  public CaseInsensitiveCharSequence getCaseInsensitiveName() {
-    return _caseInsensitiveName;
   }
 
   @Override

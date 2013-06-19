@@ -5,8 +5,6 @@
 package gw.lang.reflect;
 
 import gw.lang.PublishInGosu;
-import gw.lang.Scriptable;
-import gw.lang.annotation.ScriptabilityModifier;
 
 @PublishInGosu
 public interface IPropertyAccessor
@@ -16,7 +14,6 @@ public interface IPropertyAccessor
    * @param ctx the "this" pointer.
    * @return the value of the property for the <i>ctx</i> object
    */
-  @Scriptable(ScriptabilityModifier.ALL)
   public Object getValue( Object ctx );
 
   /**
@@ -24,7 +21,6 @@ public interface IPropertyAccessor
    * @param ctx the "this" pointer
    * @param value the new value
    */
-  @Scriptable(ScriptabilityModifier.ALL)
   public void setValue( Object ctx, Object value );
 
 }

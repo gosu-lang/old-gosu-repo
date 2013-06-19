@@ -175,10 +175,18 @@ public class MemberAccess extends Expression implements IFieldAccessExpression, 
       try
       {
         pi = getCompileTimePropertyInfo();
+        if( pi == null )
+        {
+          return false;
+        }
       }
       catch( RuntimeException e )
       {
         // Can happen if this expression does not parse / errant property name
+        return false;
+      }
+      if( pi == null )
+      {
         return false;
       }
       while( pi instanceof IPropertyInfoDelegate )

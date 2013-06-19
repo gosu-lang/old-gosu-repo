@@ -8,50 +8,60 @@ import gw.fs.IFile;
 import gw.lang.reflect.module.IModule;
 import gw.util.IdentitySet;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeSet;
 
 public class RefreshRequest {
   public final IFile file;
   public final IModule module;
+  public final ITypeLoader typeLoader;
   public final RefreshKind kind;
-  public final boolean sendEvent;
   public final String[] types;
 
-  public RefreshRequest(IFile file, String[] types, IModule module, RefreshKind kind, boolean sendEvent) {
+  public RefreshRequest(IFile file, String[] types, IModule module, ITypeLoader typeLoader, RefreshKind kind) {
     this.file = file;
-    this.module = module;
     this.kind = kind;
-    this.sendEvent = sendEvent;
     this.types = types;
+    this.module = module;
+    this.typeLoader = typeLoader;
   }
 
-  public RefreshRequest(String[] types, RefreshRequest request) {
-    this(request.file, types, request.module, request.kind, request.sendEvent);
+  public RefreshRequest(IFile file, String[] types, ITypeLoader typeLoader, RefreshKind kind) {
+    this(file, types, getModule(typeLoader), typeLoader, kind);
   }
 
-  public RefreshRequest(IdentitySet<ITypeRef> allTypes, RefreshRequest request) {
-    this(toNames(allTypes, request), request);
+  public RefreshRequest(String[] allTypes, RefreshRequest request, ITypeLoader typeLoader) {
+    this(request.file, allTypes, typeLoader, request.kind);
   }
 
-  private static String[] toNames(IdentitySet<ITypeRef> allTypes, RefreshRequest request) {
-    TreeSet<String> names = new TreeSet<String>();
-    Collections.addAll(names, request.types);
-    for (ITypeRef type : allTypes) {
-      names.add(type.getName());
+  public RefreshRequest(IFile file, String[] types, IModule module, RefreshKind kind) {
+    this(file, types, getLoader(file, module), kind);
+  }
+
+  private static ITypeLoader getLoader(IFile file, IModule module) {
+    for (ITypeLoader loader : module.getModuleTypeLoader().getTypeLoaderStack()) {
+      if (loader.handlesFile(file)) {
+        return loader;
+      }
     }
-    return names.toArray( new String[names.size()]);
+    throw new RuntimeException("No type loader for file: " + file);
+  }
+
+  private static IModule getModule(ITypeLoader typeLoader) {
+    if (typeLoader == null) {
+      throw new RuntimeException("A refresh request must have a valid typeloader");
+    }
+    return typeLoader.getModule();
   }
 
   @Override
   public String toString() {
-    String s = module + " " + kind + " of ";
+    String s = kind + " of ";
     for (String type : types) {
       s += type + ", ";
     }
+    s += "from " + (typeLoader != null ? typeLoader : module);
     return s;
   }
 }

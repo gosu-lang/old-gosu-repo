@@ -5,6 +5,7 @@
 package gw.lang.reflect;
 
 import gw.config.IService;
+import gw.fs.IDirectory;
 import gw.lang.UnstableAPI;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IAttributeSource;
@@ -13,11 +14,10 @@ import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.ILanguageLevel;
 import gw.lang.parser.expressions.IQueryExpression;
 import gw.lang.parser.expressions.IQueryExpressionEvaluator;
-import gw.lang.reflect.module.IClasspathOverrideConfig;
+import gw.lang.reflect.gs.ICompilableType;
 import gw.util.IFeatureFilter;
 import gw.util.ILogger;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -99,20 +99,11 @@ public interface IEntityAccess extends IService
 
   public boolean isWarnOnImplicitCoercionsOn();
 
-  void setRootDir( File rootDir );
-
   IType getKeyType();
 
   IPropertyInfo getEntityIdProperty( IType rootType );
 
   boolean shouldAddWarning( IType type, IParseIssue warning );
-
-  /**
-   * @return true if the type stored in this file is visible
-   */
-  boolean isVisibleType(File sourceFile);
-
-  IClasspathOverrideConfig getClasspathOverrideConfig();
 
   boolean isServerMutable();
   boolean isRetainDebugInfo();
@@ -121,4 +112,10 @@ public interface IEntityAccess extends IService
   ILanguageLevel getLanguageLevel();
 
   List<IGosuClassLoadingObserver> getGosuClassLoadingObservers();
+
+  boolean areUsesStatementsAllowedInStatementLists(ICompilableType gosuClass);
+
+  List<IDirectory> getAdditionalSourceRoots();
+
+  void reloadedTypes(String[] types);
 }

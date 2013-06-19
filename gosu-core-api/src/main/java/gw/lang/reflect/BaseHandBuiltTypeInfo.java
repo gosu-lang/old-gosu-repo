@@ -35,11 +35,6 @@ public abstract class BaseHandBuiltTypeInfo extends BaseJavaTypeInfo implements 
     return getProperty(null, property);
   }
 
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    //noinspection unchecked
-    return FIND.findCorrectString(propName, _fm.getPropertyNames(Accessibility.PRIVATE));
-  }
-
   public MethodList getMethods()
   {
     return getMethods(null);

@@ -180,8 +180,8 @@ class JavaType extends AbstractType implements IJavaTypeInternal
       _bDefiningGenericTypes = true;
       try
       {
-        TypeVarToTypeMap actualParamByVarName = TypeLord.mapTypeByVarName( thisRef(), thisRef() );
         assignGenericTypeVarPlaceholders();
+        TypeVarToTypeMap actualParamByVarName = TypeLord.mapTypeByVarName( thisRef(), thisRef() );
         return GenericTypeVariable.convertTypeVars( thisRef(), _classInfo.getTypeParameters(), actualParamByVarName );
       }
       finally
@@ -384,8 +384,9 @@ class JavaType extends AbstractType implements IJavaTypeInternal
     }
     else
     {
+      final Set<? extends IType> allTypesInHierarchy = type.getAllTypesInHierarchy();
       @SuppressWarnings({"SuspiciousMethodCalls"})
-      boolean isAssignable = type.getAllTypesInHierarchy() != null && type.getAllTypesInHierarchy().contains( pThis );
+      boolean isAssignable = allTypesInHierarchy != null && allTypesInHierarchy.contains(pThis);
       if( !isAssignable )
       {
         isAssignable = TypeLord.areGenericOrParameterizedTypesAssignable( pThis, type );
@@ -837,19 +838,45 @@ class JavaType extends AbstractType implements IJavaTypeInternal
 
     if( _parameterizationByParamsName == null )
     {
-      _parameterizationByParamsName = new ConcurrentHashMap<String, IJavaTypeInternal>( 2 );
+      TypeSystem.lock();
+      try
+      {
+        if( _parameterizationByParamsName == null )
+        {
+          _parameterizationByParamsName = new ConcurrentHashMap<String, IJavaTypeInternal>( 2 );
+        }
+      }
+      finally
+      {
+        TypeSystem.unlock();
+      }
     }
     paramTypes = TypeSystem.boxPrimitiveTypeParams( paramTypes );
     String strNameOfParams = TypeLord.getNameOfParams( paramTypes, false, true, true );
     IJavaTypeInternal parameterizedType = _parameterizationByParamsName.get( strNameOfParams );
     if( parameterizedType == null )
     {
-      if(_classInfo != null) {
-        parameterizedType = (IJavaTypeInternal)TypeSystem.getOrCreateTypeReference( new JavaType( _classInfo, paramTypes, _typeLoader ) );
-      } else {
-        parameterizedType = (IJavaTypeInternal)TypeSystem.getOrCreateTypeReference( new JavaType( _classInfo, getTypeLoader(), paramTypes ) );
+      TypeSystem.lock();
+      try
+      {
+        parameterizedType = _parameterizationByParamsName.get( strNameOfParams );
+        if( parameterizedType == null )
+        {
+          if( _classInfo != null )
+          {
+            parameterizedType = (IJavaTypeInternal)TypeSystem.getOrCreateTypeReference( new JavaType( _classInfo, paramTypes, _typeLoader ) );
+          }
+          else
+          {
+            parameterizedType = (IJavaTypeInternal)TypeSystem.getOrCreateTypeReference( new JavaType( _classInfo, getTypeLoader(), paramTypes ) );
+          }
+          _parameterizationByParamsName.put( strNameOfParams, parameterizedType );
+        }
       }
-      _parameterizationByParamsName.put( strNameOfParams, parameterizedType );
+      finally
+      {
+        TypeSystem.unlock();
+      }
     }
     return parameterizedType;
   }
@@ -997,7 +1024,7 @@ class JavaType extends AbstractType implements IJavaTypeInternal
   public IType getComponentType()
   {
     IModule module = getTypeLoader().getModule();
-    module.getExecutionEnvironment().pushModule( module );
+    TypeSystem.pushModule( module );
     try
     {
       if (isArray()) {
@@ -1012,7 +1039,7 @@ class JavaType extends AbstractType implements IJavaTypeInternal
     }
     finally
     {
-      module.getExecutionEnvironment().popModule( module );
+      TypeSystem.popModule( module );
     }
   }
   public void setComponentType( IJavaTypeInternal componentType )
@@ -1161,7 +1188,7 @@ class JavaType extends AbstractType implements IJavaTypeInternal
       {
         if( _explicitTypeInfoClass == null )
         {
-          _explicitTypeInfoClass = Class.forName(name + "TypeInfo");
+          _explicitTypeInfoClass = CommonServices.getEntityAccess().getPluginClassLoader().loadClass(name + "TypeInfo");
         }
         return (ITypeInfo)_explicitTypeInfoClass.newInstance();
       }

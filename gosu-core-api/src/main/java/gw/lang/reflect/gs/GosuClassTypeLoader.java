@@ -6,8 +6,6 @@ package gw.lang.reflect.gs;
 
 import gw.fs.IDirectory;
 import gw.lang.GosuShop;
-import gw.lang.Scriptable;
-import gw.lang.annotation.ScriptabilityModifier;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.reflect.FragmentCache;
@@ -33,10 +31,12 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
   public static final String GOSU_ENHANCEMENT_FILE_EXT = ".gsx";
   public static final String GOSU_PROGRAM_FILE_EXT = ".gsp";
   public static final String GOSU_TEMPLATE_FILE_EXT = ".gst";
+  public static final String GOSU_RULE_EXT = ".gr";
+  public static final String GOSU_RULE_SET_EXT = ".grs";
 
-  public static final String[] ALL_EXTS = {GOSU_CLASS_FILE_EXT, GOSU_ENHANCEMENT_FILE_EXT, GOSU_PROGRAM_FILE_EXT, GOSU_TEMPLATE_FILE_EXT};
-  public static final Set<String> ALL_EXTS_SET = new HashSet<String>(Arrays.asList(GOSU_CLASS_FILE_EXT, GOSU_ENHANCEMENT_FILE_EXT, GOSU_PROGRAM_FILE_EXT, GOSU_TEMPLATE_FILE_EXT));
-  public static final Set<String> EXTENSIONS = new HashSet<String>(Arrays.asList("gs", "gsx", "gsp", "gst"));
+  public static final String[] ALL_EXTS = {GOSU_CLASS_FILE_EXT, GOSU_ENHANCEMENT_FILE_EXT, GOSU_PROGRAM_FILE_EXT, GOSU_TEMPLATE_FILE_EXT, GOSU_RULE_EXT, GOSU_RULE_SET_EXT};
+  public static final Set<String> ALL_EXTS_SET = new HashSet<String>(Arrays.asList(GOSU_CLASS_FILE_EXT, GOSU_ENHANCEMENT_FILE_EXT, GOSU_PROGRAM_FILE_EXT, GOSU_TEMPLATE_FILE_EXT, GOSU_RULE_EXT, GOSU_RULE_SET_EXT));
+  public static final Set<String> EXTENSIONS = new HashSet<String>(Arrays.asList("gs", "gsx", "gsp", "gst", "gr", "grs"));
 
   // These constants are only here because api can't depend on impl currently; they shouldn't be considered
   // part of the API proper
@@ -91,6 +91,25 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
   @Override
   public ICompilableType getType( String strFullyQualifiedName )
   {
+    int iDollar = strFullyQualifiedName.indexOf( '$' );
+    if( iDollar > 0 )
+    {
+      // The name has a $ in it, which is the java inner class separator, but because a gosu class can be
+      // precompiled this name could be coming from a gosu class file, thus we need to find the toplevel
+      // type and see if it's a gosu class (note this scenario is indicative of some external tool use-case)
+      IType topLevelType = TypeSystem.getByFullNameIfValid( strFullyQualifiedName.substring( 0, iDollar ) );
+      if( topLevelType instanceof IGosuClass )
+      {
+        // The toplevel type is a gosu class, so we can assume the name is a gosu inner class name
+        strFullyQualifiedName = strFullyQualifiedName.replace( '$', '.' );
+      }
+      else if( topLevelType != null )
+      {
+        // Toplevel type is not a gosu class, bail quick
+        return null;
+      }
+    }
+
     IGosuClass adapterClass = getAdapterClass( strFullyQualifiedName );
     if( adapterClass != null )
     {
@@ -99,15 +118,16 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
 
     if( !isBlock( strFullyQualifiedName ) )
     {
-      IGosuFragment fragment = FragmentCache.instance().get(strFullyQualifiedName);
-      if (fragment != null) {
+      IGosuFragment fragment = FragmentCache.instance().get( strFullyQualifiedName );
+      if( fragment != null )
+      {
         return fragment;
       }
     }
 
     _enhancementIndex.maybeLoadEnhancementIndex();
 
-    IType type = TypeSystem.getCompilingType(strFullyQualifiedName);
+    IType type = TypeSystem.getCompilingType( strFullyQualifiedName );
     ITypeLoader typeLoader = type != null ? type.getTypeLoader() : null;
     if( type != null && typeLoader != this )
     {
@@ -116,8 +136,7 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
 
     if( type == null )
     {
-      IGosuClass aClass = findClass(strFullyQualifiedName);
-      return aClass;
+      return findClass( strFullyQualifiedName );
     }
 
     return (IGosuClass)type;
@@ -177,27 +196,21 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
   }
 
   @Override
-  @Scriptable(ScriptabilityModifier.ALL)
   public URL getResource(String name) {
     return _repository.findResource(name);
   }
 
   @Override
-  public Set<? extends CharSequence> getAllTypeNames()
+  public Set<String> computeTypeNames()
   {
-    return _repository.getAllTypeNames(ALL_EXTS);
+    return _repository.getAllTypeNames(getAllExtensions());
   }
 
   @Override
-  public void refresh(boolean clearCachedTypes)
+  public void refreshedImpl()
   {
-    super.refresh(clearCachedTypes);
-    if (clearCachedTypes) {
-      _namespaces = null;
-      if (_repository instanceof IFileSystemGosuClassRepository) {
-        _repository.typesRefreshed(null);
-      }
-    }
+    _namespaces = null;
+    _repository.typesRefreshed(null);
   }
 
   @Override
@@ -296,7 +309,7 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
 
     ISourceFileHandle sourceFile = _repository.findClass( strQualifiedClassName, getAllExtensions());
 
-    if( sourceFile == null || !isValidSourceFileHandle(sourceFile) || !sourceFile.isValid() )
+    if( sourceFile == null || !isValidSourceFileHandle( sourceFile ) || !sourceFile.isValid() || !strQualifiedClassName.endsWith( sourceFile.getRelativeName() ) )
     {
       return null;
     }
@@ -323,11 +336,13 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
     return gsClass;
   }
 
-  protected boolean isValidSourceFileHandle(ISourceFileHandle sourceFile) {
+  protected boolean isValidSourceFileHandle( ISourceFileHandle sourceFile )
+  {
     return sourceFile.getClassType().isGosu();
   }
 
-  protected String[] getAllExtensions() {
+  protected String[] getAllExtensions()
+  {
     return ALL_EXTS;
   }
 
@@ -337,15 +352,9 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
   }
 
   @Override
-  public void refreshedTypes(RefreshRequest request) {
+  public void refreshedTypesImpl(RefreshRequest request) {
     _repository.typesRefreshed(request);
     _enhancementIndex.refreshedTypes(request);
-  }
-
-  @Override
-  public void refreshed()
-  {
-    _repository.typesRefreshed(null);
   }
 
   public boolean shouldKeepDebugInfo( IGosuClass gsClass )

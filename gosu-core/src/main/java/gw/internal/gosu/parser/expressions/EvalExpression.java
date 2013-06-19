@@ -16,7 +16,6 @@ import gw.lang.reflect.RefreshKind;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.ITypeRef;
-import gw.util.fingerprint.FP64;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -39,7 +38,7 @@ public final class EvalExpression extends Expression implements IEvalExpression
   private Expression _expression;
   private List<ICapturedSymbol> _capturedForBytecode;
   private Map<String, ITypeVariableDefinition> _capturedTypeVars;
-  private Map<FP64, IGosuProgramInternal> _cacheProgramByFingerprint;
+  private Map<String, IGosuProgramInternal> _cacheProgramByFingerprint;
   private int _refreshChecksum = 0;
 
 
@@ -63,17 +62,15 @@ public final class EvalExpression extends Expression implements IEvalExpression
     return _capturedForBytecode;
   }
 
-  public void cacheProgram( String strSource, IGosuProgramInternal gsClass )
+  public void cacheProgram( String strTypeName, IGosuProgramInternal gsClass )
   {
-    FP64 fp = new FP64( strSource );
     clearCacheOnChecksumChange();
-    _cacheProgramByFingerprint.put( fp, gsClass );
+    _cacheProgramByFingerprint.put( strTypeName, gsClass );
   }
-  public IGosuProgramInternal getCachedProgram( String strSource )
+  public IGosuProgramInternal getCachedProgram( String strTypeName )
   {
-    FP64 fp = new FP64( strSource );
     clearCacheOnChecksumChange();
-    return _cacheProgramByFingerprint.get( fp );
+    return _cacheProgramByFingerprint.get( strTypeName );
   }
 
   private void clearCacheOnChecksumChange() {
@@ -138,7 +135,7 @@ public final class EvalExpression extends Expression implements IEvalExpression
     return _capturedTypeVars;
   }
 
-  static class ProgramCache extends LinkedHashMap<FP64,IGosuProgramInternal>
+  static class ProgramCache extends LinkedHashMap<String, IGosuProgramInternal>
   {
     private static final int CACHE_SIZE = 100;
 
@@ -148,7 +145,7 @@ public final class EvalExpression extends Expression implements IEvalExpression
     }
 
     @Override
-    protected boolean removeEldestEntry( Map.Entry<FP64, IGosuProgramInternal> eldest )
+    protected boolean removeEldestEntry( Map.Entry<String, IGosuProgramInternal> eldest )
     {
       TypeSystem.lock();
       try

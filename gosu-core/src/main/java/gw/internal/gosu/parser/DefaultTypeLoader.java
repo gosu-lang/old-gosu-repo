@@ -9,16 +9,7 @@ import gw.fs.IDirectory;
 import gw.internal.gosu.coercer.FunctionToInterfaceClassGenerator;
 import gw.internal.gosu.compiler.GosuClassLoader;
 import gw.internal.gosu.parser.java.classinfo.JavaSourceClass;
-import gw.lang.Scriptable;
-import gw.lang.annotation.ScriptabilityModifier;
-import gw.lang.reflect.IDefaultTypeLoader;
-import gw.lang.reflect.IErrorType;
-import gw.lang.reflect.IExtendedTypeLoader;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.RefreshRequest;
-import gw.lang.reflect.RefreshKind;
-import gw.lang.reflect.SimpleTypeLoader;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.*;
 import gw.lang.reflect.gs.GosuClassPathThing;
 import gw.lang.reflect.gs.IGosuClassLoader;
 import gw.lang.reflect.gs.IGosuObject;
@@ -191,20 +182,19 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
   }
 
   @Override
-  public Set<String> getAllTypeNames() {
+  public Set<String> computeTypeNames() {
     Set<String> allTypeNames = _classCache.getAllTypeNames();
     allTypeNames.addAll(_module.getFileRepository().getAllTypeNames(DOT_JAVA_EXTENSION));
     return allTypeNames;
   }
 
   @Override
-  @Scriptable(ScriptabilityModifier.ALL)
   public URL getResource(String name) {
     return getGosuClassLoader().getActualLoader().getResource(name);
   }
 
   @Override
-  public void refreshedTypes(RefreshRequest request) {
+  public void refreshedTypesImpl(RefreshRequest request) {
     for (String fullyQualifiedTypeName : request.types) {
       _classCache.remove(fullyQualifiedTypeName);
       _classInfoCache.remove(fullyQualifiedTypeName);
@@ -226,10 +216,7 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
     return true;
   }
 
-  @Override
-  public void refresh(boolean clearCachedTypes) {
-    super.refresh(clearCachedTypes);
-
+  public void refreshedImpl() {
     JavaType.unloadTypes();
     if (TypeSystem.isSingleModuleMode()) {
       _classCache.clearClasspathInfo();
@@ -257,13 +244,10 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
     return _classCache.loadClass( className );
   }
 
-  ClassLoader getModuleClassLoader() {
-    return _classCache.getLoader();
-  }
-
   public IGosuClassLoader getGosuClassLoader() {
     if (_gosuClassLoader == null) {
-      _gosuClassLoader = new GosuClassLoader(getModuleClassLoader());
+      _gosuClassLoader = new GosuClassLoader(_module.getModuleClassLoader());
+      GosuClassPathThing.init();
     }
     return _gosuClassLoader;
   }
@@ -280,14 +264,14 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
         // which means we have to manually dump and recreate the plugin loader and the module loader.
         _classCache.reassignClassLoader();
       }
-      _gosuClassLoader.assignParent( getModuleClassLoader() );
+      _gosuClassLoader.assignParent( _module.getModuleClassLoader() );
       GosuClassPathThing.init();
     }
   }
 
   private boolean haveWeRecreatedTheModuleLoader() {
     ClassLoader gosusLoader = _gosuClassLoader.getActualLoader();
-    ClassLoader csr = getModuleClassLoader();
+    ClassLoader csr = _module.getModuleClassLoader();
     while( csr != null ) {
       if( csr == gosusLoader ) {
         return false;

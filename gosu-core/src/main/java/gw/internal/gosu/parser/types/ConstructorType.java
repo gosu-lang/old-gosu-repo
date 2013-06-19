@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.GosuConstructorInfo;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IReducedSymbol;
 import gw.lang.reflect.*;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
@@ -84,9 +83,9 @@ public class ConstructorType extends AbstractType implements IConstructorType
     return strParams;
   }
 
-  public CaseInsensitiveCharSequence getParamSignature()
+  public String getParamSignature()
   {
-    return CaseInsensitiveCharSequence.get( getArgSignature() );
+    return getArgSignature();
   }
 
   public String getName()

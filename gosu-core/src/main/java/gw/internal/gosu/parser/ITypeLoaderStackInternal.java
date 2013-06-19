@@ -27,13 +27,9 @@ public interface ITypeLoaderStackInternal extends ITypeLoaderStack {
 
   IType getIntrinsicTypeFromObject( Object object );
 
-  IType getTypeByFullNameIfValid( String fullyQualifiedName );
+  IType getTypeByFullNameIfValid( String fullyQualifiedName, boolean skipJava );
 
-  IFile getResource(String strResourceName);
-
-  void refresh();
-
-  void refresh(IResource file, RefreshKind refreshKind);
+  boolean refresh(IResource file, String typeName, RefreshKind refreshKind);
 
   void clearFromCaches(RefreshRequest typesToClear);
 }

@@ -4,35 +4,28 @@
 
 package gw.internal.gosu.ir.transform.statement;
 
+import gw.config.CommonServices;
 import gw.internal.gosu.ir.nodes.JavaClassIRType;
-import gw.internal.gosu.parser.statements.ForEachStatement;
-import gw.internal.gosu.parser.statements.ReturnStatement;
-import gw.internal.gosu.parser.statements.ThrowStatement;
+import gw.internal.gosu.ir.transform.ExpressionTransformer;
+import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.Symbol;
-import gw.internal.gosu.parser.Statement;
-import gw.lang.ir.IRStatement;
+import gw.internal.gosu.parser.statements.ForEachStatement;
 import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRTypeConstants;
 import gw.lang.ir.statement.IRAssignmentStatement;
 import gw.lang.ir.statement.IRForEachStatement;
-import gw.internal.gosu.ir.transform.ExpressionTransformer;
-import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.interval.AbstractIntIterator;
 import gw.lang.reflect.interval.AbstractLongIterator;
 import gw.lang.reflect.interval.IntegerInterval;
 import gw.lang.reflect.interval.LongInterval;
-import gw.lang.reflect.interval.NumberInterval;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.parser.statements.ITerminalStatement;
-import gw.config.CommonServices;
 import gw.lang.reflect.java.JavaTypes;
 
-import java.util.Iterator;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -114,7 +107,7 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
       if( indexSymbol.isValueBoxed() )
       {
         IRExpression increment = buildAddition( buildArrayLoad( identifier( indexIRSymbol ), 0, getDescriptor( indexSymbol.getType() ) ), numericLiteral( 1 ) );
-        forLoop.addIncrementor( buildArrayStore( identifier( indexIRSymbol ), numericLiteral( 0 ), increment, IRTypeConstants.pINT ) );
+        forLoop.addIncrementor( buildArrayStore( identifier( indexIRSymbol ), numericLiteral( 0 ), increment, IRTypeConstants.pINT()) );
       }
       else
       {
@@ -124,12 +117,6 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
     }
 
     return forLoop;
-  }
-
-  static boolean isTerminal( Statement stmt )
-  {
-    ITerminalStatement terminalStmt = stmt.getLeastSignificantTerminalStatement();
-    return terminalStmt instanceof ReturnStatement || terminalStmt instanceof ThrowStatement;
   }
 
   private void makeIteratorLoop( TopLevelTransformationContext cc, IRExpression rootExpression, IRForEachStatement forLoop, Symbol identifier, Symbol iteratorIdentifier )
@@ -208,14 +195,14 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
     forLoop.setIdentifierToNullCheck( identifier( array.getSymbol() ) );
 
     // array length init
-    IRAssignmentStatement arrayLen = buildAssignment( cc.makeAndIndexTempSymbol( IRTypeConstants.pINT ),
+    IRAssignmentStatement arrayLen = buildAssignment( cc.makeAndIndexTempSymbol(IRTypeConstants.pINT()),
                                                       buildAddition( numericLiteral( -1 ), buildNullCheckTernary( identifier( array.getSymbol() ),
                                                                                                                   numericLiteral( -1 ),
                                                                                                                   buildArrayLength( identifier( array.getSymbol() ) ) ) ) );
     forLoop.addInitializer( arrayLen );
 
     // array position init
-    IRAssignmentStatement arrayPos = buildAssignment( cc.makeAndIndexTempSymbol( IRTypeConstants.pINT ), numericLiteral( -1 ) );
+    IRAssignmentStatement arrayPos = buildAssignment( cc.makeAndIndexTempSymbol(IRTypeConstants.pINT()), numericLiteral( -1 ) );
     forLoop.addInitializer( arrayPos );
 
     // loop variable init
@@ -244,7 +231,7 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
   private void makeIntLoop( TopLevelTransformationContext cc, IRExpression rootExpression, IRForEachStatement forLoop, Symbol identifier )
   {
     // int temporary variable
-    IRAssignmentStatement intToCountTo = buildAssignment( cc.makeAndIndexTempSymbol( IRTypeConstants.pINT ), buildAddition(makeInt(rootExpression), numericLiteral( -1 ) ) );
+    IRAssignmentStatement intToCountTo = buildAssignment( cc.makeAndIndexTempSymbol(IRTypeConstants.pINT()), buildAddition(makeInt(rootExpression), numericLiteral( -1 ) ) );
     forLoop.addInitializer( intToCountTo );
 
     // loop variable init
@@ -273,10 +260,10 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
   private IRExpression makeInt(IRExpression rootExpression) {
     if (rootExpression.getType().isInt()) {
       return rootExpression;
-    } else if (IRTypeConstants.NUMBER.isAssignableFrom(rootExpression.getType())) {
+    } else if (IRTypeConstants.NUMBER().isAssignableFrom(rootExpression.getType())) {
       return buildMethodCall(Number.class, "intValue", int.class, new Class[0], rootExpression, Collections.<IRExpression>emptyList());
     } else if (rootExpression.getType().isPrimitive()) {
-      return numberConvert(rootExpression.getType(), IRTypeConstants.pINT, rootExpression);
+      return numberConvert(rootExpression.getType(), IRTypeConstants.pINT(), rootExpression);
     } else {
       throw new IllegalArgumentException("Cannot create an int from value of type " + rootExpression.getType());
     }

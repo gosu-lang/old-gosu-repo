@@ -4,19 +4,16 @@
 
 package gw.internal.gosu.parser;
 
-import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
+import gw.fs.IFileUtil;
 import gw.internal.gosu.parser.FileSystemGosuClassRepository.ClassFileInfo;
 import gw.lang.parser.IFileRepositoryBasedType;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeLoader;
-import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.TypeName;
-import gw.lang.reflect.module.IClasspathOverrideConfig;
 import gw.lang.reflect.module.IModule;
-import gw.util.OSPlatform;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,79 +83,19 @@ class PackageToClassPathEntryTreeMap
     if (strQualifiedClassName.length() <= _strFullPackageName.length()) {
       return null;
     }
-    boolean bMultiModule = !TypeSystem.isSingleModuleMode();
-    FileSystemGosuClassRepository.ClassFileInfo info = null;
     String remainingPart = _strFullPackageName.isEmpty()
                            ? strQualifiedClassName
                            : strQualifiedClassName.substring(_strFullPackageName.length() + 1);
     int dotIndex = remainingPart.indexOf('.');
     String fileName = remainingPart.substring(0, dotIndex == -1 ? remainingPart.length() : dotIndex);
-    if (_classPathEntries.size() == 1) {
-      info = getClassFileInfo(_classPathEntries.get(0), fileName, dotIndex, remainingPart, extensions);
-    } else {
-      String strModule = null;
-      IClasspathOverrideConfig overrideConfig = CommonServices.getEntityAccess().getClasspathOverrideConfig();
-      for (IFileSystemGosuClassRepository.ClassPathEntry classPathEntry : _classPathEntries) {
-        String strCurrentMod = bMultiModule || overrideConfig == null ? null : overrideConfig.getConfigModule(classPathEntry.getPath());
-        if (bMultiModule || strModule == null || overrideConfig.shouldOverride(strCurrentMod, strModule)) {
-          FileSystemGosuClassRepository.ClassFileInfo currentInfo = getClassFileInfo(classPathEntry, fileName, dotIndex, remainingPart, extensions);
-          if (currentInfo != null) {
-            info = currentInfo;
-            if( bMultiModule ) {
-              break;
-            }
-            strModule = strCurrentMod;
-            if (overrideConfig == null) {
-              break;
-            }
-          }
-        }
+    for (IFileSystemGosuClassRepository.ClassPathEntry classPathEntry : _classPathEntries) {
+      FileSystemGosuClassRepository.ClassFileInfo info =
+              getClassFileInfo(classPathEntry, fileName, dotIndex, remainingPart, extensions);
+      if (info != null) {
+        return info;
       }
     }
-    return info;
-  }
-
-  public FileSystemGosuClassRepository.ClassFileInfo resolveToClassFileInfo(String strQualifiedClassName, String[] extensions, IDirectory targetDir)
-  {
-    if( strQualifiedClassName.length() <= _strFullPackageName.length() )
-    {
-      return null;
-    }
-
-    FileSystemGosuClassRepository.ClassFileInfo info = null;
-    String remainingPart = strQualifiedClassName.substring( _strFullPackageName.length() + 1 );
-    int dotIndex = remainingPart.indexOf( '.' );
-    String fileName = remainingPart.substring( 0, dotIndex == -1 ? remainingPart.length() : dotIndex );
-    if( _classPathEntries.size() == 1 )
-    {
-      info = getClassFileInfo( _classPathEntries.get( 0 ), fileName, dotIndex, remainingPart, extensions );
-    }
-    else
-    {
-      String strModule = null;
-      IClasspathOverrideConfig cfa = CommonServices.getEntityAccess().getClasspathOverrideConfig();
-      for( IFileSystemGosuClassRepository.ClassPathEntry classPathEntry : _classPathEntries ) {
-        if (targetDir.getPath().equals(classPathEntry.getPath().getPath()) ||
-                targetDir.getPath().getFileSystemPathString().startsWith(classPathEntry.getPath().getPath().getFileSystemPathString() + File.separator)) {
-          FileSystemGosuClassRepository.ClassFileInfo currentInfo = getClassFileInfo( classPathEntry, fileName, dotIndex, remainingPart, extensions );
-          if (currentInfo != null) {
-            return currentInfo;
-          }
-        } else {
-          String strCurrentMod = cfa == null ? null : cfa.getConfigModule(classPathEntry.getPath());
-          if( strModule == null || cfa.shouldOverride( strCurrentMod, strModule ) )
-          {
-            FileSystemGosuClassRepository.ClassFileInfo currentInfo = getClassFileInfo( classPathEntry, fileName, dotIndex, remainingPart, extensions );
-            if( currentInfo != null )
-            {
-              info = currentInfo;
-              strModule = strCurrentMod;
-            }
-          }          
-        }
-      }
-    }
-    return info;
+    return null;
   }
 
   public URL resolveToResource( String resourceName )
@@ -168,35 +105,16 @@ class PackageToClassPathEntryTreeMap
       return null;
     }
 
-    URL info = null;
     String remainingPart = resourceName.substring( _strFullPackageName.length() + 1 );
-    if( _classPathEntries.size() == 1 )
+    for( IFileSystemGosuClassRepository.ClassPathEntry classPathEntry : _classPathEntries )
     {
-      info = getResource(_classPathEntries.get(0), remainingPart);
-    }
-    else
-    {
-      String strModule = null;
-      IClasspathOverrideConfig cfa = CommonServices.getEntityAccess().getClasspathOverrideConfig();
-      for( IFileSystemGosuClassRepository.ClassPathEntry classPathEntry : _classPathEntries )
+      URL url = getResource( classPathEntry, remainingPart );
+      if( url != null )
       {
-        String strCurrentMod = cfa == null ? null : cfa.getConfigModule(classPathEntry.getPath());
-        if( strModule == null || cfa.shouldOverride(strCurrentMod, strModule) )
-        {
-          URL currentInfo = getResource( classPathEntry, remainingPart );
-          if( currentInfo != null )
-          {
-            info = currentInfo;
-            strModule = strCurrentMod;
-            if( cfa == null )
-            {
-              break;
-            }
-          }
-        }
+        return url;
       }
     }
-    return info;
+    return null;
   }
 
   private FileSystemGosuClassRepository.ClassFileInfo getClassFileInfo( IFileSystemGosuClassRepository.ClassPathEntry classPathEntry,
@@ -251,61 +169,37 @@ class PackageToClassPathEntryTreeMap
     }
   }
 
-  private IFile getFile(IFileSystemGosuClassRepository.ClassPathEntry root, String strFileName)
+  private IFile getFile( IFileSystemGosuClassRepository.ClassPathEntry root, String strFileName )
   {
-    IDirectory dir = getDir(root);
-    IFile possibleFile = dir.file( strFileName );
-    if( !possibleFile.exists() )
-    {
-      possibleFile = null;
-      if( !OSPlatform.isWindows() )
-      {
-        // Try the case insensitive version...
-        possibleFile = findCaseInsensitiveFile( dir, strFileName );
-      }
-    }
-
-    return possibleFile == null ? null : possibleFile;
+    IDirectory dir = getDir( root );
+    return getFileMatchCase( dir, strFileName );
   }
 
   private ClassFileInfo getFile( IFileSystemGosuClassRepository.ClassPathEntry root, String strFileName, String[] extensions )
   {
-    IDirectory dir = getDir(root);
+    IDirectory dir = getDir( root );
     for( String ext : extensions )
     {
-      IFile possibleFile = dir.file( strFileName + ext );
-      if( possibleFile != null && possibleFile.exists() )
+      IFile file = getFileMatchCase( dir, strFileName + ext );
+      if( file != null )
       {
-        return new FileSystemGosuClassRepository.ClassFileInfo( root, possibleFile, root.isTestResource() );
-      }
-      if( !OSPlatform.isWindows() )
-      {
-        // Try the case insensitive version...
-        possibleFile = findCaseInsensitiveFile( dir, strFileName + ext );
-        if( possibleFile != null && possibleFile.exists() )
-        {
-          return new FileSystemGosuClassRepository.ClassFileInfo( root, possibleFile, root.isTestResource() );
-        }
+        return new FileSystemGosuClassRepository.ClassFileInfo( root, file, root.isTestResource() );
       }
     }
     return null;
+  }
+
+  private IFile getFileMatchCase( IDirectory dir, String strFileName ) {
+    IFile file = dir.file( strFileName );
+    return file != null && file.exists() && IFileUtil.getBaseName( strFileName ).equals( file.getBaseName() )
+           ? file
+           : null;
   }
 
   private IDirectory getDir(IFileSystemGosuClassRepository.ClassPathEntry root) {
     return _strFullPackageName.isEmpty()
             ? root.getPath()
             : root.getPath().dir(_strFullPackageName.replace('.', File.separatorChar));
-  }
-
-  private static IFile findCaseInsensitiveFile( IDirectory dirFile, final String fileName )
-  {
-    for (IFile file : dirFile.listFiles()) {
-      if (file.getName().equalsIgnoreCase(fileName)) {
-        return file;
-      }
-    }
-
-    return null;
   }
 
   public void delete( IDirectory dir ) {

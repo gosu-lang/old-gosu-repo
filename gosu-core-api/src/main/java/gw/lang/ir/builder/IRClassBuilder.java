@@ -61,11 +61,11 @@ public class IRClassBuilder extends IRFeatureBuilder<IRClassBuilder> {
   }
   
   public IRMethodBuilder createConstructor() {
-    return new IRMethodBuilder(this).name("<init>").returns(IRTypeConstants.pVOID);
+    return new IRMethodBuilder(this).name("<init>").returns(IRTypeConstants.pVOID());
   }
 
   public void addDefaultConstructor() {
-    new IRMethodBuilder(this)._public().name("<init>").returns(IRTypeConstants.pVOID).body(
+    new IRMethodBuilder(this)._public().name("<init>").returns(IRTypeConstants.pVOID()).body(
             IRBuilderMethods._superInit(),
             IRBuilderMethods._return()
     );

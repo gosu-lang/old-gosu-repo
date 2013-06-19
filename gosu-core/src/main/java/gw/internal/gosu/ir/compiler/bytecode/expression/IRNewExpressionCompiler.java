@@ -31,7 +31,7 @@ public class IRNewExpressionCompiler extends AbstractBytecodeCompiler {
       descriptor.append(param.getDescriptor());
     }
     descriptor.append(")");
-    descriptor.append(IRTypeConstants.pVOID.getDescriptor());
+    descriptor.append(IRTypeConstants.pVOID().getDescriptor());
 
     mv.visitMethodInsn( Opcodes.INVOKESPECIAL,
                         expression.getOwnersType().getSlashName(),

@@ -60,5 +60,8 @@ public interface IResource {
 
   boolean isJavaFile();
 
+  boolean isInJar();
+
   boolean create();
+
 }

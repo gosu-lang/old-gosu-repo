@@ -17,40 +17,21 @@ import java.util.List;
 /**
  */
 public class GosucGlobalLoaderProvider extends BaseService implements IGlobalLoaderProvider {
-  private static ArrayList<Class<? extends ITypeLoader>> LOADER_CLASSES;
+  private final List<Class<? extends ITypeLoader>> _loaderClasses;
+
+  public GosucGlobalLoaderProvider(List<String> classNames) {
+    _loaderClasses = new ArrayList<Class<? extends ITypeLoader>>();
+    for (String name : classNames) {
+      try {
+        _loaderClasses.add((Class<? extends ITypeLoader>) Class.forName(name));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 
   @Override
   public List<Class<? extends ITypeLoader>> getGlobalLoaderTypes() {
-    return LOADER_CLASSES;
-  }
-
-  @Override
-  public List<GosuPathEntry> getGlobalPathEntries() {
-    if( LOADER_CLASSES.size() > 0 ) {
-      try {
-        // hack: The presence of global loaders indicates we're executing with PL classes in classpath,
-        // so it's ok to call reflectively.
-        Class<?> GosuModuleUtil_Class = Class.forName( "com.guidewire.util.gosu.GosuModuleUtil" );
-        Method createDefaultPathEntries_Method = GosuModuleUtil_Class.getMethod( "createDefaultPathEntries" );
-        return (List<GosuPathEntry>)createDefaultPathEntries_Method.invoke( null );
-      }
-      catch( Exception e ) {
-        throw new RuntimeException( e );
-      }
-    }
-    return Collections.emptyList();
-  }
-
-  public static void setLoaderClass( List<String> classNames ) {
-    ArrayList<Class<? extends ITypeLoader>> loaderClasses = new ArrayList<Class<? extends ITypeLoader>>();
-    for( String name: classNames ) {
-      try {
-        loaderClasses.add( (Class<? extends ITypeLoader>)Class.forName( name ) );
-      }
-      catch( Exception e ) {
-        throw new RuntimeException( e );
-      }
-      LOADER_CLASSES = loaderClasses;
-    }
+    return _loaderClasses;
   }
 }

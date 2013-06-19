@@ -4,7 +4,6 @@
 
 package gw.config;
 
-import gw.fs.IFile;
 import gw.lang.IGosuShop;
 import gw.lang.parser.ICoercionManager;
 import gw.lang.parser.IGosuParserFactory;
@@ -15,8 +14,6 @@ import gw.lang.reflect.module.IFileSystem;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.util.concurrent.locks.Lock;
 
 public class CommonServices extends ServiceKernel
 {
@@ -55,6 +52,7 @@ public class CommonServices extends ServiceKernel
       defineService( IMemoryMonitor.class, (IMemoryMonitor)Class.forName( "gw.internal.gosu.memory.DefaultMemoryMonitor" ).newInstance() );
       defineService( IGosuInitializationHooks.class, new DefaultGosuInitializationHooks());
       defineService( IGlobalLoaderProvider.class, new DefaultGlobalLoaderProvider());
+      defineService( IGosuProfilingService.class, new DefaultGosuProfilingService() );
     }
     catch( Exception e )
     {
@@ -91,9 +89,19 @@ public class CommonServices extends ServiceKernel
     return _kernel.getService( ICoercionManager.class );
   }
 
+  @SuppressWarnings("UnusedDeclaration")
+  public static IGosuProfilingService getGosuProfilingService()
+  {
+    return _kernel.getService( IGosuProfilingService.class );
+  }
+
   public static ITypeSystem getTypeSystem()
   {
     return _typeSystem;
+  }
+
+  public static void sneakySetTypeSystem(ITypeSystem typeSystem) {
+    _typeSystem = typeSystem;
   }
 
   public static IGosuParserFactory getGosuParserFactory()

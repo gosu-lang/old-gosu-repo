@@ -167,6 +167,14 @@ public class TypeVarToTypeMap
     return existing;
   }
 
+  public void putAll( TypeVarToTypeMap from )
+  {
+    for( Object x : from._map.keySet() )
+    {
+      putRaw( x, from.getRaw( x ) );
+    }
+  }
+
   public IType putByString( String strName, IType object )
   {
     return _map.put( strName, object );

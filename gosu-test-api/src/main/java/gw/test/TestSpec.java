@@ -76,7 +76,7 @@ public class TestSpec implements Comparable<TestSpec> {
 
   @SuppressWarnings("unchecked")
   public static String[] extractTestMethods(IType testType) {
-    List<String> methodNames = new ArrayList<>();
+    List<String> methodNames = new ArrayList<String>();
     if (testType instanceof IJavaBackedType) {
       methodNames = extractTestMethods(((IJavaBackedType) testType).getBackingClass());
     } else {
@@ -91,7 +91,7 @@ public class TestSpec implements Comparable<TestSpec> {
   }
 
   public static List<String> extractTestMethods(Class<? extends TestCase> testClass) {
-    Set<String> methodNames = new HashSet<>();
+    Set<String> methodNames = new HashSet<String>();
     for (Method methodInfo : testClass.getMethods()) {
       if (TestSpec.isTestMethod(methodInfo) /*&& shouldIncludeTestMethod(methodInfo)*/) {
         methodNames.add(methodInfo.getName());
@@ -101,7 +101,7 @@ public class TestSpec implements Comparable<TestSpec> {
   }
 
   private static List<String> sortMethodsAccordingToSourceOrder(Set<String> testMethods, Class<? extends TestCase> clazz) {
-    List<String> sortedMethods = new ArrayList<>();
+    List<String> sortedMethods = new ArrayList<String>();
     for (org.apache.bcel.classfile.Method method : TestClassHelper.getMethodsSorted(clazz)) {
       if (method.getArgumentTypes().length == 0 && testMethods.remove(method.getName())) {
         sortedMethods.add(method.getName());

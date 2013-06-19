@@ -13,6 +13,7 @@ import gw.lang.parser.EvaluationException;
 import gw.lang.parser.expressions.IQueryExpressionEvaluator;
 import gw.lang.parser.statements.IFunctionStatement;
 import gw.config.CommonServices;
+import gw.lang.reflect.gs.ICompilableType;
 
 import java.util.Collections;
 import java.util.Map;
@@ -23,7 +24,7 @@ import java.util.HashMap;
 public class QueryExpressionTransformer extends EvalBasedTransformer<QueryExpression>
 {
   public static final Map<String, QueryExpression> QUERY_EXPRESSIONS = Collections.synchronizedMap( new HashMap<String, QueryExpression>() );
-  private static final Class[] PARAM_TYPES = new Class[]{Object.class, Object[].class, IType[].class, IType.class, String.class};
+  private static final Class[] PARAM_TYPES = new Class[]{Object.class, Object[].class, IType[].class, IType.class, int.class, int.class, String.class};
 
   public static IRExpression compile( TopLevelTransformationContext cc, QueryExpression expr )
   {
@@ -38,11 +39,12 @@ public class QueryExpressionTransformer extends EvalBasedTransformer<QueryExpres
 
   protected IRExpression compile_impl()
   {
-    String iQueryExprId;
+    String queryExprKey;
     synchronized( QUERY_EXPRESSIONS )
     {
-      iQueryExprId = makeId( _expr() );
-      QUERY_EXPRESSIONS.put( iQueryExprId, _expr() );
+      queryExprKey = EvalExpressionTransformer.makeEvalKey( getGosuClass(),
+              _expr().getLineNum(), _expr().getColumn(), _expr().toString() );
+      QUERY_EXPRESSIONS.put( queryExprKey, _expr() );
     }
 
     IFunctionStatement fs = _expr().getLocation().getEnclosingFunctionStatement();
@@ -53,20 +55,26 @@ public class QueryExpressionTransformer extends EvalBasedTransformer<QueryExpres
                                                                pushCapturedSymbols( getGosuClass(), _expr().getCapturedForBytecode() ),
                                                                pushEnclosingFunctionTypeParamsInArray( _expr() ),
                                                                pushType( getGosuClass() ),
-                                                               pushConstant( iQueryExprId )
+                                                               pushConstant( _expr().getLineNum() ),
+                                                               pushConstant( _expr().getColumn() ),
+                                                               pushConstant( _expr().toString() )
                                                              ) );
     return checkCast( TypeSystem.getByFullName( "gw.api.database.IQueryBeanResult", TypeSystem.getGlobalModule() ), compileAndRunEvalSource );
   }
 
-  private String makeId( QueryExpression queryExpression )
-  {
-    return queryExpression.getLocation().getScriptPartId().getContainingType().getName() + ":" + queryExpression.getLocation().getOffset();
-  }
-
   public static Object compileAndRunQuery( Object outer, Object[] capturedValues,
-                                           IType[] immediateFuncTypeParams, IType enclosingClass, String iQueryExprId )
+                                           IType[] immediateFuncTypeParams, IType enclosingClass, int iLineNum, int iColumnNum, String exprText )
   {
-    QueryExpression queryExpr = QUERY_EXPRESSIONS.get( iQueryExprId );
+    String exprKey = EvalExpressionTransformer.makeEvalKey( enclosingClass, iLineNum, iColumnNum, exprText );
+    QueryExpression queryExpr = QUERY_EXPRESSIONS.get( exprKey );
+    if( queryExpr == null )
+    {
+      if( enclosingClass instanceof ICompilableType )
+      {
+        ((ICompilableType)enclosingClass).compile();
+        queryExpr = QUERY_EXPRESSIONS.get( exprKey );
+      }
+    }
 
     IQueryExpressionEvaluator evaluator = CommonServices.getEntityAccess().getQueryExpressionEvaluator( queryExpr );
     if( evaluator != null )

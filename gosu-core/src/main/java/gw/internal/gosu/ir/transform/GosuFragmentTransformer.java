@@ -10,7 +10,6 @@ import gw.lang.parser.expressions.IMemberAccessExpression;
 import gw.lang.parser.expressions.IParenthesizedExpression;
 import gw.lang.reflect.gs.FragmentInstance;
 import gw.lang.reflect.gs.IExternalSymbolMap;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.ir.statement.IRMethodCallStatement;
 import gw.internal.gosu.parser.Statement;
@@ -33,7 +32,6 @@ import gw.lang.ir.statement.IRStatementList;
 import gw.lang.ir.statement.IRSyntheticStatement;
 import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.lang.parser.statements.ITerminalStatement;
-import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -89,7 +87,7 @@ public class GosuFragmentTransformer extends AbstractElementTransformer<IExpress
             new IRStatementList( true, statements),
             "<init>",
             Opcodes.ACC_PUBLIC,
-            IRTypeConstants.pVOID,
+            IRTypeConstants.pVOID(),
             Collections.<IRSymbol>emptyList());
 
     irClass.addMethod(methodStatement);
@@ -112,8 +110,10 @@ public class GosuFragmentTransformer extends AbstractElementTransformer<IExpress
 
       // If the program doesn't terminate, then add in an explicit return null at the end.
       // This is likely in the case of a program that doesn't actually return a value
-      ITerminalStatement terminalStmt = mainStatement.getLeastSignificantTerminalStatement();
-      if( !(terminalStmt instanceof ReturnStatement) &&
+      boolean[] bAbsolute = {false};
+      ITerminalStatement terminalStmt = mainStatement.getLeastSignificantTerminalStatement( bAbsolute );
+      if( !bAbsolute[0] ||
+          !(terminalStmt instanceof ReturnStatement) &&
           !(terminalStmt instanceof ThrowStatement) )
       {
         statements.add( new IRReturnStatement( null, nullLiteral() ) );
@@ -136,7 +136,7 @@ public class GosuFragmentTransformer extends AbstractElementTransformer<IExpress
             new IRStatementList( true, statements),
             "evaluate",
             Opcodes.ACC_PUBLIC,
-            IRTypeConstants.OBJECT,
+            IRTypeConstants.OBJECT(),
             Collections.singletonList(symbolsParam));
 
     irClass.addMethod(methodStatement);
@@ -166,7 +166,7 @@ public class GosuFragmentTransformer extends AbstractElementTransformer<IExpress
               new IRStatementList( true, statements),
               "evaluateRootExpression",
               Opcodes.ACC_PUBLIC,
-              IRTypeConstants.OBJECT,
+              IRTypeConstants.OBJECT(),
               Collections.singletonList(symbolsParam));
 
       irClass.addMethod(methodStatement);

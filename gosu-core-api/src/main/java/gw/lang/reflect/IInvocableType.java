@@ -4,7 +4,6 @@
 
 package gw.lang.reflect;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IExpression;
 
 public interface IInvocableType extends IType, INonLoadableType
@@ -17,5 +16,5 @@ public interface IInvocableType extends IType, INonLoadableType
 
   public boolean hasOptionalParams();
 
-  public CaseInsensitiveCharSequence getParamSignature();
+  public String getParamSignature();
 }

@@ -43,7 +43,7 @@ public class IRMethodForPropertySetter extends IRFeatureBase implements IRMethod
         }
       }
     }
-    return IRTypeConstants.pVOID;
+    return IRTypeConstants.pVOID();
   }
 
   @Override

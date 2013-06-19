@@ -16,9 +16,7 @@ import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.IJavaFieldPropertyInfo;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
 import gw.internal.gosu.ir.transform.util.IRTypeResolver;
@@ -40,7 +38,7 @@ public class IRFeatureBase {
       if( owner instanceof IGosuClassInternal)
       {
         IType reifiedOwner = TypeLord.getDefaultParameterizedType( owner.getGenericType() );
-        VarStatement field = ((IGosuClassInternal) reifiedOwner).getMemberField( CaseInsensitiveCharSequence.get( name ) );
+        VarStatement field = ((IGosuClassInternal) reifiedOwner).getMemberField( name );
         symType = IRTypeResolver.getDescriptor( field.getType() );
       }
       else if( owner instanceof IJavaType)
@@ -146,7 +144,7 @@ public class IRFeatureBase {
   protected void addTypeVariableParameters( List<IRType> params, int number ) {
     for( int i = 0; i < number; i++ )
     {
-      params.add( IRTypeConstants.ITYPE );
+      params.add(IRTypeConstants.ITYPE());
     }
   }
 

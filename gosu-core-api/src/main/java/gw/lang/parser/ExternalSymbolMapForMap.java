@@ -4,30 +4,45 @@
 
 package gw.lang.parser;
 
-import gw.util.CaseInsensitiveHashMap;
+import java.util.HashMap;
 
 public class ExternalSymbolMapForMap extends ExternalSymbolMapBase {
 
-  private CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> _externalSymbols;
+  private HashMap<String, ISymbol> _externalSymbols;
 
-  public ExternalSymbolMapForMap(CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbols) {
+  public ExternalSymbolMapForMap( HashMap<String, ISymbol> externalSymbols) {
     this(externalSymbols, false);
   }
 
-  public ExternalSymbolMapForMap(CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbols, boolean assumeSymbolsRequireExternalSymbolMapArgument) {
+  public ExternalSymbolMapForMap( HashMap<String, ISymbol> externalSymbols, boolean assumeSymbolsRequireExternalSymbolMapArgument) {
     super(assumeSymbolsRequireExternalSymbolMapArgument);
     _externalSymbols = externalSymbols;
   }
 
   public ISymbol getSymbol(String name) {
-    return _externalSymbols.get(CaseInsensitiveCharSequence.get(name));
+    ISymbol symbol = _externalSymbols.get( name );
+    if( symbol == null ) {
+      symbol = getAltSymbol( name );
+    }
+    return symbol;
+  }
+
+  private ISymbol getAltSymbol( String name ) {
+    String altName = handleCrappyPcfCapitalization( name );
+    if( altName != null ) {
+      return _externalSymbols.get( altName );
+    }
+    return null;
   }
 
   public boolean isExternalSymbol(String name) {
-    return _externalSymbols.containsKey(CaseInsensitiveCharSequence.get(name));
+    if( !_externalSymbols.containsKey( name ) ) {
+      return getAltSymbol( name ) != null;
+    }
+    return true;
   }
 
-  public CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> getMap() {
+  public HashMap<String, ISymbol> getMap() {
     return _externalSymbols;
   }
 }

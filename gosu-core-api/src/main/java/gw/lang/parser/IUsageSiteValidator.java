@@ -5,7 +5,6 @@
 package gw.lang.parser;
 
 import gw.lang.PublishInGosu;
-import gw.lang.Scriptable;
 
 @PublishInGosu
 public interface IUsageSiteValidator
@@ -15,6 +14,5 @@ public interface IUsageSiteValidator
    *
    * @param pe The parsed element to validate.
    */
-  @Scriptable
   public void validate( IParsedElement pe );
 }

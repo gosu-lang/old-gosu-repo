@@ -16,15 +16,11 @@ import java.util.List;
 public interface IFileSystemGosuClassRepository extends IGosuClassRepository
 {
 
-  List<IDirectory> getClassPath();
-
-  String getClassNameFromFile( IDirectory root, IFile file, String[] fileExts );
-
-  void addResourcesToClassPath( List<IDirectory> resourceRootDirs );
-
-  String[] getExtensions();
+  IDirectory[] getSourcePath();
 
   void setSourcePath(IDirectory[] sourcePath);
+
+  String getClassNameFromFile( IDirectory root, IFile file, String[] fileExts );
 
   List<Pair<String, IFile>> findAllFilesByExtension(String extension);
 
@@ -34,8 +30,8 @@ public interface IFileSystemGosuClassRepository extends IGosuClassRepository
 
   public static class ClassPathEntry
   {
-    private IDirectory _path;
-    private boolean _isTestResource;
+    private final IDirectory _path;
+    private final boolean _isTestResource;
 
     public ClassPathEntry( IDirectory path, boolean testResource )
     {
@@ -59,15 +55,31 @@ public interface IFileSystemGosuClassRepository extends IGosuClassRepository
     }
 
     @Override
-    public boolean equals(Object obj) {
-      return (obj instanceof ClassPathEntry) &&
-              ((ClassPathEntry)obj)._path.equals(_path) &&
-              ((ClassPathEntry)obj)._isTestResource == _isTestResource;
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ClassPathEntry)) {
+        return false;
+      }
+
+      ClassPathEntry that = (ClassPathEntry) o;
+
+      if (_isTestResource != that._isTestResource) {
+        return false;
+      }
+      if (_path != null ? !_path.equals(that._path) : that._path != null) {
+        return false;
+      }
+
+      return true;
     }
 
     @Override
     public int hashCode() {
-      return _path.hashCode();
+      int result = _path != null ? _path.hashCode() : 0;
+      result = 31 * result + (_isTestResource ? 1 : 0);
+      return result;
     }
   }
 
@@ -96,15 +108,6 @@ public interface IFileSystemGosuClassRepository extends IGosuClassRepository
     ClassPathEntry getEntry();
 
     String getContent();
-  }
-
-  /**
-  */
-  public static interface IFileSystemSourceFileHandle extends ISourceFileHandle
-  {
-    IDirectory getParentFile();
-
-    IFileSystemGosuClassRepository.IClassFileInfo getFileInfo();
   }
 
   class Util

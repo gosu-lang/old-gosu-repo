@@ -7,10 +7,7 @@ package gw.internal.gosu.parser.statements;
 
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.Statement;
-import gw.lang.parser.IParsedElement;
-import gw.lang.parser.statements.IBreakStatement;
 import gw.lang.parser.statements.IIfStatement;
-import gw.lang.parser.statements.IStatementList;
 import gw.lang.parser.statements.ITerminalStatement;
 
 
@@ -30,7 +27,6 @@ public final class IfStatement extends Statement implements IIfStatement
   protected Statement _statement;
   protected Statement _elseStatement;
   protected Expression _except;
-  private ITerminalStatement[] _terminal;
 
   /**
    * @return The conditional expression.
@@ -119,64 +115,14 @@ public final class IfStatement extends Statement implements IIfStatement
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    if( _terminal == null )
-    {
-      _terminal = new ITerminalStatement[] {_getLeastSignificantTerminalStatement()};
-    }
-    return _terminal[0];
-  }
-  private ITerminalStatement _getLeastSignificantTerminalStatement()
-  {
-    if( getStatement() == null )
-    {
-      return null;
-    }
-
-    ITerminalStatement followingTerminal = null;
-    if( getParent() instanceof IStatementList )
-    {
-      followingTerminal = ((StatementList)getParent()).getLeastSignificantTerminalStatementAfter( this );
-    }
-
-    ITerminalStatement ifStmtTerminal = getStatement().getLeastSignificantTerminalStatement();
-    if( (ifStmtTerminal != null && _elseStatement != null) || followingTerminal != null )
-    {
-      ITerminalStatement elseStmtTerminal = _elseStatement == null ? null :_elseStatement.getLeastSignificantTerminalStatement();
-      if( elseStmtTerminal != null || followingTerminal != null )
-      {
-        if( ifStmtTerminal instanceof IBreakStatement ||
-            ifStmtTerminal instanceof ContinueStatement )
-        {
-          return ifStmtTerminal;
-        }
-        if( elseStmtTerminal instanceof IBreakStatement ||
-            elseStmtTerminal instanceof ContinueStatement )
-        {
-          return elseStmtTerminal;
-        }
-        if( followingTerminal instanceof IBreakStatement ||
-            followingTerminal instanceof ContinueStatement )
-        {
-          return followingTerminal;
-        }
-        // Return any one, doesn't matter because they are either return or throw.
-        return ifStmtTerminal != null
-               ? ifStmtTerminal
-               : elseStmtTerminal != null
-                 ? elseStmtTerminal
-                 : followingTerminal;
-      }
-    }
-    return null;
-  }
-
-  @Override
-  public void setParent( IParsedElement rootElement )
-  {
-    super.setParent( rootElement );
-    _terminal = null;
+    boolean[] bAbsoluteStmt = {false};
+    ITerminalStatement ifStmtTerminal = getStatement() == null ? null : getStatement().getLeastSignificantTerminalStatement( bAbsoluteStmt );
+    boolean[] bAbsoluteElse = {false};
+    ITerminalStatement elseStmtTerminal = getElseStatement() == null ? null : getElseStatement().getLeastSignificantTerminalStatement( bAbsoluteElse );
+    bAbsolute[0] = bAbsoluteStmt[0] && bAbsoluteElse[0];
+    return getLeastSignificant( ifStmtTerminal, elseStmtTerminal );
   }
 
   @Override

@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.statements.ClassStatement;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.statements.IClassDeclaration;
 
 public class ClassDeclaration extends Expression implements IClassDeclaration
@@ -44,12 +43,12 @@ public class ClassDeclaration extends Expression implements IClassDeclaration
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return getLocation().getOffset();
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     throw new UnsupportedOperationException();
   }
@@ -59,12 +58,12 @@ public class ClassDeclaration extends Expression implements IClassDeclaration
     return new String[] {gsClass.getRelativeName()};
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
     IGosuClassInternal gsClass = getGSClass();
     return identifierName != null &&
-           (identifierName.equalsIgnoreCase(gsClass.getName()) ||
-            identifierName.equalsIgnoreCase(gsClass.getRelativeName()));
+           (identifierName.equals( gsClass.getName() ) ||
+            identifierName.equals( gsClass.getRelativeName() ));
   }
 
   public IGosuClassInternal getGSClass() {

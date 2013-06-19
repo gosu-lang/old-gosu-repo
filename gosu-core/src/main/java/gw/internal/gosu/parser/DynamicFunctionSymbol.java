@@ -26,8 +26,9 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
   private List<ISymbol> _args;
   private MethodCallStatement _initializer;
   private FunctionStatement _functionStmt;
-  private CaseInsensitiveCharSequence _superGenericName;
+  private String _superGenericName;
   private DynamicFunctionSymbol _superDfs;
+  private boolean _bLoopImplicitReturn;
 
   /**
    * Constructs a DynamicFunctionSymbol for use with an IGosuParser's ISymbolTable.
@@ -74,7 +75,7 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
     }
 
     _strDisplayName = name.toString();
-    setCaseInsensitiveName( getSignatureName( name ) );
+    setName( getSignatureName( name ) );
   }
 
   public DynamicFunctionSymbol( DynamicFunctionSymbol dfs )
@@ -83,14 +84,14 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
     _value = dfs._value;
     _args = dfs._args;
     _initializer = dfs._initializer;
-    setCaseInsensitiveName( dfs.getCaseInsensitiveName() );
+    setName( (String)dfs.getName() );
     _scriptPartId = dfs._scriptPartId;
     replaceModifierInfo(dfs.getModifierInfo());
   }
 
   public void renameAsErrantDuplicate( int iIndex )
   {
-    setCaseInsensitiveName( getSignatureName( iIndex + "_duplicate_" + _strDisplayName ) );
+    setName( getSignatureName( iIndex + "_duplicate_" + _strDisplayName ) );
   }
 
   public String getDisplayName()
@@ -202,9 +203,9 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
   /**
    * @return the canonical, generic name of this function
    */
-  protected CaseInsensitiveCharSequence getCannonicalName()
+  protected String getCannonicalName()
   {
-    return getCaseInsensitiveName();
+    return getName();
   }
 
   public boolean isClassMember()
@@ -241,12 +242,12 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
     return getDisplayName() + getParameterDisplay( true ) + " : " + TypeInfoUtil.getTypeName( ((FunctionType)getType()).getReturnType() );
   }
 
-  public static CaseInsensitiveCharSequence getSignatureName( CharSequence strName, List<ISymbol> args )
+  public static String getSignatureName( CharSequence strName, List<ISymbol> args )
   {
-    return CaseInsensitiveCharSequence.get( strName + getUniqueNameForParameters( args ) );
+    return strName + getUniqueNameForParameters( args );
   }
 
-  protected CaseInsensitiveCharSequence getSignatureName( CharSequence strName )
+  protected String getSignatureName( CharSequence strName )
   {
     return getSignatureName( strName, getArgs() );
   }
@@ -288,7 +289,7 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
 
   protected DynamicFunctionSymbol getFunctionSymbol()
   {
-    ISymbol symbol = _symTable.getSymbol( getCaseInsensitiveName() );
+    ISymbol symbol = _symTable.getSymbol( getName() );
     if( symbol != null )
     {
       return (DynamicFunctionSymbol)symbol;
@@ -476,16 +477,16 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
 
     if( superDfs instanceof ParameterizedDynamicFunctionSymbol &&
         superDfs.getBackingDfs() != null &&
-        !superDfs.getBackingDfs().getCaseInsensitiveName().equals( getCaseInsensitiveName() ) )
+        !superDfs.getBackingDfs().getName().equals( getName() ) )
     {
-      _superGenericName = superDfs.getBackingDfs().getCaseInsensitiveName();
+      _superGenericName = superDfs.getBackingDfs().getName();
     }
   }
   public DynamicFunctionSymbol getSuperDfs()
   {
     return _superDfs;
   }
-  public CaseInsensitiveCharSequence getSuperGenericName()
+  public String getSuperGenericName()
   {
     return _superGenericName;
   }
@@ -512,8 +513,18 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
     return false;
   }
   
-  public IReducedDynamicFunctionSymbol createReducedSymbol() {
+  public IReducedDynamicFunctionSymbol createReducedSymbol()
+  {
     return new ReducedDynamicFunctionSymbol( this );
   }
-  
+
+  public void setLoopImplicitReturn( boolean bLoopImplicitReturn )
+  {
+    _bLoopImplicitReturn = bLoopImplicitReturn;
+  }
+
+  public boolean isLoopImplicitReturn()
+  {
+    return _bLoopImplicitReturn;
+  }
 }

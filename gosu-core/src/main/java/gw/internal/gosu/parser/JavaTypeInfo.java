@@ -10,41 +10,49 @@ import gw.lang.GosuShop;
 import gw.lang.annotation.Annotations;
 import gw.lang.javadoc.IClassDocNode;
 import gw.lang.javadoc.IDocRef;
-import gw.lang.parser.ILanguageLevel;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.Keyword;
 import gw.lang.parser.TypeVarToTypeMap;
+import gw.lang.reflect.ConstructorInfoBuilder;
 import gw.lang.reflect.FeatureManager;
 import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IConstructorHandler;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IEventInfo;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.MethodList;
+import gw.lang.reflect.ParameterInfoBuilder;
 import gw.lang.reflect.TypeInfoUtil;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.IConstructorHandler;
-import gw.lang.reflect.ConstructorInfoBuilder;
-import gw.lang.reflect.ParameterInfoBuilder;
-import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.reflect.java.*;
+import gw.lang.reflect.java.IJavaAnnotatedElement;
+import gw.lang.reflect.java.IJavaClassConstructor;
+import gw.lang.reflect.java.IJavaClassField;
+import gw.lang.reflect.java.IJavaClassInfo;
+import gw.lang.reflect.java.IJavaClassMethod;
+import gw.lang.reflect.java.IJavaMethodDescriptor;
+import gw.lang.reflect.java.IJavaMethodInfo;
+import gw.lang.reflect.java.IJavaPropertyDescriptor;
+import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.java.IJavaTypeInfo;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.beans.IndexedPropertyDescriptor;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Array;
-import java.lang.ref.WeakReference;
 import java.lang.annotation.Annotation;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Array;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -62,7 +70,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
 
   private static class JavaFeatureManager extends FeatureManager {
     public JavaFeatureManager(IRelativeTypeInfo type) {
-      super(type, false, type.getOwnersType().isInterface() &&
+      super(type, true, type.getOwnersType().isInterface() &&
                          type.getOwnersType().getSupertype() == null);
     }
   }
@@ -110,7 +118,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
         if ( getOwnersType().isArray()) {
           for (Iterator<IPropertyInfo> iterator = ret.iterator(); iterator.hasNext();) {
             IPropertyInfo propertyInfo = iterator.next();
-            if (propertyInfo.getName().equalsIgnoreCase(Keyword.KW_length.toString())) {
+            if (propertyInfo.getName().equals(Keyword.KW_length.toString())) {
               iterator.remove();
             }
           }
@@ -189,16 +197,16 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
         private int getPosition(List<IPropertyInfo> properties, String name) {
           for (int i = 0; i < properties.size(); i++) {
             IPropertyInfo propertyInfo = properties.get(i);
-            if( ILanguageLevel.Util.STANDARD_GOSU() ) {
+//            if( ILanguageLevel.Util.STANDARD_GOSU() ) {
               if (propertyInfo.getName().equals(name)) {
                 return i;
               }
-            }
-            else {
-              if (propertyInfo.getName().equalsIgnoreCase(name)) {
-                return i;
-              }
-            }
+//            }
+//            else {
+//              if (propertyInfo.getName().equals(name)) {
+//                return i;
+//              }
+//            }
           }
 
           return -1;
@@ -579,11 +587,6 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
   }
 
   @Override
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return FIND.findCorrectString(propName, _fm.getPropertyNames(Accessibility.PRIVATE));
-  }
-
-  @Override
   public IPropertyInfo getProperty( IType whosAskin, CharSequence propName )
   {
     return _fm.getProperty(getAccessibilityForType(whosAskin), propName);
@@ -798,7 +801,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
     {
       IType genOwnerType = TypeLord.getPureGenericType( ownersClass );
       String strGenericOwnerClass = genOwnerType.getName();
-      if( IGosuClass.ProxyUtil.getNameSansProxy( whosAskin ).equalsIgnoreCase( strGenericOwnerClass ) )
+      if( IGosuClass.ProxyUtil.getNameSansProxy( whosAskin ).equals( strGenericOwnerClass ) )
       {
         return Accessibility.INTERNAL;
       }

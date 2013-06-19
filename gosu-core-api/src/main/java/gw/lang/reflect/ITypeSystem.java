@@ -5,7 +5,6 @@
 package gw.lang.reflect;
 
 import gw.config.IService;
-import gw.config.ResourceFileResolver;
 import gw.fs.IFile;
 import gw.fs.IResource;
 import gw.lang.gosuc.ICustomParser;
@@ -109,27 +108,18 @@ public interface ITypeSystem extends IService
    */
   IType getByFullNameIfValid( String fullyQualifiedName );
 
-  void refresh(ITypeRef typeRef, boolean fireChangeEvent);
+  IType getByFullNameIfValidNoJava( String fullyQualifiedName );
 
-  /**
-   * Refresh a type by name.  Does not require type to exist in the type
-   * system.  Inner classes related to the type, if any, will also be
-   * refreshed.
-   *
-   * @param typesToRefresh fully qualified name of types to refresh.
-   * @param kind
-   * @param fireChangeEvent true if the TypeSystem should notify it's listeners
-   */
-  void refreshTypesByName(String[] typesToRefresh, IModule module, RefreshKind kind, boolean fireChangeEvent);
-  void refresh();
+  void refresh(ITypeRef typeRef);
+
   void refresh( boolean bRefreshCaches );
-  void refresh(IModule module, boolean bRefreshCaches);
+  void refresh(IModule module);
 
   /**
    * @return true if any types were refreshed for this file
    */
-  void refreshed(IResource file, RefreshKind refreshKind);
-  void shutdown(boolean clearRefs);
+  void refreshed(IResource file, String typeName, RefreshKind refreshKind);
+  void shutdown();
 
   String[] getTypesForFile(IModule module, IFile file);
 
@@ -211,13 +201,12 @@ public interface ITypeSystem extends IService
 
   List<ITypeLoader> getAllTypeLoaders();
 
-  void removeAllTypeLoaders();
-
   IType getJavaType(Class javaClass);
 
   String getNameWithQualifiedTypeVariables(IType type);
 
   IType getDefaultParameterizedType(IType type);
+  IType getDefaultParameterizedTypeWithTypeVars(IType type);
 
   boolean canCast(IType lhsType, IType rhsType);
 
@@ -229,7 +218,6 @@ public interface ITypeSystem extends IService
 
   IType getBoxType(IType primitiveType);
 
-  Collection<? extends IExecutionEnvironment> getExecutionEnvironments();
   IExecutionEnvironment getExecutionEnvironment();
   IExecutionEnvironment getExecutionEnvironment( IProject project );
 
@@ -239,13 +227,9 @@ public interface ITypeSystem extends IService
 
   ITypeRef getTypeReference( IType type );
 
-  IFile getResource(String strResourceName);
-
   IType getTypeFromObject( Object obj );
 
   boolean isExpandable( IType type );
-
-  IType getExpandableComponentType( IType type );
 
   void clearErrorTypes();
 

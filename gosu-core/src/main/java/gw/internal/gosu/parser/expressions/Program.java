@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.ParseTree;
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IParseIssue;
 import gw.lang.parser.IParsedElement;
@@ -130,7 +129,7 @@ public class Program extends Expression implements IProgram
   }
 
   @Override
-  public IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement element, CaseInsensitiveCharSequence identifierName )
+  public IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement element, String identifierName )
   {
     return _mainStatement.findDeclaringStatement( element, identifierName );
   }

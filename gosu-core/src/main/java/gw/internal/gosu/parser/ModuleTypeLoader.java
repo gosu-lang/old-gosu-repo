@@ -8,6 +8,7 @@ import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
 import gw.fs.IResource;
+import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.IExtendedTypeLoader;
 import gw.lang.reflect.IMetaType;
 import gw.lang.reflect.INamespaceType;
@@ -26,7 +27,6 @@ import gw.lang.reflect.gs.IGosuObject;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IModule;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.GosuClassUtil;
 import gw.util.Pair;
 import gw.util.Predicate;
@@ -59,7 +59,10 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
   // Type system caches
   private WeakFqnCache<IType> _typesByName;
   private Map<String, IType> _namespaceTypesByName; // A case-Sensitive map of names to namespace types
+
+  //## todo: remove this pos
   private Map<String, IType> _typesByCaseInsensitiveName; // A case-Insensitive map of names to intrinsic types
+
   private ITypeRefFactory _typeRefFactory;
 
   public ModuleTypeLoader( IModule module, List<ITypeLoader> loaderStack )
@@ -85,7 +88,7 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     _loadersByPrefix = new HashMap<String, ITypeLoader>();
     _typesByName = new WeakFqnCache<IType>();
     _namespaceTypesByName = new HashMap<String, IType>();
-    _typesByCaseInsensitiveName = new CaseInsensitiveHashMap<String, IType>();
+    _typesByCaseInsensitiveName = new HashMap<String, IType>();
   }
 
   public ModuleTypeLoader( IModule module, DefaultTypeLoader defaultTypeLoader)
@@ -215,7 +218,7 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
       {
         _globalStack.remove( typeLoader );
         // Removing a type loader must trigger a type system reset
-        refresh();
+        refreshed();
         List<String> handledPrefixes = typeLoader.getHandledPrefixes();
         for( String handledPrefix : handledPrefixes )
         {
@@ -223,45 +226,6 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
         }
         CommonServices.getEntityAccess().getLogger().debug("TypeLoader removed: " + GosuClassUtil.getShortClassName(typeLoader.getClass()));
       }
-    }
-    finally
-    {
-      TypeSystem.unlock();
-    }
-  }
-
-  public void removeAllTypeLoaders()
-  {
-    refresh();
-    TypeSystem.lock();
-    try
-    {
-      _globalStack.clear();
-      if (_defaultTypeLoader != null) {
-        _globalStack.add( _defaultTypeLoader );
-      }
-      _loadersByPrefix.clear();
-      clearCaches();
-    }
-    finally
-    {
-      TypeSystem.unlock();
-    }
-  }
-
-  public void removeAllTypeLoadersAndRecreateDefaultLoader()
-  {
-    refresh();
-    TypeSystem.lock();
-    try
-    {
-      _globalStack.clear();
-      if (_defaultTypeLoader != null) {
-        _defaultTypeLoader = new DefaultTypeLoader(getModule());
-        _globalStack.add( _defaultTypeLoader );
-      }
-      _loadersByPrefix.clear();
-      clearCaches();
     }
     finally
     {
@@ -400,34 +364,10 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     return type;
   }
 
-  @Override
-  public IType getTypeByFullNameIfValid( String fullyQualifiedName )
-  {
-    return getTypeByFullNameIfValid( fullyQualifiedName, true );
-  }
-
-  @Override
-  public IFile getResource(String strResourceName)
-  {
-//    for (IDirectory directory : getModule().getSourcePath()) {
-//      IFile file = directory.file(strResourceName);
-//      if (file.exists()) {
-//        return file;
-//      }
-//    }
-    for (IDirectory directory : getModule().getRoots()) {
-      IFile file = directory.file(strResourceName);
-      if (file.exists()) {
-        return file;
-      }
-    }
-    return null;
-  }
-
-  public IType getTypeByFullNameIfValid( String fullyQualifiedName, boolean bResolve )
+  public IType getTypeByFullNameIfValid( String fullyQualifiedName, boolean skipJava )
   {
     // strip off all trailing array brackets "[]"
-    String fqnNoArrays = stripArrayBrackets( fullyQualifiedName );
+    String fqnNoArrays = stripArrayBrackets(fullyQualifiedName);
 
     // First, look for the type in the map by name
     IType foundType = findInCache( fqnNoArrays );
@@ -451,11 +391,7 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
         // If it's not found, then go ahead and try to load it from the type loader stacks
         if( foundType == null )
         {
-          if( !bResolve )
-          {
-            return null;
-          }
-          foundType = loadTypeAndCacheResult(fqnNoArrays);
+          foundType = loadTypeAndCacheResult(fqnNoArrays, skipJava);
         }
       }
       finally
@@ -537,13 +473,13 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     return name.substring( 0, checkPos );
   }
 
-  private IType loadTypeAndCacheResult(String fullyQualifiedName)
+  private IType loadTypeAndCacheResult(String fullyQualifiedName, boolean skipJava)
   {
     Pair<IType, ITypeLoader> pair;
     TypeSystem.pushModule( getModule() );
     try
     {
-      pair = loadType(fullyQualifiedName);
+      pair = loadType(fullyQualifiedName, skipJava);
     }
     finally
     {
@@ -555,9 +491,15 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     {
       type = cacheType(fullyQualifiedName, pair);
     }
-    else
+    else if( !skipJava )
     {
       type = cacheType(fullyQualifiedName, new Pair<IType, ITypeLoader>(CACHE_MISS, null));
+    }
+    else
+    {
+      // Type loading was initiated through class loader, so we skipped Java type loader. Don't cache -- type could
+      // be valid Java type. Eventually, we will cache it.
+      type = null;
     }
 
     return type;
@@ -578,20 +520,14 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
   }
 
   @Override
-  public void refresh()
-  {
-    refresh(false);
-  }
-
-  @Override
-  public void refresh(boolean clearCachedTypes)
+  public void refreshed()
   {
     TypeSystem.lock();
     try
     {
       clearCaches();
       for (ITypeLoader loader : _globalStack) {
-        loader.refresh(clearCachedTypes);
+        loader.refreshed();
       }
     }
     finally
@@ -608,7 +544,7 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     }
   }
 
-  private Pair<IType, ITypeLoader> loadType(String fullyQualifiedName)
+  private Pair<IType, ITypeLoader> loadType(String fullyQualifiedName, boolean skipJava)
   {
     IType type = TypeLoaderAccess.instance().getDefaultType(fullyQualifiedName);
     if (type != null) {
@@ -637,6 +573,10 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
       if( loader.handlesNonPrefixLoads() && loader.isInited() )
       {
         // Only look through loaders that can do non-prefix loading
+        if (loader instanceof IDefaultTypeLoader && skipJava) {
+          // Forbid going back into classloaders world (for example, we are loading Gosu type through URL handler)
+          continue;
+        }
         type = loader.getType( fullyQualifiedName );
         if( type != null )
         {
@@ -748,16 +688,19 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
   }
 
   public void shutdown() {
+    for (ITypeLoader typeLoader : _globalStack) {
+      typeLoader.shutdown();
+    }
   }
 
-  public void refresh(IResource file, RefreshKind refreshKind) {
+  public boolean refresh(IResource file, String typeName, RefreshKind refreshKind) {
     TypeSystem.pushModule(getModule());
     TypeSystem.lock();
     try {
       if (file instanceof IFile) {
-        refreshFile((IFile) file, refreshKind);
+        return refreshFile((IFile) file, typeName, refreshKind);
       } else if (file instanceof IDirectory) {
-        refreshDirectory((IDirectory) file, refreshKind);
+        return refreshDirectory((IDirectory) file, refreshKind);
       } else {
         throw new RuntimeException("Unknown resource: " + file);
       }
@@ -767,7 +710,9 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     }
   }
 
-  private void refreshDirectory(IDirectory directory, RefreshKind kind) {
+  private boolean refreshDirectory(IDirectory directory, RefreshKind kind) {
+    boolean processed = false;
+
     // refresh the directory itself
     for (ITypeLoader typeLoader : _globalStack) {
       if (typeLoader.handlesDirectory(directory)) {
@@ -776,16 +721,19 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
           refreshNamespaceCaches(namespace, typeLoader, kind);
           typeLoader.refreshedNamespace(namespace, directory, kind);
         }
+        processed = true;
       }
     }
 
     // refresh directory content
     for (IFile file : directory.listFiles()) {
-      refreshFile(file, kind);
+      processed |= refreshFile(file, null, kind);
     }
     for (IDirectory dir : directory.listDirs()) {
-      refreshDirectory(dir, kind);
+      processed |= refreshDirectory(dir, kind);
     }
+
+    return processed;
   }
 
   private void refreshNamespaceCaches( String namespace, ITypeLoader typeLoader, RefreshKind kind ) {
@@ -800,41 +748,26 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
     }
   }
 
-  private void refreshFile(IFile file, RefreshKind kind) {
-    _refreshFile( file, kind );
-    if( kind == RefreshKind.MODIFICATION ) {
-      for( IFile oldFile: findOldFiles() ) {
-        _refreshFile( oldFile, kind );
-      }
-    }
-  }
-  private void _refreshFile(IFile file, RefreshKind kind) {
+  private boolean refreshFile(IFile file, String typeName, RefreshKind kind) {
+    boolean processed = false;
+
     for (ITypeLoader typeLoader : _globalStack) {
       if (typeLoader.handlesFile(file)) {
-        String[] types = typeLoader.getTypesForFile(file);
-        typeLoader.refreshedFile(file, types, kind);
+        String[] types;
+        if (typeName != null) {
+          types = new String[] {typeName};
+        } else {
+          types = typeLoader.getTypesForFile(file);
+        }
+        kind = typeLoader.refreshedFile(file, types, kind);
         if (types != null && types.length != 0) {
-          RefreshRequest refreshRequest = new RefreshRequest(file, types, getModule(), kind, true);
+          RefreshRequest refreshRequest = new RefreshRequest(file, types, typeLoader, kind);
           TypeLoaderAccess.instance().refreshTypes(refreshRequest);
         }
+        processed = true;
       }
     }
-  }
-
-  public List<IFile> findOldFiles() {
-    List<IFile> combined = new ArrayList<IFile>();
-//    for( IModule module: _module.getModuleTraversalList() ) {
-//      List<ITypeRef> oldTypes = module.getModuleTypeLoader().getTypeRefFactory().huntForTypesToKill( false );
-//      for( ITypeRef type: oldTypes ) {
-//        if( type instanceof IFileBasedType ) {
-//          IFile[] sourceFiles = ((IFileBasedType)type).getSourceFiles();
-//          if( sourceFiles != null ) {
-//            Collections.addAll( combined, sourceFiles );
-//          }
-//        }
-//      }
-//    }
-    return combined;
+    return processed;
   }
 
   public IType getCachedType(String fqn) {

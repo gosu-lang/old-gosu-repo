@@ -32,6 +32,6 @@ public class IRConditionalOrExpression extends IRExpression {
 
   @Override
   public IRType getType() {
-    return IRTypeConstants.pBOOLEAN;
+    return IRTypeConstants.pBOOLEAN();
   }
 }

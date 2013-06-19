@@ -33,6 +33,8 @@ public interface TopLevelTransformationContext {
 
   void initializeInstanceFields( List<IRStatement> statements );
 
+  void addAssertionsStaticField();
+
   ICompilableTypeInternal getGosuClass();
 
   boolean shouldUseReflection( IType declaringClass, IRelativeTypeInfo.Accessibility accessibility );

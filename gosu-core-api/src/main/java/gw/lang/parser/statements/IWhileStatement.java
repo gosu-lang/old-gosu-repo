@@ -4,12 +4,6 @@
 
 package gw.lang.parser.statements;
 
-import gw.lang.parser.IExpression;
-import gw.lang.parser.IStatement;
-
-public interface IWhileStatement extends ILoopStatement
+public interface IWhileStatement extends ILoopStatement, ITerminalStatement
 {
-  IExpression getExpression();
-
-  IStatement getStatement();
 }

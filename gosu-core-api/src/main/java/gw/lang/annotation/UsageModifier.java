@@ -12,7 +12,6 @@ import gw.lang.reflect.java.JavaTypes;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -131,7 +130,8 @@ public enum UsageModifier {
             elementTypeConst.equals( ElementType.FIELD.name() ) && targetType == UsageTarget.PropertyTarget ||
             elementTypeConst.equals( ElementType.ANNOTATION_TYPE.name() ) && targetType == UsageTarget.TypeTarget ||
             elementTypeConst.equals( ElementType.TYPE.name() ) && targetType == UsageTarget.TypeTarget ||
-            elementTypeConst.equals( ElementType.METHOD.name() ) && (targetType == UsageTarget.MethodTarget || targetType == UsageTarget.PropertyTarget) )
+            elementTypeConst.equals( ElementType.METHOD.name() ) && (targetType == UsageTarget.MethodTarget || targetType == UsageTarget.PropertyTarget) ||
+            elementTypeConst.equals( ElementType.PARAMETER.name() ) && targetType == UsageTarget.ParameterTarget )
         {
           return UsageModifier.One;
         }

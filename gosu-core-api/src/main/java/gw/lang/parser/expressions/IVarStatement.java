@@ -4,7 +4,6 @@
 
 package gw.lang.parser.expressions;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IHasType;
@@ -17,11 +16,11 @@ import gw.lang.reflect.IType;
 
 public interface IVarStatement extends IStatement, IParsedElementWithAtLeastOneDeclaration, IHasType
 {
-  CaseInsensitiveCharSequence getIdentifierName();
+  String getIdentifierName();
 
   ISymbol getSymbol();
 
-  CaseInsensitiveCharSequence getPropertyName();
+  String getPropertyName();
 
   GlobalScope getScope();
 

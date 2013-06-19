@@ -5,7 +5,6 @@
 package gw.lang.reflect.gs;
 
 import gw.internal.gosu.parser.IParameterizableType;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICompilationState;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IDynamicPropertySymbol;
@@ -78,9 +77,9 @@ public interface IGosuClass extends IFileBasedType, ICompilableType, IEnumType, 
 
   List<? extends IDynamicFunctionSymbol> getMemberFunctions();
 
-  Map<CaseInsensitiveCharSequence, ? extends IVarStatement> getMemberFieldsMap();
+  Map<String, ? extends IVarStatement> getMemberFieldsMap();
   
-  public IDynamicPropertySymbol getMemberProperty( CaseInsensitiveCharSequence name );
+  public IDynamicPropertySymbol getMemberProperty( String name );
 
   IType getEnclosingTypeReference();
 

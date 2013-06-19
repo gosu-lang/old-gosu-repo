@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
-    <version>0.10-beta04-SNAPSHOT</version>
+    <version>0.11-SNAPSHOT</version>
     <relativePath>../gosu-parent/pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -16,7 +16,7 @@
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-core-api</artifactId>
-      <version>0.10-beta04-SNAPSHOT</version>
+      <version>0.11-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -37,6 +37,11 @@
       <groupId>org.apache.bcel</groupId>
       <artifactId>com.springsource.org.apache.bcel</artifactId>
       <version>5.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu</groupId>
+      <artifactId>gosu-classredefiner</artifactId>
+      <version>1.0.0</version>
     </dependency>
   </dependencies>
 

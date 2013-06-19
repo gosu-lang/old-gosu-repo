@@ -4,9 +4,6 @@
 
 package gw.lang.parser;
 
-import gw.lang.reflect.IType;
-import gw.lang.reflect.gs.IGosuClass;
-
 public interface IReducedDynamicPropertySymbol extends IReducedSymbol
 {
   boolean isReadable();
@@ -17,7 +14,7 @@ public interface IReducedDynamicPropertySymbol extends IReducedSymbol
 
   IReducedDynamicPropertySymbol getParent();
 
-  IReducedDynamicFunctionSymbol getFunction(CaseInsensitiveCharSequence strFunctionName);
+  IReducedDynamicFunctionSymbol getFunction( String strFunctionName);
 
-  CaseInsensitiveCharSequence getVarIdentifier();
+  String getVarIdentifier();
 }

@@ -1,7 +1,12 @@
 package gw.test;
 
-import gw.config.ResourceFileResolver;
-import gw.lang.reflect.*;
+import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.IHasJavaClass;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.Modifier;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.testharness.IncludeInTestResults;
@@ -14,12 +19,18 @@ import gw.util.Predicate;
 import junit.framework.TestCase;
 import junit.framework.TestResult;
 
-import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public abstract class TestClass extends TestCase implements ITestWithMetadata {
   private String _pkgName;
@@ -145,6 +156,7 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
   }
 
   public void reallyRunBare() throws Throwable {
+    initMetadata(getName());
     super.runBare();
   }
 
@@ -273,10 +285,6 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
   // Utility Methods
   //================================================================
 
-  public File getFile(String fileName) {
-    return new ResourceFileResolver().resolveToFile(fileName, Thread.currentThread().getContextClassLoader());
-  }
-
   public String getClassName() {
     return _className;
   }
@@ -310,6 +318,21 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
       }
     });
   }
+
+  /**
+   * Compare two byte arrays, first the size then each byte.
+   * @param expected
+   * @param actual
+   */
+  public static void assertArrayEquals(String message, byte[] expected, byte[] actual) {
+    if (expected.length != actual.length) {
+      fail(message+" - expected array length of "+expected.length+" but got "+actual.length);
+    for (int i=0; i<expected.length; i++) {
+      assertEquals(message, expected[i], actual[i]);
+      }
+    }
+  }
+
 
   /**
    * Verifies that all elements in the first array are present in the second

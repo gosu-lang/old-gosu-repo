@@ -4,29 +4,30 @@
 
 package gw.internal.gosu.compiler;
 
+import gw.config.CommonServices;
+import gw.internal.gosu.ir.TransformingCompiler;
+import gw.internal.gosu.ir.transform.AbstractElementTransformer;
+import gw.internal.gosu.parser.ICompilableTypeInternal;
 import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.IGosuProgramInternal;
 import gw.internal.gosu.parser.ModuleClassLoader;
 import gw.internal.gosu.parser.NewIntrospector;
 import gw.internal.gosu.parser.TypeLord;
-import gw.internal.gosu.parser.ICompilableTypeInternal;
-import gw.internal.gosu.ir.TransformingCompiler;
-import gw.internal.gosu.ir.transform.expression.QueryExpressionTransformer;
-import gw.internal.gosu.ir.transform.expression.EvalExpressionTransformer;
-import gw.internal.gosu.ir.transform.AbstractElementTransformer;
 import gw.lang.reflect.IGosuClassLoadingObserver;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.gs.*;
+import gw.lang.reflect.gs.BytecodeOptions;
+import gw.lang.reflect.gs.GosuClassPathThing;
+import gw.lang.reflect.gs.ICompilableType;
+import gw.lang.reflect.gs.IGosuClassLoader;
 import gw.lang.reflect.java.IJavaBackedType;
-import gw.lang.reflect.module.TypeSystemLockHelper;
 import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.module.TypeSystemLockHelper;
 import gw.util.GosuExceptionUtil;
-import gw.config.CommonServices;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.List;
 
 public class GosuClassLoader implements IGosuClassLoader
 {
@@ -46,16 +47,12 @@ public class GosuClassLoader implements IGosuClassLoader
     // be an instance method, since it's calling static helpers, but it's an instance
     // method at the moment so it can appear on IGosuClassLoader and make it through
     // the wall and be usable from gosu-core-api
-    QueryExpressionTransformer.clearQueryExpressions();
-    EvalExpressionTransformer.clearEvalExpressions();
     AbstractElementTransformer.clearCustomRuntimes();
   }
 
   @Override
-  public byte[] getBytes( ICompilableType gsClass, boolean compiledToUberModule )
+  public byte[] getBytes( ICompilableType gsClass )
   {
-    boolean bPrevValue = ((IGosuClassInternal)gsClass).isCompiledToUberModule();
-    ((IGosuClassInternal)gsClass).setCompiledToUberModule( compiledToUberModule );
     try
     {
       return compileClass( gsClass, false );
@@ -63,10 +60,6 @@ public class GosuClassLoader implements IGosuClassLoader
     catch( Exception pre )
     {
       throw GosuExceptionUtil.forceThrow( new IOException( pre ) );
-    }
-    finally
-    {
-      ((IGosuClassInternal)gsClass).setCompiledToUberModule( bPrevValue );
     }
   }
 
@@ -209,7 +202,15 @@ public class GosuClassLoader implements IGosuClassLoader
   {
     if( shouldUseSingleServingLoader(gsClass) || forceSingleServingLoader || BytecodeOptions.isSingleServingLoader() )
     {
-      return new SingleServingGosuClassLoader( this )._defineClass( gsClass );
+      SingleServingGosuClassLoader loader = new SingleServingGosuClassLoader( this );
+      Class<?> result = loader._defineClass( gsClass );
+      // Define all blocks, too. Otherwise, they eventually could be loaded through URL handler, which would
+      // cause them to be defined by a different classloader, defeating SingleServingGosuClassLoader purpose.
+      // Also, this removes the dependency on URL handler in certain cases.
+      for (int i = 0; i < gsClass.getBlockCount(); i++) {
+        loader._defineClass(gsClass.getBlock(i));
+      }
+      return result;
     }
     else
     {

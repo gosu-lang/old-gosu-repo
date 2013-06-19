@@ -18,7 +18,6 @@ import gw.internal.gosu.parser.statements.VarStatement;
 import gw.lang.parser.IBlockClass;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IExpression;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IGosuParser;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
@@ -42,7 +41,6 @@ import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.JavaTypes;
 import gw.util.concurrent.LockingLazyVar;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.GosuExceptionUtil;
 import gw.internal.gosu.compiler.GosuClassLoader;
 
@@ -50,6 +48,7 @@ import java.io.ObjectStreamException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,7 +76,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
 
   private IExpression _expression;
   private String _name;
-  private CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> _externalSymbols;
+  private HashMap<String, ISymbol> _externalSymbols;
   private IType _supertype;
   private Set<IType> _allTypesInHierarchy;
 
@@ -95,7 +94,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
     }
   };
 
-  public GosuFragment(String name, CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbols, ITypeUsesMap typeUsesMap) {
+  public GosuFragment(String name, HashMap<String, ISymbol> externalSymbols, ITypeUsesMap typeUsesMap) {
     _typeInfo = createTypeInfo();
     _typeUsesMap = typeUsesMap;
     _name = name;
@@ -187,7 +186,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
   // ==========================================================================
 
   @Override
-  public List<DynamicFunctionSymbol> getMemberFunctions(CaseInsensitiveCharSequence names) {
+  public List<DynamicFunctionSymbol> getMemberFunctions( String names) {
     return Collections.emptyList();
   }
 
@@ -208,27 +207,27 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
   }
 
   @Override
-  public DynamicPropertySymbol getStaticProperty(CaseInsensitiveCharSequence name) {
+  public DynamicPropertySymbol getStaticProperty( String name) {
     return null;
   }
 
   @Override
-  public DynamicPropertySymbol getMemberProperty(CaseInsensitiveCharSequence name) {
+  public DynamicPropertySymbol getMemberProperty( String name) {
     return null;
   }
 
   @Override
-  public Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols() {
+  public Map<String, ICapturedSymbol> getCapturedSymbols() {
     return Collections.emptyMap();
   }
 
   @Override
-  public ICapturedSymbol getCapturedSymbol(CaseInsensitiveCharSequence strName) {
+  public ICapturedSymbol getCapturedSymbol( String strName) {
     return null;
   }
 
   @Override
-  public VarStatement getMemberField(CaseInsensitiveCharSequence charSequence) {
+  public VarStatement getMemberField( String charSequence) {
     return null;
   }
 
@@ -476,7 +475,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
   }
 
   public boolean isExternalSymbol( String name ) {
-    return _externalSymbols.containsKey( CaseInsensitiveCharSequence.get(name) );
+    return _externalSymbols.containsKey( name );
   }
 
   @Override
@@ -547,7 +546,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
 
   @Override
   public ISymbol getExternalSymbol(String strName) {
-    return _externalSymbols.get(CaseInsensitiveCharSequence.get(strName));
+    return _externalSymbols.get( strName );
   }
 
   // -------------------- Private helper methods
@@ -580,6 +579,12 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
   @Override
   public GosuClassParseInfo getParseInfo() {
     throw new RuntimeException();
+  }
+
+  @Override
+  public boolean hasAssertions()
+  {
+    return false;
   }
 
   @Override

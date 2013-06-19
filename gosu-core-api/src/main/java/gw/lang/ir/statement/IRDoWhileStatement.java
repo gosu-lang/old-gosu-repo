@@ -4,12 +4,14 @@
 
 package gw.lang.ir.statement;
 
+import gw.lang.ir.IRAbstractLoopStatement;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRExpression;
 import gw.lang.UnstableAPI;
 
 @UnstableAPI
-public class IRDoWhileStatement extends IRStatement implements IRLoopStatement {
+public class IRDoWhileStatement extends IRAbstractLoopStatement
+{
 
   // test
   private IRExpression _test;
@@ -40,13 +42,15 @@ public class IRDoWhileStatement extends IRStatement implements IRLoopStatement {
   }
 
   @Override
-  public IRTerminalStatement getLeastSignificantTerminalStatement() {
+  public IRTerminalStatement getLeastSignificantTerminalStatement()
+  {
     // do/while loops always execute at least once, so we can look for a terminal statement
     // within the body of the loop
-    if (_body != null) {
+    if (_body != null)
+    {
       IRTerminalStatement terminalStmt = _body.getLeastSignificantTerminalStatement();
-      if( terminalStmt instanceof IRReturnStatement ||
-          terminalStmt instanceof IRThrowStatement )
+      if (terminalStmt instanceof IRReturnStatement ||
+              terminalStmt instanceof IRThrowStatement)
       {
         return terminalStmt;
       }

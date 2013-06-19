@@ -46,6 +46,6 @@ public class IREqualityExpression extends IRExpression {
 
   @Override
   public IRType getType() {
-    return IRTypeConstants.pBOOLEAN;
+    return IRTypeConstants.pBOOLEAN();
   }
 }

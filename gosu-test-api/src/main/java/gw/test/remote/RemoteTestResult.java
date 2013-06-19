@@ -1,10 +1,9 @@
 package gw.test.remote;
 
+import gw.lang.reflect.TypeSystem;
 import gw.xml.simple.SimpleXmlNode;
 import junit.framework.AssertionFailedError;
 
-import java.io.StringWriter;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +65,7 @@ public class RemoteTestResult {
       if (cause != null && cause != t) {
         causeExceptionInfo = fromThrowable(cause);
       }
-      return new ExceptionInfo(t.getClass().getName(), t.getMessage(), t.getStackTrace(), causeExceptionInfo);
+      return new ExceptionInfo( TypeSystem.getFromObject( t ).getName(), t.getMessage(), t.getStackTrace(), causeExceptionInfo);
     }
 
     private ExceptionInfo(String className, String message, StackTraceElement[] stackTrace, ExceptionInfo cause) {
@@ -92,6 +91,7 @@ public class RemoteTestResult {
       return _cause;
     }
 
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public Throwable toThrowable() {
       if (_className.equals(AssertionFailedError.class.getName())) {
         return new RemoteAssertionFailedError(_message, _className, _stackTrace);

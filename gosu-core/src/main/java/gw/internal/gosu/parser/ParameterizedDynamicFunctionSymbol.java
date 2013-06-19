@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.statements.MethodCallStatement;
 import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IReducedDynamicFunctionSymbol;
 import gw.lang.parser.ScriptPartId;
@@ -30,7 +29,7 @@ public class ParameterizedDynamicFunctionSymbol extends DynamicFunctionSymbol
     {
       strName = '@' + strName;
     }
-    setCaseInsensitiveName( CaseInsensitiveCharSequence.get( strName ) );
+    setName( (String)strName );
     setDisplayName( dfsDelegate.getDisplayName() );
     setScriptPart( new ScriptPartId( owner, null ) );
     assignSuperDfs( dfsDelegate, owner );
@@ -72,7 +71,7 @@ public class ParameterizedDynamicFunctionSymbol extends DynamicFunctionSymbol
   }
 
   @Override
-  protected CaseInsensitiveCharSequence getCannonicalName()
+  protected String getCannonicalName()
   {
     return _dfsDelegate.getCannonicalName();
   }

@@ -7,36 +7,36 @@ package gw.internal.gosu.ir.transform;
 import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.internal.gosu.ir.nodes.IRPropertyFactory;
+import gw.internal.gosu.ir.transform.statement.SyntheticFunctionStatementTransformer;
+import gw.internal.gosu.parser.DynamicFunctionSymbol;
+import gw.internal.gosu.parser.IBlockClassInternal;
 import gw.internal.gosu.parser.ParseTree;
+import gw.internal.gosu.parser.Statement;
+import gw.internal.gosu.parser.ThisConstructorFunctionSymbol;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.statements.FunctionStatement;
+import gw.internal.gosu.parser.statements.MethodCallStatement;
+import gw.internal.gosu.parser.statements.SyntheticFunctionStatement;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.expression.IRStringLiteralExpression;
 import gw.lang.ir.statement.IRAssignmentStatement;
+import gw.lang.ir.statement.IRCatchClause;
+import gw.lang.ir.statement.IRMethodCallStatement;
 import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRStatementList;
-import gw.lang.ir.statement.IRMethodCallStatement;
 import gw.lang.ir.statement.IRTryCatchFinallyStatement;
-import gw.lang.ir.statement.IRCatchClause;
-import gw.internal.gosu.ir.transform.statement.SyntheticFunctionStatementTransformer;
-import gw.internal.gosu.parser.DynamicFunctionSymbol;
-import gw.internal.gosu.parser.IBlockClassInternal;
-import gw.internal.gosu.parser.Statement;
-import gw.internal.gosu.parser.ThisConstructorFunctionSymbol;
-import gw.internal.gosu.parser.statements.FunctionStatement;
-import gw.internal.gosu.parser.statements.MethodCallStatement;
-import gw.internal.gosu.parser.statements.ReturnStatement;
-import gw.internal.gosu.parser.statements.SyntheticFunctionStatement;
-import gw.internal.gosu.parser.statements.ThrowStatement;
 import gw.lang.parser.IFunctionSymbol;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.IToken;
 import gw.lang.parser.statements.IFunctionStatement;
+import gw.lang.parser.statements.IReturnStatement;
 import gw.lang.parser.statements.IStatementList;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.IThrowStatement;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
@@ -44,8 +44,8 @@ import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -161,29 +161,51 @@ public class FunctionStatementTransformer extends AbstractElementTransformer<Fun
     return simpleMethodName;
   }
 
-  private void handleImplicitReturns( Statement statement, List<IRStatement> statements )
+  private void handleImplicitReturns(Statement statement, List<IRStatement> statements)
   {
-    ITerminalStatement terminalStmt = statement.getLeastSignificantTerminalStatement();
+    IType returnType = _dfs.getReturnType();
+    boolean[] bAbsolute = {false};
+    ITerminalStatement terminalStmt = statement.getLeastSignificantTerminalStatement( bAbsolute );
     if( _cc().isBlockInvoke() )
     {
-      if( terminalStmt == null )
+      if( terminalStmt == null || !bAbsolute[0] )
       {
         //visit a label
         IRReturnStatement returnStatement = new IRReturnStatement( null, nullLiteral() );
         returnStatement.setLineNumber( statement.getLineNum() );
         statements.add( returnStatement );
       }
-    }
-    else if( _dfs.getReturnType() == JavaTypes.pVOID() )
-    {
-      if( !(terminalStmt instanceof ReturnStatement) &&
-          !(terminalStmt instanceof ThrowStatement) )
+      else if( _dfs.isLoopImplicitReturn() )
       {
-        IRReturnStatement returntStmt = new IRReturnStatement();
-        returntStmt.setLineNumber( getLastLineOfFunction( statement ) );
-        statements.add( returntStmt );
+        addImplicitReturn( statements, returnType );
       }
     }
+    else if( returnType == JavaTypes.pVOID() &&
+             (!bAbsolute[0] ||
+              !(terminalStmt instanceof IReturnStatement) &&
+              !(terminalStmt instanceof IThrowStatement) &&
+              !(terminalStmt instanceof gw.internal.gosu.parser.statements.LoopStatement)) )
+    {
+      IRReturnStatement returnStmt = new IRReturnStatement();
+      returnStmt.setLineNumber( getLastLineOfFunction( statement ) );
+      statements.add( returnStmt );
+    }
+    else if( _dfs.isLoopImplicitReturn() )
+    {
+      addImplicitReturn( statements, returnType );
+    }
+  }
+
+  private void addImplicitReturn( List<IRStatement> statements, IType returnType )
+  {
+    // This return stmt is never executed, it's only here to pacify Java's bytecode verifier
+    // which doesn't perform the static analysis thoroughly enough to understand that a return
+    // is not needed here.
+    gw.lang.ir.statement.IRImplicitReturnStatement returnStatement =
+            returnType == JavaTypes.pVOID()
+            ? new gw.lang.ir.statement.IRImplicitReturnStatement()
+            : new gw.lang.ir.statement.IRImplicitReturnStatement( null, getDefaultConstIns( returnType ) );
+    statements.add( returnStatement );
   }
 
   private void compileConstructorInitializers( List<IRStatement> statements )

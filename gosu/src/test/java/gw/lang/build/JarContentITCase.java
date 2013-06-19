@@ -87,7 +87,7 @@ public class JarContentITCase extends Assert {
   @Test
   public void testGosuXmlJar() {
     IDirectory dir = getGosuXmlJar();
-    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "gw", "internal", "xml");
+    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "gw", "xml");
     assertGosuCoreApiShades(dir, false);
     assertGosuCoreShades(dir, false);
     assertGosuXmlShades(dir, true);
@@ -107,7 +107,7 @@ public class JarContentITCase extends Assert {
   @Test
   public void testGosuWebservicesJar() {
     IDirectory dir = getGosuWebservicesJar();
-    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "dftree", "gw", "internal", "xml");
+    Assertions.assertThat(toNamesSorted(dir.listDirs())).containsExactly("META-INF", "dftree", "gw", "xml");
     assertGosuCoreApiShades(dir, false);
     assertGosuCoreShades(dir, false);
     assertGosuXmlShades(dir, false);

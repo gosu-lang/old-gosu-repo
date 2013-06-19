@@ -18,9 +18,9 @@ import java.util.List;
 public class ModuleFileUtil {
 
   /**
-   * Reads a module.xml file into a GosuPathEntry object
+   * Reads a pom.xml file into a GosuPathEntry object
    *
-   * @param moduleFile the module.xml file to convert to GosuPathEntry
+   * @param moduleFile the pom.xml file to convert to GosuPathEntry
    * @return an ordered list of GosuPathEntries created based on the algorithm described above
    */
   public static GosuPathEntry createPathEntryForModuleFile(IFile moduleFile) {
@@ -31,21 +31,13 @@ public class ModuleFileUtil {
         IDirectory rootDir = moduleFile.getParent();
 
         List<IDirectory> sourceDirs = new ArrayList<IDirectory>();
-        List<String> typeloaderNames = new ArrayList<String>();
-
-        for (SimpleXmlNode child : moduleNode.getChildren()) {
-          if (child.getName().equals("src")) {
-            sourceDirs.add(rootDir.dir(child.getText()));
-          } else if (child.getName().equals("typeloaders")) {
-            for (SimpleXmlNode typeloader : child.getChildren()) {
-              if (typeloader.getName().equals("typeloader")) {
-                typeloaderNames.add(typeloader.getAttributes().get("class"));
-              }
-            }
+        for (String child : new String[] { "gsrc", "gtest" }) {
+          IDirectory dir = rootDir.dir(child);
+          if (dir.exists()) {
+            sourceDirs.add(dir);
           }
         }
-
-        return new GosuPathEntry(rootDir, sourceDirs, typeloaderNames);
+        return new GosuPathEntry(rootDir, sourceDirs);
       } finally {
         is.close();
       }

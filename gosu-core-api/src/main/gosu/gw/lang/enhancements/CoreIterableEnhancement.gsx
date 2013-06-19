@@ -231,7 +231,7 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
       }
     }
   }
-  
+
   /**
    * Returns the first element in this collection that matches the given condition. 
    * If no element matches the criteria, null is returned.
@@ -303,7 +303,7 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
       if( this typeis List ) {
         return this[i - 1] as T
       } else {
-        var ret : T
+        var ret : T = null
         for( elt in this ) {
           ret = elt
         }
@@ -317,7 +317,7 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
    * If the collection is empty, null is returned.
    */
   function lastWhere( cond(elt:T):boolean ) : T {
-    var returnVal : T
+    var returnVal : T = null
     var found = false
     for( elt in this ) {
       if( cond( elt ) ) {
@@ -347,12 +347,17 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
     if( Count == 0 ) {
       throw new IllegalStateException( "${this} is empty" )
     }
-    var returnVal = transform( first() )
+    var returnVal : R = null
     for( elt in this ) {
       var eltVal = transform( elt )
-      if( eltVal > returnVal ) {
-        returnVal = eltVal
+      if( eltVal != null ) {
+        if( returnVal == null || eltVal > returnVal ) {
+          returnVal = eltVal
+        }
       }
+    }
+    if( returnVal == null ) {
+      throw new IllegalStateException( "The iterable does not have any max value" )
     }
     return returnVal
   }
@@ -382,12 +387,17 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
     if( Count == 0 ) {
       throw new IllegalStateException( "${this} is empty" )
     }
-    var returnVal = transform( first() )
+    var returnVal : R = null
     for( elt in this ) {
       var eltVal = transform( elt )
-      if( eltVal < returnVal ) {
-        returnVal = eltVal
+      if( eltVal != null ) {
+        if( returnVal == null || eltVal < returnVal ) {
+          returnVal = eltVal
+        }
       }
+    }
+    if( returnVal == null ) {
+      throw new IllegalStateException( "The iterable does not have any min value" )
     }
     return returnVal
   }
@@ -481,7 +491,7 @@ enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {
    */
   function singleWhere( cond(elt:T):boolean ) : T {
     var found = false
-    var returnVal : T
+    var returnVal : T = null
     for( elt in this ) {
       if( cond( elt ) ) {
         if( found ) {

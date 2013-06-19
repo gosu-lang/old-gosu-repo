@@ -4,10 +4,9 @@
 
 package gw.lang.parser;
 
-import gw.config.CommonServices;
-
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class Keyword implements CharSequence
 {
@@ -48,7 +47,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_foreach = addReservedWord( "foreach" );
   public static final Keyword KW_for = addReservedWord( "for" );
   public static final Keyword KW_index = addReservedWord( "index", true );
-  public static final Keyword KW_iterator = addReservedWord( "iterator", true, false );
+  public static final Keyword KW_iterator = addReservedWord( "iterator", true );
   public static final Keyword KW_while = addReservedWord( "while" );
   public static final Keyword KW_do = addReservedWord( "do" );
   public static final Keyword KW_continue = addReservedWord( "continue" );
@@ -56,7 +55,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_return = addReservedWord( "return" );
   public static final Keyword KW_construct = addReservedWord( "construct" );
   public static final Keyword KW_function = addReservedWord( "function" );
-  public static final Keyword KW_property = addReservedWord( "property", false, false );
+  public static final Keyword KW_property = addReservedWord( "property", false );
   public static final Keyword KW_get = addReservedWord( "get", true );
   public static final Keyword KW_set = addReservedWord( "set", true );
   public static final Keyword KW_try = addReservedWord( "try" );
@@ -64,6 +63,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_finally = addReservedWord( "finally" );
   public static final Keyword KW_this = addReservedWord( "this", true );
   public static final Keyword KW_throw = addReservedWord( "throw" );
+  public static final Keyword KW_assert = addReservedWord( "assert", true );
   public static final Keyword KW_new = addReservedWord( "new" );
   public static final Keyword KW_switch = addReservedWord( "switch" );
   public static final Keyword KW_case = addReservedWord( "case" );
@@ -79,12 +79,12 @@ public class Keyword implements CharSequence
   public static final Keyword KW_final = addReservedWord( "final", true );
   public static final Keyword KW_static = addReservedWord( "static", true );
   public static final Keyword KW_extends = addReservedWord( "extends" );
-  public static final Keyword KW_transient = addReservedWord( "transient", false, false );
+  public static final Keyword KW_transient = addReservedWord( "transient", false );
   public static final Keyword KW_implements = addReservedWord( "implements" );
   public static final Keyword KW_readonly = addReservedWord( "readonly", true );
-  public static final Keyword KW_class = addReservedWord( "class", false, false );
-  public static final Keyword KW_interface = addReservedWord( "interface", false, false );
-  public static final Keyword KW_enum = addReservedWord( "enum", false, false );
+  public static final Keyword KW_class = addReservedWord( "class", false );
+  public static final Keyword KW_interface = addReservedWord( "interface", false );
+  public static final Keyword KW_enum = addReservedWord( "enum", false );
   public static final Keyword KW_super = addReservedWord( "super", true );
   public static final Keyword KW_outer = addReservedWord( "outer", true );
   public static final Keyword KW_execution = addReservedWord( "execution", true );
@@ -99,13 +99,11 @@ public class Keyword implements CharSequence
   public static final Keyword KW_using = addReservedWord( "using" );
   //public static final Keyword KW_type = addReservedWord( "Type", true );
 
-  private CaseInsensitiveCharSequence _strCICS;
   private String _strName;
   private boolean _bValue;
 
   private Keyword( String strWord, boolean bValue )
   {
-    _strCICS = CaseInsensitiveCharSequence.get(strWord);
     _strName = strWord;
     _bValue = bValue;
   }
@@ -116,10 +114,6 @@ public class Keyword implements CharSequence
   }
   private static Keyword addReservedWord( String strWord, boolean bValue )
   {
-    return addReservedWord( strWord, bValue, true );
-  }
-  private static Keyword addReservedWord( String strWord, boolean bValue, boolean bCrappyMixedCase )
-  {
     String strLower = strWord.toLowerCase();
     if( RESERVED_WORDS.containsKey( strLower ) )
     {
@@ -127,12 +121,6 @@ public class Keyword implements CharSequence
     }
     Keyword keyword = new Keyword( strWord, bValue );
     RESERVED_WORDS.put( strWord, keyword );
-    if( bCrappyMixedCase && !CommonServices.getEntityAccess().getLanguageLevel().isStandard() )
-    {
-      RESERVED_WORDS.put( strLower, keyword );
-      RESERVED_WORDS.put( strLower.toUpperCase(), keyword );
-      RESERVED_WORDS.put( Character.toUpperCase( strLower.charAt( 0 ) ) + strLower.substring( 1 ).toLowerCase(), keyword );
-    }
     return keyword;
   }
 
@@ -147,19 +135,24 @@ public class Keyword implements CharSequence
     return keyword != null && keyword.isValue();
   }
 
+  public static Set<String> getAll()
+  {
+    return RESERVED_WORDS.keySet();
+  }
+
   public int length()
   {
-    return _strCICS.length();
+    return _strName.length();
   }
 
   public char charAt( int index )
   {
-    return _strCICS.charAt( index );
+    return _strName.charAt( index );
   }
 
   public CharSequence subSequence( int start, int end )
   {
-    return _strCICS.subSequence( start, end );
+    return _strName.subSequence( start, end );
   }
 
   public boolean isValue()
@@ -167,13 +160,11 @@ public class Keyword implements CharSequence
     return _bValue;
   }
 
-  public CaseInsensitiveCharSequence getCICS() {
-    return _strCICS;
-  }
-
+  @SuppressWarnings("NullableProblems")
+  @Override
   public String toString()
   {
-    return _strCICS.toString();
+    return _strName;
   }
 
   public boolean equals( Object o )
@@ -187,22 +178,17 @@ public class Keyword implements CharSequence
       return false;
     }
     Keyword keyword = (Keyword)o;
-    return _strCICS.equals( keyword._strCICS );
+    return _strName.equals( keyword._strName );
   }
 
   public int hashCode()
   {
-    return _strCICS.hashCode();
+    return _strName.hashCode();
   }
 
   public boolean equals( String str )
   {
-    return _strCICS.equalsIgnoreCase( str );
-  }
-
-  public boolean equalsIgnoreCase( String str )
-  {
-    return _strCICS.equalsIgnoreCase( str );
+    return _strName.equals( str );
   }
 
   public static boolean isExactKeywordMatch( String strValue )

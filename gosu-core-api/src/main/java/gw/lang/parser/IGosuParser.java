@@ -11,7 +11,6 @@ import gw.lang.parser.expressions.ITypeVariableDefinition;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.resources.ResourceKey;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ISourceFileHandle;
 
 import java.math.BigDecimal;
@@ -226,7 +225,7 @@ public interface IGosuParser extends IParserPart
 
   ITypeLiteralExpression resolveTypeLiteral( String strName );
 
-  Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> getDfsDecls();
+  Map<String, Set<IFunctionSymbol>> getDfsDecls();
 
   public IParserState getState();
 
@@ -234,7 +233,7 @@ public interface IGosuParser extends IParserPart
 
   void setCaptureSymbolsForEval( boolean bCaputreSymbolsForEval );
 
-  void setDfsDeclInSetByName( Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDecl );
+  void setDfsDeclInSetByName( Map<String, Set<IFunctionSymbol>> dfsDecl );
 
   boolean isParsingFunction();
 

@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.module.fs;
 
+import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IDirectoryUtil;
 import gw.fs.IFile;
@@ -57,7 +58,7 @@ public class JavaDirectoryImpl extends JavaResourceImpl implements IDirectory {
   public IDirectory dir(String relativePath) {
 //    try {
       File subDir = new File(this._file, relativePath)/*.getCanonicalFile()*/;
-      return getFileSystem().getIDirectory(subDir);
+    return CommonServices.getFileSystem().getIDirectory(subDir);
 //    } catch (IOException e) {
 //      throw new RuntimeException(e);
 //    }
@@ -67,7 +68,7 @@ public class JavaDirectoryImpl extends JavaResourceImpl implements IDirectory {
   public IFile file(String path) {
 //    try {
       File subFile = new File(this._file, path)/*.getCanonicalFile()*/;
-      return getFileSystem().getIFile(subFile);
+    return CommonServices.getFileSystem().getIFile(subFile);
 //    } catch (IOException e) {
 //      throw new RuntimeException(e);
 //    }
@@ -112,7 +113,7 @@ public class JavaDirectoryImpl extends JavaResourceImpl implements IDirectory {
       if (files != null) {
         for (File f : _file.listFiles()) {
           if (FileSystemImpl.isDirectory(f)) {
-            results.add(getFileSystem().getIDirectory(f));
+            results.add(CommonServices.getFileSystem().getIDirectory(f));
           }
         }
       }
@@ -126,7 +127,7 @@ public class JavaDirectoryImpl extends JavaResourceImpl implements IDirectory {
       if (files != null) {
         for (File f : files) {
           if (!FileSystemImpl.isDirectory(f)) {
-            results.add(getFileSystem().getIFile(f));
+            results.add(CommonServices.getFileSystem().getIFile(f));
           }
         }
       }
@@ -170,9 +171,9 @@ public class JavaDirectoryImpl extends JavaResourceImpl implements IDirectory {
       if (files != null) {
         for (File f : files) {
           if (FileSystemImpl.isDirectory(f)) {
-            _directories.add(getFileSystem().getIDirectory(f));
+            _directories.add(CommonServices.getFileSystem().getIDirectory(f));
           } else {
-            _files.add(getFileSystem().getIFile(f));
+            _files.add(CommonServices.getFileSystem().getIFile(f));
           }
         }
       }

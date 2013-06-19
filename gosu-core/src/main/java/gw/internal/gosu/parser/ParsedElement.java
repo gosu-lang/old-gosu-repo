@@ -10,7 +10,6 @@ import gw.internal.gosu.parser.statements.ClassFileStatement;
 import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.NoOpStatement;
 import gw.internal.gosu.parser.statements.UsesStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IParseIssue;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
@@ -27,7 +26,6 @@ import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.module.IModule;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.GosuObjectUtil;
 
 import java.util.ArrayList;
@@ -63,7 +61,7 @@ public abstract class ParsedElement implements IParsedElement
   {
     private List<IParseIssue> _parseExceptions = Collections.emptyList();
     private List<IParseIssue> _parseWarnings = Collections.emptyList();
-    private Map<CaseInsensitiveCharSequence, IParsedElementWithAtLeastOneDeclaration> _declaringStatements;
+    private Map<String, IParsedElementWithAtLeastOneDeclaration> _declaringStatements;
     private boolean _bSynthetic;
   }
 
@@ -242,6 +240,23 @@ public abstract class ParsedElement implements IParsedElement
       }
     }
     return false;
+  }
+
+  public IParseIssue getImmediateParseIssue( ResourceKey errKey )
+  {
+    for( IParseIssue err : getImmediateParseIssues() )
+    {
+      if( err.getMessageKey() == errKey )
+      {
+        return err;
+      }
+    }
+    return null;
+  }
+
+  public boolean hasImmediateParseIssue( ResourceKey errKey )
+  {
+    return getImmediateParseIssue( errKey ) != null;
   }
 
   public boolean hasParseWarning( ResourceKey errKey )
@@ -808,11 +823,6 @@ public abstract class ParsedElement implements IParsedElement
     return parent == null ? null : parent.getModule();
   }
   
-  public String getFileName()
-  {
-    return getParent() == null ? UNDEF_FILE : getParent().getFileName();
-  }
-
   public static IFeatureInfo getEnclosingFeatureInfo( Stack<IFeatureInfo> enclosingFeatureInfos )
   {
     if( enclosingFeatureInfos.empty() )
@@ -837,13 +847,13 @@ public abstract class ParsedElement implements IParsedElement
     }
   }
 
-  public int findLineNumberOfDeclaration( CaseInsensitiveCharSequence identifierName )
+  public int findLineNumberOfDeclaration( String identifierName )
   {
     IParsedElementWithAtLeastOneDeclaration statement = findDeclaringStatement( this, identifierName );
     return statement.getLineNum();
   }
 
-  public IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement element, CaseInsensitiveCharSequence identifierName )
+  public IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement element, String identifierName )
   {
     IParsedElementWithAtLeastOneDeclaration declaringStatement;
 
@@ -878,14 +888,14 @@ public abstract class ParsedElement implements IParsedElement
           declaringStatement != null )
       {
         maybeInitLikelyNullFields();
-        _lnf._declaringStatements = new HashMap<CaseInsensitiveCharSequence, IParsedElementWithAtLeastOneDeclaration>( 0 );
+        _lnf._declaringStatements = new HashMap<String, IParsedElementWithAtLeastOneDeclaration>( 0 );
         _lnf._declaringStatements.put( identifierName, declaringStatement );
       }
     }
     return declaringStatement;
   }
 
-  private static IParsedElementWithAtLeastOneDeclaration findDeclaringStatementInChildren( IParsedElement element, CaseInsensitiveCharSequence identifierName )
+  private static IParsedElementWithAtLeastOneDeclaration findDeclaringStatementInChildren( IParsedElement element, String identifierName )
   {
     IParsedElementWithAtLeastOneDeclaration declaringStatement;
     if( element.getLocation() == null )
@@ -914,7 +924,7 @@ public abstract class ParsedElement implements IParsedElement
     return null;
   }
 
-  private static IParsedElementWithAtLeastOneDeclaration checkIfDeclaringStatement( IParsedElement parsedElement, CaseInsensitiveCharSequence identifierName )
+  private static IParsedElementWithAtLeastOneDeclaration checkIfDeclaringStatement( IParsedElement parsedElement, String identifierName )
   {
     if( parsedElement instanceof IParsedElementWithAtLeastOneDeclaration )
     {
@@ -987,7 +997,8 @@ public abstract class ParsedElement implements IParsedElement
     }
     if ((gosuClass != null) && (gosuClass.getTypeUsesMap() != null)) {
       Set<IUsesStatement> usesStatements = gosuClass.getTypeUsesMap().getUsesStatements();
-      Map<CharSequence, UsesStatement> usesMap = new CaseInsensitiveHashMap<CharSequence, UsesStatement>(usesStatements.size());
+      final int initialCapacity = usesStatements.size();
+      Map<CharSequence, UsesStatement> usesMap = new HashMap<CharSequence, UsesStatement>( initialCapacity );
       for (IUsesStatement usesStatement : usesStatements) {
         usesMap.put(usesStatement.getTypeName(), (UsesStatement)usesStatement );
       }

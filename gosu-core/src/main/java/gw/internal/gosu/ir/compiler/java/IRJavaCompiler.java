@@ -5,64 +5,66 @@
 package gw.internal.gosu.ir.compiler.java;
 
 import gw.lang.ir.IRClass;
-import gw.lang.ir.IRType;
 import gw.lang.ir.IRElement;
-import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
 import gw.lang.ir.expression.IRArithmeticExpression;
+import gw.lang.ir.expression.IRArrayLengthExpression;
 import gw.lang.ir.expression.IRArrayLoadExpression;
 import gw.lang.ir.expression.IRBooleanLiteral;
+import gw.lang.ir.expression.IRCastExpression;
 import gw.lang.ir.expression.IRCharacterLiteral;
+import gw.lang.ir.expression.IRClassLiteral;
 import gw.lang.ir.expression.IRCompositeExpression;
+import gw.lang.ir.expression.IRConditionalAndExpression;
+import gw.lang.ir.expression.IRConditionalOrExpression;
 import gw.lang.ir.expression.IREqualityExpression;
 import gw.lang.ir.expression.IRFieldGetExpression;
 import gw.lang.ir.expression.IRIdentifier;
+import gw.lang.ir.expression.IRInstanceOfExpression;
 import gw.lang.ir.expression.IRMethodCallExpression;
+import gw.lang.ir.expression.IRNegationExpression;
+import gw.lang.ir.expression.IRNewArrayExpression;
+import gw.lang.ir.expression.IRNewExpression;
 import gw.lang.ir.expression.IRNewMultiDimensionalArrayExpression;
 import gw.lang.ir.expression.IRNoOpExpression;
-import gw.lang.ir.expression.IRNullLiteral;
-import gw.lang.ir.expression.IRPrimitiveTypeConversion;
-import gw.lang.ir.expression.IRTernaryExpression;
-import gw.lang.ir.expression.IRNumericLiteral;
-import gw.lang.ir.expression.IRStringLiteralExpression;
-import gw.lang.ir.expression.IRNewArrayExpression;
-import gw.lang.ir.expression.IRCastExpression;
-import gw.lang.ir.expression.IRNewExpression;
-import gw.lang.ir.expression.IRRelationalExpression;
-import gw.lang.ir.expression.IRArrayLengthExpression;
-import gw.lang.ir.expression.IRClassLiteral;
-import gw.lang.ir.expression.IRNegationExpression;
-import gw.lang.ir.expression.IRConditionalOrExpression;
-import gw.lang.ir.expression.IRConditionalAndExpression;
 import gw.lang.ir.expression.IRNotExpression;
-import gw.lang.ir.expression.IRInstanceOfExpression;
-import gw.lang.ir.statement.IRFieldDecl;
-import gw.lang.ir.statement.IRMethodStatement;
+import gw.lang.ir.expression.IRNullLiteral;
+import gw.lang.ir.expression.IRNumericLiteral;
+import gw.lang.ir.expression.IRPrimitiveTypeConversion;
+import gw.lang.ir.expression.IRRelationalExpression;
+import gw.lang.ir.expression.IRStringLiteralExpression;
+import gw.lang.ir.expression.IRTernaryExpression;
+import gw.lang.ir.statement.IRArrayStoreStatement;
 import gw.lang.ir.statement.IRAssignmentStatement;
+import gw.lang.ir.statement.IRBreakStatement;
+import gw.lang.ir.statement.IRCaseClause;
+import gw.lang.ir.statement.IRCatchClause;
+import gw.lang.ir.statement.IRContinueStatement;
+import gw.lang.ir.statement.IRDoWhileStatement;
+import gw.lang.ir.statement.IREvalStatement;
+import gw.lang.ir.statement.IRFieldDecl;
 import gw.lang.ir.statement.IRFieldSetStatement;
+import gw.lang.ir.statement.IRForEachStatement;
 import gw.lang.ir.statement.IRIfStatement;
 import gw.lang.ir.statement.IRMethodCallStatement;
+import gw.lang.ir.statement.IRMethodStatement;
 import gw.lang.ir.statement.IRMonitorLockAcquireStatement;
 import gw.lang.ir.statement.IRMonitorLockReleaseStatement;
+import gw.lang.ir.statement.IRNewStatement;
 import gw.lang.ir.statement.IRNoOpStatement;
 import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRStatementList;
-import gw.lang.ir.statement.IRArrayStoreStatement;
-import gw.lang.ir.statement.IRBreakStatement;
+import gw.lang.ir.statement.IRSwitchStatement;
+import gw.lang.ir.statement.IRSyntheticStatement;
 import gw.lang.ir.statement.IRThrowStatement;
 import gw.lang.ir.statement.IRTryCatchFinallyStatement;
-import gw.lang.ir.statement.IRCatchClause;
-import gw.lang.ir.statement.IRSyntheticStatement;
 import gw.lang.ir.statement.IRWhileStatement;
-import gw.lang.ir.statement.IRForEachStatement;
-import gw.lang.ir.statement.IRSwitchStatement;
-import gw.lang.ir.statement.IRCaseClause;
-import gw.lang.ir.statement.IRContinueStatement;
-import gw.lang.ir.statement.IRDoWhileStatement;
 
-import java.util.List;
 import java.lang.reflect.Modifier;
+import java.util.List;
 
 public class IRJavaCompiler {
   private StringBuilder _output = new StringBuilder();
@@ -138,34 +140,38 @@ public class IRJavaCompiler {
       compileIRIfStatement((IRIfStatement) statement);
     } else if (statement instanceof IRMethodCallStatement) {
       compileIRMethodCallStatement((IRMethodCallStatement) statement);
+    } else if (statement instanceof IRNewStatement ) {
+      compileIRNewStatement( (IRNewStatement)statement );
     } else if (statement instanceof IRMethodStatement) {
-      compileIRMethodStatement((IRMethodStatement) statement);
+      compileIRMethodStatement( (IRMethodStatement)statement );
     } else if (statement instanceof IRNoOpStatement) {
-      compileIRNoOpStatement((IRNoOpStatement) statement);
+      compileIRNoOpStatement( (IRNoOpStatement)statement );
     } else if (statement instanceof IRReturnStatement) {
-      compileIRReturnStatement((IRReturnStatement) statement);
+      compileIRReturnStatement( (IRReturnStatement)statement );
     } else if (statement instanceof IRStatementList) {
-      compileIRStatementList((IRStatementList) statement);
+      compileIRStatementList( (IRStatementList)statement );
     } else if (statement instanceof IRArrayStoreStatement) {
-      compileIRArrayStoreStatement((IRArrayStoreStatement) statement);
+      compileIRArrayStoreStatement( (IRArrayStoreStatement)statement );
     } else if (statement instanceof IRThrowStatement) {
-      compileIRThrowStatement((IRThrowStatement) statement);
+      compileIRThrowStatement( (IRThrowStatement)statement );
     } else if (statement instanceof IRTryCatchFinallyStatement) {
-      compileIRTryCatchFinallyStatement((IRTryCatchFinallyStatement) statement);
+      compileIRTryCatchFinallyStatement( (IRTryCatchFinallyStatement)statement );
     } else if (statement instanceof IRSyntheticStatement) {
-      compileIRSyntheticStatement((IRSyntheticStatement) statement);
+      compileIRSyntheticStatement( (IRSyntheticStatement)statement );
     } else if (statement instanceof IRWhileStatement) {
-      compileIRWhileStatement((IRWhileStatement) statement);
+      compileIRWhileStatement( (IRWhileStatement)statement );
     } else if (statement instanceof IRDoWhileStatement) {
-      compileIRDoWhileStatement((IRDoWhileStatement) statement);
+      compileIRDoWhileStatement( (IRDoWhileStatement)statement );
     } else if (statement instanceof IRForEachStatement) {
-      compileIRForEachStatement((IRForEachStatement) statement);
+      compileIRForEachStatement( (IRForEachStatement)statement );
     } else if (statement instanceof IRSwitchStatement) {
-      compileIRSwitchStatement((IRSwitchStatement) statement);
+      compileIRSwitchStatement( (IRSwitchStatement)statement );
     } else if (statement instanceof IRBreakStatement) {
-      compileIRBreak((IRBreakStatement) statement);
+      compileIRBreak( (IRBreakStatement)statement );
     } else if (statement instanceof IRContinueStatement) {
-      compileIRContinue((IRContinueStatement) statement);
+      compileIRContinue( (IRContinueStatement)statement );
+    } else if (statement instanceof IREvalStatement) {
+      compileIREvalStatement( (IREvalStatement)statement );
     } else if (statement instanceof IRMonitorLockAcquireStatement) {
       compileIRMonitorLockAcquireStatement((IRMonitorLockAcquireStatement) statement);
     } else if (statement instanceof IRMonitorLockReleaseStatement ) {
@@ -173,6 +179,13 @@ public class IRJavaCompiler {
     } else {
       throw new IllegalArgumentException("Unrecognized statement of type " + statement.getClass());
     }
+  }
+
+  private void compileIREvalStatement( IREvalStatement statement ) {
+    appendIndent();
+    _output.append( "eval( " );
+    compileIRElement( statement.getExpression() );
+    _output.append( " )" );
   }
 
   private void compileIRDoWhileStatement(IRDoWhileStatement irDoWhileStatement) {
@@ -386,6 +399,12 @@ public class IRJavaCompiler {
   private void compileIRMethodCallStatement(IRMethodCallStatement irMethodCallStatement) {
     appendIndent();
     compileIRElement(irMethodCallStatement.getExpression());
+    _output.append(";\n");
+  }
+
+  private void compileIRNewStatement(IRNewStatement irNewExpr ) {
+    appendIndent();
+    compileIRElement( irNewExpr.getNewExpression());
     _output.append(";\n");
   }
 

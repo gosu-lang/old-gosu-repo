@@ -16,7 +16,19 @@ public class ExternalSymbolMapSymbolTableWrapper extends ExternalSymbolMapBase {
     _table = table;
   }
 
-  public ISymbol getSymbol(String name) {
-    return _table.getSymbol(name);
+  public ISymbol getSymbol( String name ) {
+    ISymbol symbol = _table.getSymbol( name );
+    if( symbol == null ) {
+      symbol = getAltSymbol( name );
+    }
+    return symbol;
+  }
+
+  private ISymbol getAltSymbol( String name ) {
+    String altName = handleCrappyPcfCapitalization( name );
+    if( altName != null ) {
+      return _table.getSymbol( altName );
+    }
+    return null;
   }
 }

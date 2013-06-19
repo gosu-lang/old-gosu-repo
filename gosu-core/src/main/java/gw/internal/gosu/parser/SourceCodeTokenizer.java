@@ -640,23 +640,41 @@ public class SourceCodeTokenizer implements ISourceCodeTokenizer
     return getTokens().get( 0 );
   }
 
-  public IToken lookahead( int iTokens )
+  public int lookaheadType( int iTokens, boolean bSkipSpaces )
   {
-    int iPos = _state + iTokens;
-    if( iPos < getTokens().size() )
-    {
-      return getTokens().get( iPos );
-    }
-    return null;
-  }
+    int iPos = _state;
 
-  public int lookaheadType( int iTokens )
-  {
-    int iPos = _state + iTokens;
+    if( bSkipSpaces )
+    {
+      int i = 0;
+      while( i < iTokens && iPos != -1 )
+      {
+        iPos = skipSpaces( iPos );
+        i++;
+      }
+      iPos = iPos == -1 ?  getTokens().size() : iPos;
+    }
+    else
+    {
+      iPos = _state + iTokens;
+    }
     if( iPos < getTokens().size() )
     {
       return getTokens().get( iPos ).getType();
     }
+
     return TT_EOF;
+  }
+
+  private int skipSpaces(int iPos)
+  {
+    int type = TT_WHITESPACE;
+    iPos++;
+    while( iPos < getTokens().size() && type == TT_WHITESPACE )
+    {
+      type = getTokens().get( iPos ).getType();
+      iPos++;
+    }
+    return type != TT_WHITESPACE ?  iPos-1 : -1;
   }
 }

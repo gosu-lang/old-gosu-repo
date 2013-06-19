@@ -154,9 +154,19 @@ public abstract class ServiceKernel
       ServiceKernelInit init = (ServiceKernelInit)aClass.newInstance();
       init.init( this );
     }
-    catch( Exception e )
+    catch( ClassNotFoundException e )
     {
-      throw new RuntimeException( e );
+      try {
+        Class<?> aClass = Thread.currentThread().getContextClassLoader().loadClass( initClassName );
+        ServiceKernelInit init = (ServiceKernelInit)aClass.newInstance();
+        init.init( this );
+      } catch (Exception e1) {
+        e1.printStackTrace();
+        throw new RuntimeException( e1 );
+      }
+    }
+    catch (Exception e1) {
+      throw new RuntimeException( e1 );
     }
   }
 

@@ -59,8 +59,34 @@ public class Identifier extends Expression implements IIdentifierExpression
   @Override
   public boolean isCompileTimeConstant()
   {
+//## todo: reverting change 537145 to see if this is what is crushing suites in TH (causing OutOfMemoryError with permgen)
     ISymbol symbol = getSymbol();
-    return !(symbol instanceof DynamicSymbol) || (symbol.isStatic() && symbol.isFinal());
+    return (!(symbol instanceof DynamicSymbol) &&
+            !(symbol instanceof DynamicPropertySymbol) &&
+            !symbol.isLocal()) ||
+            isStaticFinalInitializedCompileTimeConstant();
+//
+//    return symbol.isStatic() && symbol.isFinal();
+  }
+
+
+  public boolean isStaticFinalInitializedCompileTimeConstant()
+  {
+    ISymbol symbol = getSymbol();
+    if ( symbol instanceof DynamicSymbol && symbol.isStatic() && symbol.isFinal() )
+    {
+      IGosuClassInternal gsClass = (IGosuClassInternal)symbol.getGosuClass();
+      if ( !gsClass.isValid() )
+      {
+        return false;
+      }
+      VarStatement varStmt = gsClass.getStaticField( symbol.getName() );
+      if( varStmt != null &&  varStmt.getAsExpression() != null )
+      {
+        return varStmt.getAsExpression().isCompileTimeConstant();
+      }
+    }
+    return false;
   }
 
   public Object evaluate()
@@ -71,12 +97,12 @@ public class Identifier extends Expression implements IIdentifierExpression
     {
       IGosuClassInternal gsClass = (IGosuClassInternal)symbol.getGosuClass();
       gsClass.isValid();
-      VarStatement varStmt = gsClass.getStaticField( symbol.getCaseInsensitiveName() );
+      VarStatement varStmt = gsClass.getStaticField( symbol.getName() );
       if( varStmt != null )
       {
         return varStmt.getAsExpression().evaluate();
       }
-      throw new IllegalStateException( "Should have found field for: " + symbol.getCaseInsensitiveName() );
+      throw new IllegalStateException( "Should have found field for: " + symbol.getName() );
     }
 
     IType type = symbol.getType();
@@ -131,5 +157,5 @@ public class Identifier extends Expression implements IIdentifierExpression
            !(symbol instanceof CapturedSymbol) &&
            symbol.getIndex() >= 0;
   }
-  
+
 }

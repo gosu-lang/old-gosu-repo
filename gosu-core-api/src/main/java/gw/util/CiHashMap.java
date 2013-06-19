@@ -1,23 +1,23 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.util;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
+import gw.lang.parser.CICS;
 
-import java.util.AbstractMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.AbstractSet;
-import java.util.AbstractCollection;
-import java.util.NoSuchElementException;
-import java.util.ConcurrentModificationException;
 import java.io.Serializable;
+import java.util.AbstractCollection;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
-public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractMap<K, V> implements Map<K, V>, Cloneable, Serializable {
+public class CiHashMap<K extends CharSequence, V> extends AbstractMap<K, V> implements Map<K, V>, Cloneable, Serializable {
 
   private static final int NULL_KEY_HASH_CODE = 0;
   private static final int DEFAULT_INITIAL_CAPACITY = 16;
@@ -30,16 +30,16 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
   private float _loadFactor;
   private int _modCount;
 
-  public CaseInsensitiveHashMap() {
+  public CiHashMap() {
     this(DEFAULT_INITIAL_CAPACITY);
   }
 
-  public CaseInsensitiveHashMap(int initialCapacity) {
+  public CiHashMap( int initialCapacity ) {
     this(initialCapacity, DEFAULT_LOAD_FACTOR);
   }
 
   @SuppressWarnings({"unchecked"})
-  public CaseInsensitiveHashMap(int initialCapacity, float loadFactor) {
+  public CiHashMap( int initialCapacity, float loadFactor ) {
     initialCapacity = findNearestPowerOfTwo(initialCapacity);
     _table = new Entry[initialCapacity];
     _resizeThreshold = (int) (initialCapacity * loadFactor);
@@ -59,7 +59,7 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
     return result;
   }
 
-  public CaseInsensitiveHashMap(Map<? extends K, ? extends V> m) {
+  public CiHashMap( Map<? extends K, ? extends V> m ) {
     this(Math.max((int) (m.size() / DEFAULT_LOAD_FACTOR) + 1,
             DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
     putAllImpl(m, false);
@@ -212,9 +212,9 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
   @SuppressWarnings({"unchecked"})
   @Override
   public Object clone() {
-    CaseInsensitiveHashMap<K, V> result;
+    CiHashMap<K, V> result;
     try {
-      result = (CaseInsensitiveHashMap<K, V>) super.clone();
+      result = (CiHashMap<K, V>) super.clone();
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
@@ -260,11 +260,11 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
       throw new IllegalArgumentException("Key value must be instanceof CharSequence");
     }
 
-    return CaseInsensitiveCharSequence.equalsIgnoreCase((CharSequence) x, (CharSequence) y);
+    return CICS.equalsIgnoreCase((CharSequence) x, (CharSequence) y);
   }
 
   private static int hash(Object x) {
-    if (x instanceof CaseInsensitiveCharSequence) {
+    if (x instanceof CICS) {
       return x.hashCode();
     }
 
@@ -276,7 +276,7 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
       throw new IllegalArgumentException("Key value must be instanceof CharSequence it is a type of " + x.getClass());
     }
 
-    return CaseInsensitiveCharSequence.getLowerCaseHashCode((CharSequence) x);
+    return CICS.getLowerCaseHashCode((CharSequence) x);
   }
 
   private int bucketNumber(int hashCode) {
@@ -404,7 +404,7 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
 
     @Override
     public void clear() {
-      CaseInsensitiveHashMap.this.clear();
+      CiHashMap.this.clear();
     }
   }
 
@@ -427,7 +427,7 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
 
     @Override
     public void clear() {
-      CaseInsensitiveHashMap.this.clear();
+      CiHashMap.this.clear();
     }
   }
 
@@ -465,7 +465,7 @@ public class CaseInsensitiveHashMap<K extends CharSequence, V> extends AbstractM
 
     @Override
     public void clear() {
-      CaseInsensitiveHashMap.this.clear();
+      CiHashMap.this.clear();
     }
   }
 

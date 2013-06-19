@@ -4,7 +4,6 @@
 
 package gw.lang.parser.expressions;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IScope;
@@ -19,7 +18,7 @@ public interface IBlockExpression extends IExpression
 {
   List<ISymbol> getArgs();
 
-  ICapturedSymbol getCapturedSymbol( CaseInsensitiveCharSequence strName );
+  ICapturedSymbol getCapturedSymbol( String strName );
 
   boolean isWithinScope( ISymbol sym, ISymbolTable symbolTable );
 

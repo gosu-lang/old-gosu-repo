@@ -29,6 +29,7 @@ import gw.lang.parser.coercers.FloatHighPriorityCoercer;
 import gw.lang.parser.coercers.FloatPHighPriorityCoercer;
 import gw.lang.parser.coercers.FunctionFromInterfaceCoercer;
 import gw.lang.parser.coercers.FunctionToInterfaceCoercer;
+import gw.lang.parser.coercers.IMonitorLockCoercer;
 import gw.lang.parser.coercers.IdentityCoercer;
 import gw.lang.parser.coercers.IntCoercer;
 import gw.lang.parser.coercers.IntHighPriorityCoercer;
@@ -46,8 +47,6 @@ import gw.lang.parser.coercers.ShortPHighPriorityCoercer;
 import gw.lang.parser.coercers.StandardCoercer;
 import gw.lang.parser.coercers.StringCoercer;
 import gw.lang.parser.coercers.TypeVariableCoercer;
-import gw.lang.parser.coercers.IMonitorLockCoercer;
-import gw.lang.parser.exceptions.IncompatibleTypeException;
 import gw.lang.parser.exceptions.ParseException;
 import gw.lang.parser.resources.Res;
 import gw.lang.reflect.IBlockType;
@@ -72,7 +71,6 @@ import gw.util.GosuExceptionUtil;
 import gw.util.Pair;
 import gw.util.concurrent.Cache;
 
-import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DateFormat;
@@ -88,6 +86,8 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
   static {
     BIG_DECIMAL_FORMAT.setParseBigDecimal( true );
   }
+
+  public static final Object NO_DICE = new Object();
 
   // LRUish cache of coercers
   public final TypeSystemAwareCache<Pair<IType, IType>, ICoercer> _coercerCache =
@@ -294,8 +294,12 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     if( (JavaTypes.CLASS().equals( lhsType.getGenericType() ) &&
          rhsType instanceof IMetaType && ((IMetaType)rhsType).getType() instanceof IHasJavaClass) )
     {
-      //TODO: refuse to coerce if T != T'
-      return MetaTypeToClassCoercer.instance();
+      if( !lhsType.isParameterizedType() ||
+          lhsType.getTypeParameters()[0].isAssignableFrom( ((IMetaType)rhsType).getType() ) ||
+          (((IMetaType)rhsType).getType().isPrimitive() && canCoerce( lhsType.getTypeParameters()[0], ((IMetaType)rhsType).getType() )) )
+      {
+        return MetaTypeToClassCoercer.instance();
+      }
     }
 
     //=============================================================================
@@ -591,19 +595,33 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
 
   public IType verifyTypesComparable( IType lhsType, IType rhsType, boolean bBiDirectional, IFullParserState parserState ) throws ParseException
   {
-
+    IType lhsT;
+    IType rhsT;
+    if( bBiDirectional )
+    {
+      // Bi-Directional indicates comparison as opposed to assignability, therefore for comparison
+      // we need to test comparability between type variables' bounds
+      lhsT = TypeSystem.getDefaultParameterizedTypeWithTypeVars( lhsType );
+      rhsT = TypeSystem.getDefaultParameterizedTypeWithTypeVars( rhsType );
+    }
+    else
+    {
+      lhsT = lhsType;
+      rhsT = rhsType;
+    }
+    
     //==================================================================================
     // Upcasting
     //==================================================================================
-    if( lhsType == rhsType )
+    if( lhsT == rhsT )
     {
       return lhsType;
     }
-    if( lhsType.equals( rhsType ) )
+    if( lhsT.equals( rhsT ) )
     {
       return lhsType;
     }
-    if( lhsType.isAssignableFrom( rhsType ) )
+    if( lhsT.isAssignableFrom( rhsT ) )
     {
       return lhsType;
     }
@@ -611,11 +629,11 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     // null/void confusion (see http://jira/jira/browse/PL-12766)
     //==================================================================================
-    if( JavaTypes.pVOID().equals(rhsType) && !lhsType.isPrimitive() )
+    if( JavaTypes.pVOID().equals( rhsT ) && !lhsT.isPrimitive() )
     {
       return lhsType;
     }
-    if( JavaTypes.pVOID().equals(lhsType) && !rhsType.isPrimitive() )
+    if( JavaTypes.pVOID().equals( lhsT ) && !rhsT.isPrimitive() )
     {
       return rhsType;
     }
@@ -623,11 +641,11 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     // Error type handling
     //==================================================================================
-    if( lhsType instanceof IErrorType)
+    if( lhsT instanceof IErrorType)
     {
       return lhsType;
     }
-    if( rhsType instanceof IErrorType )
+    if( rhsT instanceof IErrorType )
     {
       return rhsType;
     }
@@ -635,8 +653,8 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     // IPlaceholderType type handling
     //==================================================================================
-    if( (lhsType instanceof IPlaceholder && ((IPlaceholder)lhsType).isPlaceholder()) ||
-        (rhsType instanceof IPlaceholder && ((IPlaceholder)rhsType).isPlaceholder()) )
+    if( (lhsT instanceof IPlaceholder && ((IPlaceholder)lhsT).isPlaceholder()) ||
+        (rhsT instanceof IPlaceholder && ((IPlaceholder)rhsT).isPlaceholder()) )
     {
       return lhsType;
     }
@@ -644,11 +662,11 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     //Covariant arrays
     //==================================================================================
-    if( lhsType.isArray() && rhsType.isArray() )
+    if( lhsT.isArray() && rhsT.isArray() )
     {
       // Note an array of primitives and an array of non-primitives are never assignable
-      if( lhsType.getComponentType().isPrimitive() == rhsType.getComponentType().isPrimitive() &&
-          lhsType.getComponentType().isAssignableFrom( rhsType.getComponentType() ) )
+      if( lhsT.getComponentType().isPrimitive() == rhsT.getComponentType().isPrimitive() &&
+          lhsT.getComponentType().isAssignableFrom( rhsT.getComponentType() ) )
       {
         return lhsType;
       }
@@ -659,13 +677,13 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     if( bBiDirectional )
     {
-      if( rhsType.isAssignableFrom( lhsType ) )
+      if( rhsT.isAssignableFrom( lhsT ) )
       {
         return lhsType;
       }
-      if( lhsType.isArray() && rhsType.isArray() )
+      if( lhsT.isArray() && rhsT.isArray() )
       {
-        if( rhsType.getComponentType().isAssignableFrom( lhsType.getComponentType() ) )
+        if( rhsT.getComponentType().isAssignableFrom( lhsT.getComponentType() ) )
         {
           return lhsType;
         }
@@ -675,14 +693,14 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //==================================================================================
     // Coercion
     //==================================================================================
-    if( canCoerce( lhsType, rhsType ) )
+    if( canCoerce( lhsT, rhsT ) )
     {
       return lhsType;
     }
 
     if( bBiDirectional )
     {
-      if( canCoerce( rhsType, lhsType ) )
+      if( canCoerce( rhsT, lhsT ) )
       {
         return rhsType;
       }
@@ -883,35 +901,7 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
         //otherwise, return the value itself uncoerced (See comment above)
         if( !runtimeType.isArray() )
         {
-          StringBuilder sb = new StringBuilder( "Cannot coerce " + runtimeType.getName() + " to " + intrType.getName() );
-          if ( runtimeType instanceof IJavaType )
-          {
-            Class backingClass = ( (IJavaType) runtimeType ).getBackingClass();
-            if ( Proxy.isProxyClass( backingClass ) )
-            {
-              // add additional Proxy-related information which might be useful
-              sb.append( '\n' );
-              sb.append( "  This proxy instance has the following attributes:\n" );
-              sb.append( "    Implemented Interfaces: " );
-              int idx = 0;
-              for ( Class ifaceClass : backingClass.getInterfaces() )
-              {
-                if ( idx++ > 0 )
-                {
-                  sb.append( ", " );
-                }
-                sb.append( ifaceClass.getName() );
-              }
-              if ( idx == 0 )
-              {
-                sb.append( "<none>" );
-              }
-              sb.append( '\n' );
-              sb.append( "    Invocation Handler Class: " );
-              sb.append( Proxy.getInvocationHandler( value ).getClass().getName() );
-            }
-          }
-          throw new IncompatibleTypeException( sb.toString() );
+          return NO_DICE;
         }
         return value;
       }

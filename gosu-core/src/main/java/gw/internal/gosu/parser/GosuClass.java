@@ -14,19 +14,20 @@ import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.DelegateStatement;
 import gw.internal.gosu.parser.statements.StatementList;
 import gw.internal.gosu.parser.statements.VarStatement;
-
 import gw.lang.Returns;
-import gw.lang.parser.*;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.GosuParserTypes;
+import gw.lang.parser.IBlockClass;
+import gw.lang.parser.ICapturedSymbol;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IGosuParser;
+import gw.lang.parser.ISource;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.PostCompilationAnalysis;
 import gw.lang.parser.ScriptPartId;
 import gw.lang.parser.ScriptabilityModifiers;
-import gw.lang.parser.ICapturedSymbol;
-import gw.lang.parser.IBlockClass;
-import gw.lang.parser.PostCompilationAnalysis;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.parser.exceptions.ErrantGosuClassException;
 import gw.lang.parser.exceptions.ParseResultsException;
@@ -34,8 +35,24 @@ import gw.lang.parser.expressions.ITypeVariableDefinition;
 import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.parser.statements.IFunctionStatement;
 import gw.lang.parser.statements.IUsesStatement;
-import gw.lang.reflect.*;
-import gw.lang.reflect.gs.*;
+import gw.lang.reflect.AbstractType;
+import gw.lang.reflect.FunctionType;
+import gw.lang.reflect.IEnumValue;
+import gw.lang.reflect.IFunctionType;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IParameterInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeRef;
+import gw.lang.reflect.Modifier;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.ClassType;
+import gw.lang.reflect.gs.GosuClassTypeLoader;
+import gw.lang.reflect.gs.IEnhancementIndex;
+import gw.lang.reflect.gs.IGosuArrayClass;
+import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.gs.IGosuEnhancement;
+import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.IModule;
@@ -49,17 +66,21 @@ import java.io.ObjectStreamException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  */
 public class GosuClass extends AbstractType implements IGosuClassInternal
 {
-  private static int ID_CONST = 1;
-
-  public final int ID;
-
   private static final long serialVersionUID = 5L;
   public static final String CLASS_ANNOTATION_SLOT = "class";
   public static final String EVAL_ANNOTATIONS_METHOD = "$evalAnnotations";
@@ -92,7 +113,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   transient private ISourceFileHandle _sourceFileHandle;
   transient private List<IGosuClassInternal> _subtypes;
   transient private String _description;
-  transient private CaseInsensitiveCharSequence _defaultConstructorName;
+  transient private String _defaultConstructorName;
   transient private boolean _bCannotCaptureSymbols;
   transient private Boolean _hasError;
   transient private boolean _bDiscarded;
@@ -107,15 +128,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   transient private ITypeUsesMap _typeUsesMap;
   transient private ModifierInfo _modifierInfo;
   transient private boolean _bCompiledToUberModule;
+  transient private boolean _bHasAssertions;
 
   public GosuClass( String strNamespace, String strRelativeName, GosuClassTypeLoader classTypeLoader,
                     ISourceFileHandle sourceFile, ITypeUsesMap typeUsesMap )
   {
-    synchronized (GosuClass.class) {
-      ID = ID_CONST;
-      ID_CONST++;
-    }
-
 //    System.out.println("NEW: "+ strNamespace + ": " + sourceFile.getClass().getSimpleName() + " :::: " + sourceFile.getSource().getSource().replace("\n", " "));
     initLazyVars();
 
@@ -141,7 +158,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       _strFullName = (GosuStringUtil.isEmpty( _strNamespace ) ? "" : (_strNamespace + '.')) + _strRelativeName;
       _mapInnerClasses = Collections.emptyMap();
       _interfaces = EMPTY_TYPE_ARRAY;
-      _defaultConstructorName = CaseInsensitiveCharSequence.get( _strRelativeName + "()" );
+      _defaultConstructorName = _strRelativeName + "()";
       _blocks = Collections.emptyList();
       _typeUsesMap = typeUsesMap;
       _modifierInfo = new ModifierInfo( Modifier.PUBLIC );
@@ -163,11 +180,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   }
   protected GosuClass( IGosuClass genericClass, IType[] typeParams, boolean bCopyState  )
   {
-    synchronized (GosuClass.class) {
-      ID = ID_CONST;
-      ID_CONST++;
-    }
-
     initLazyVars();
     try
     {
@@ -196,6 +208,17 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return _parseInfo;
   }
 
+  @Override
+  public boolean hasAssertions()
+  {
+    return _bHasAssertions;
+  }
+
+  public void setHasAssertions( boolean bHasAssertions )
+  {
+    _bHasAssertions = bHasAssertions;
+  }
+
   public Object dontEverCallThis()
   {
     return this;
@@ -217,7 +240,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       _strRelativeName = realGenericClass._strRelativeName + TypeLord.getNameOfParams( _typeParams, true, false );
       _strFullName = realGenericClass._strFullName + TypeLord.getNameOfParams( _typeParams, false, false );
 
-      _defaultConstructorName = CaseInsensitiveCharSequence.get( realGenericClass.getRelativeName() + "()" );
+      _defaultConstructorName = realGenericClass.getRelativeName() + "()";
 
       _bInterface = realGenericClass._bInterface;
 
@@ -446,7 +469,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     {
       if( f.isEnumConstant() )
       {
-        enumConstants.add( f.getIdentifierName().toString() );
+        enumConstants.add( f.getIdentifierName() );
       }
     }
     return enumConstants;
@@ -585,7 +608,18 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
     if( _parameterizationByParamsName == null )
     {
-      _parameterizationByParamsName = new ConcurrentHashMap<String, IGosuClassInternal>( 2 );
+      TypeSystem.lock();
+      try
+      {
+        if( _parameterizationByParamsName == null )
+        {
+          _parameterizationByParamsName = new ConcurrentHashMap<String, IGosuClassInternal>( 2 );
+        }
+      }
+      finally
+      {
+        TypeSystem.unlock();
+      }
     }
 
     paramTypes = TypeSystem.boxPrimitiveTypeParams( paramTypes );
@@ -593,10 +627,21 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     IGosuClassInternal parameterizedClass = _parameterizationByParamsName.get( strNameOfParams );
     if( parameterizedClass == null )
     {
-      parameterizedClass = makeCopy( paramTypes );
-      _parameterizationByParamsName.put( strNameOfParams, parameterizedClass );
-      parameterizedClass.copyHierarchyInfo();
-
+      TypeSystem.lock();
+      try
+      {
+        parameterizedClass = _parameterizationByParamsName.get( strNameOfParams );
+        if( parameterizedClass == null )
+        {
+          parameterizedClass = makeCopy( paramTypes );
+          _parameterizationByParamsName.put( strNameOfParams, parameterizedClass );
+          parameterizedClass.copyHierarchyInfo();
+        }
+      }
+      finally
+      {
+        TypeSystem.unlock();
+      }
     }
     return parameterizedClass;
   }
@@ -1013,7 +1058,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     compileDeclarationsIfNeeded();
 
-    Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> ctors = getParseInfo().getConstructorFunctions();
+    Map<String, DynamicFunctionSymbol> ctors = getParseInfo().getConstructorFunctions();
     //noinspection unchecked
     return ctors.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( ctors );
   }
@@ -1024,7 +1069,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return Collections.unmodifiableList(new ArrayList(functionSymbolMap.values()));
   }
 
-  public DynamicFunctionSymbol getConstructorFunction( CaseInsensitiveCharSequence name )
+  public DynamicFunctionSymbol getConstructorFunction( String name )
   {
     compileDeclarationsIfNeeded();
 
@@ -1134,22 +1179,27 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     compileDeclarationsIfNeeded();
 
-    Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> memberFunctions = getParseInfo().getMemberFunctions();
-    return memberFunctions.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( memberFunctions );
+    Map<String, DynamicFunctionSymbol> memberFunctions = getParseInfo().getMemberFunctions();
+    return memberFunctions.isEmpty() ? Collections.<VarStatement>emptyList() : Collections.unmodifiableList( new ArrayList( memberFunctions.values() ) );
   }
 
-  public DynamicFunctionSymbol getMemberFunction( CaseInsensitiveCharSequence name )
+  public DynamicFunctionSymbol getMemberFunction( IFunctionType funcType, String signature )
   {
-    return getParseInfo().getMemberFunctions().get(name);
+    DynamicFunctionSymbol dfs = getParseInfo().getMemberFunctions().get( signature );
+    if( dfs == null )
+    {
+      dfs = getMemberFunction( funcType );
+    }
+    return dfs;
   }
 
-  public List<DynamicFunctionSymbol> getMemberFunctions( CaseInsensitiveCharSequence names )
+  public List<DynamicFunctionSymbol> getMemberFunctions( String names )
   {
     Collection<DynamicFunctionSymbol> dfss = getParseInfo().getMemberFunctions().values();
     List<DynamicFunctionSymbol> returnDFSs = new ArrayList<DynamicFunctionSymbol>( );
     for( DynamicFunctionSymbol dfs : dfss )
     {
-      if( names.equalsIgnoreCase( dfs.getDisplayName() ) )
+      if( names.equals( dfs.getDisplayName() ) )
       {
         returnDFSs.add( dfs );
       }
@@ -1157,13 +1207,52 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return returnDFSs;
   }
 
-  public DynamicPropertySymbol getStaticProperty( CaseInsensitiveCharSequence name )
+  public DynamicFunctionSymbol getMemberFunction( IFunctionType funcType )
+  {
+    String name = funcType.getDisplayName();
+    for( DynamicFunctionSymbol dfs : getParseInfo().getMemberFunctions().values() )
+    {
+      if( name.equals( dfs.getDisplayName() ) )
+      {
+        if( isParameterizedType() )
+        {
+          dfs = dfs.getParameterizedVersion( (IGosuClass)getOrCreateTypeReference() );
+        }
+        if( isAssignable( funcType, dfs ) )
+        {
+          return dfs;
+        }
+      }
+    }
+    return null;
+  }
+
+  private boolean isAssignable( IFunctionType funcType, IDynamicFunctionSymbol dfs )
+  {
+    if( dfs == null )
+    {
+      return false;
+    }
+    if( funcType.isAssignableFrom( dfs.getType() ) )
+    {
+      return true;
+    }
+    if( dfs.getBackingDfs() != dfs &&
+        isAssignable( funcType, dfs.getBackingDfs() ) )
+    {
+      return true;
+    }
+    return dfs.getSuperDfs() != dfs &&
+           isAssignable( funcType, dfs.getSuperDfs() );
+  }
+
+  public DynamicPropertySymbol getStaticProperty( String name )
   {
     compileDeclarationsIfNeeded();
 
     for( DynamicPropertySymbol dps :getParseInfo().getStaticProperties() )
     {
-      if( name.equalsIgnoreCase( dps.getName() ) )
+      if( name.equals( dps.getName() ) )
       {
         return dps;
       }
@@ -1183,11 +1272,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     compileDeclarationsIfNeeded();
 
-    Map<CaseInsensitiveCharSequence, DynamicPropertySymbol> properties = getParseInfo().getMemberProperties();
+    Map<String, DynamicPropertySymbol> properties = getParseInfo().getMemberProperties();
     return properties.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( properties );
   }
 
-  public DynamicPropertySymbol getMemberProperty( CaseInsensitiveCharSequence name )
+  public DynamicPropertySymbol getMemberProperty( String name )
   {
     return getParseInfo().getMemberProperties().get(name);
   }
@@ -1197,11 +1286,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     compileDeclarationsIfNeeded();
 
-    Map<CaseInsensitiveCharSequence, VarStatement> fields = getParseInfo().getStaticFields();
+    Map<String, VarStatement> fields = getParseInfo().getStaticFields();
     return fields.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( fields );
   }
 
-  public VarStatement getStaticField( CaseInsensitiveCharSequence name )
+  public VarStatement getStaticField( String name )
   {
     return getParseInfo().getStaticFields().get(name);
   }
@@ -1218,11 +1307,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     compileDeclarationsIfNeeded();
 
-    Map<CaseInsensitiveCharSequence, VarStatement> fields = getParseInfo().getMemberFields();
+    Map<String, VarStatement> fields = getParseInfo().getMemberFields();
     return fields.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( fields );
   }
 
-  public Map<CaseInsensitiveCharSequence, VarStatement> getMemberFieldsMap()
+  public Map<String, VarStatement> getMemberFieldsMap()
   {
     compileDeclarationsIfNeeded();
 
@@ -1236,14 +1325,14 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return getParseInfo().getStaticThisSymbol();
   }
 
-  public Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols()
+  public Map<String, ICapturedSymbol> getCapturedSymbols()
   {
     compileDefinitionsIfNeeded();
 
     return getParseInfo().getCapturedSymbols();
   }
 
-  public ICapturedSymbol getCapturedSymbol( CaseInsensitiveCharSequence strName )
+  public ICapturedSymbol getCapturedSymbol( String strName )
   {
     return getCapturedSymbols().get(strName);
   }
@@ -1619,7 +1708,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
   public void compileHeaderIfNeeded()
   {
-    if( !shouldCompileHeader() )
+    if( isHeaderCompiled() )
     {
       return;
     }
@@ -1643,7 +1732,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     TypeSystem.lock();
     try
     {
-      if( shouldCompileHeader() )
+      if( !isCompilingHeader() && !isHeaderCompiled() )
       {
         setCompilingHeader( true );
         try
@@ -1691,11 +1780,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   private boolean shouldCompileDeclarations()
   {
     return !isDeclarationsCompiled() || !_compilationState.isInnerDeclarationsCompiled();
-  }
-
-  private boolean shouldCompileHeader()
-  {
-    return !isCompilingHeader() && !isHeaderCompiled();
   }
 
   public CompilationState getCompilationState()
@@ -1794,7 +1878,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     else
     {
-      return Collections.EMPTY_LIST;
+      return Collections.emptyList();
     }
   }
 
@@ -1868,7 +1952,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return innerClass;
   }
 
-  public VarStatement getMemberField( CaseInsensitiveCharSequence charSequence )
+  public VarStatement getMemberField( String charSequence )
   {
     return getParseInfo().getMemberFields().get(charSequence);
   }
@@ -2188,7 +2272,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return isInEnclosingTypeChain( compilingClass ) ||
            ads.isPublic() ||
            ads.isProtected() ||
-           (ads.isInternal() && getNamespace().equalsIgnoreCase( compilingClass.getNamespace() ));
+           (ads.isInternal() && getNamespace().equals( compilingClass.getNamespace() ));
   }
 
   private boolean isAccessible( IGosuClassInternal compilingClass, IVarStatement varStmt )
@@ -2196,7 +2280,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return isInEnclosingTypeChain( compilingClass ) ||
            varStmt.isPublic() ||
            varStmt.isProtected() ||
-           (varStmt.isInternal() && getNamespace().equalsIgnoreCase( compilingClass.getNamespace() ));
+           (varStmt.isInternal() && getNamespace().equals( compilingClass.getNamespace() ));
   }
 
   private boolean isInEnclosingTypeChain( ICompilableTypeInternal gosuClass )
@@ -2524,8 +2608,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
         continue;
       }
       IFunctionType ifaceFuncType = new FunctionType( mi );
-      CaseInsensitiveCharSequence signature = ifaceFuncType.getParamSignatureForCurrentModule();
-      DynamicFunctionSymbol implDfs = getImplDfs( (IGosuClassInternal)implClass, signature );
+      DynamicFunctionSymbol implDfs = getImplDfs( (IGosuClassInternal)implClass, ifaceFuncType );
       if( (implDfs == null || !isAssignable( implDfs, ifaceFuncType ) || (ensurePublic && !implDfs.isPublic()) ) && !isObjectMethod( mi ) )
       {
         if( !handleParameterizedDfs( implClass, mi, ifaceFuncType ) )
@@ -2544,7 +2627,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
   private boolean handleParameterizedDfs( IGosuClass implClass, IMethodInfo mi, IFunctionType ifaceFuncType )
   {
-    CaseInsensitiveCharSequence signature;
     DynamicFunctionSymbol implDfs;
     if( mi instanceof GosuMethodInfo )
     {
@@ -2553,8 +2635,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       {
         while( miDfs instanceof ReducedParameterizedDynamicFunctionSymbol )
         {
-          signature = ((FunctionType)miDfs.getBackingDfs().getType()).getParamSignatureForCurrentModule();
-          implDfs = getImplDfs( (IGosuClassInternal)implClass, signature );
+          implDfs = getImplDfs( (IGosuClassInternal)implClass, (IFunctionType)miDfs.getBackingDfs().getType() );
           if( implDfs == null || !isAssignable( implDfs, ifaceFuncType ) )
           {
             miDfs = (ReducedDynamicFunctionSymbol) miDfs.getBackingDfs();
@@ -2602,14 +2683,16 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return objMethod != null;
   }
 
-  private DynamicFunctionSymbol getImplDfs( IGosuClassInternal implClass, CaseInsensitiveCharSequence signature )
+  private DynamicFunctionSymbol getImplDfs( IGosuClassInternal implClass, IFunctionType ifaceFuncType )
   {
     if( implClass == null )
     {
       return null;
     }
 
-    DynamicFunctionSymbol implDfs = implClass.getMemberFunction( signature );
+    String signature = ifaceFuncType.getParamSignatureForCurrentModule();
+
+    DynamicFunctionSymbol implDfs = implClass.getMemberFunction( ifaceFuncType, signature );
     if( implDfs != null && implClass.isParameterizedType() )
     {
       implDfs = implDfs.getParameterizedVersion( implClass );
@@ -2621,7 +2704,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     if( implDfs == null )
     {
-      implDfs = getImplDfs( implClass.getSuperClass(), signature );
+      implDfs = getImplDfs( implClass.getSuperClass(), ifaceFuncType );
     }
     if( implDfs != null && implDfs.isAbstract() )
     {
@@ -2630,20 +2713,23 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return implDfs;
   }
 
-  private DynamicFunctionSymbol findVarPropertyAccessorDfs( CaseInsensitiveCharSequence signature, IGosuClassInternal implClass )
+  private DynamicFunctionSymbol findVarPropertyAccessorDfs( String signature, IGosuClassInternal implClass )
   {
-    String strPropName = signature.toString();
+    String strPropName = signature;
     strPropName = strPropName.substring( 1, strPropName.indexOf( '(' ) );
-    DynamicPropertySymbol dps = implClass.getMemberProperty( CaseInsensitiveCharSequence.get( strPropName ) );
+    DynamicPropertySymbol dps = implClass.getMemberProperty( strPropName );
     if( dps != null )
     {
-      if( dps.getGetterDfs() != null && dps.getGetterDfs().getCaseInsensitiveName().equals(signature) )
+      if( dps.getGetterDfs() != null && dps.getGetterDfs().getName().equals( signature ) )
       {
         return dps.getGetterDfs();
       }
-      else if( dps.getSetterDfs() != null && dps.getSetterDfs().getCaseInsensitiveName().equals(signature) )
+      else
       {
-        return dps.getSetterDfs();
+        if( dps.getSetterDfs() != null && dps.getSetterDfs().getName().equals( signature ) )
+        {
+          return dps.getSetterDfs();
+        }
       }
     }
     return null;
@@ -2908,15 +2994,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       }
     }
     return null;
-  }
-
-  public boolean isCompiledToUberModule()
-  {
-    return _bCompiledToUberModule;
-  }
-  public void setCompiledToUberModule( boolean bUber )
-  {
-    _bCompiledToUberModule = bUber;
   }
 
   private boolean equalArgs(IParameterInfo[] parameters, List<ISymbol> args) {

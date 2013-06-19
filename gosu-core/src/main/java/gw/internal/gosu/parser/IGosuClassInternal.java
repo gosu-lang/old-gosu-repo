@@ -5,7 +5,6 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.statements.VarStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IBlockClass;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.ISymbol;
@@ -111,40 +110,40 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
 
   List<DynamicFunctionSymbol> getConstructorFunctions();
 
-  DynamicFunctionSymbol getConstructorFunction( CaseInsensitiveCharSequence name );
+  DynamicFunctionSymbol getConstructorFunction( String name );
 
   DynamicFunctionSymbol getDefaultConstructor();
 
   List<DynamicFunctionSymbol> getStaticFunctions();
 
-  public List<DynamicFunctionSymbol> getMemberFunctions( CaseInsensitiveCharSequence names );
+  public List<DynamicFunctionSymbol> getMemberFunctions( String names );
 
   void addInnerClass( IGosuClassInternal innerGsClass );
   void removeInnerClass( IGosuClassInternal innerGsClass );
 
-  DynamicFunctionSymbol getMemberFunction( CaseInsensitiveCharSequence name );
+  DynamicFunctionSymbol getMemberFunction( IFunctionType ifaceFuncType, String name );
 
-  DynamicPropertySymbol getStaticProperty( CaseInsensitiveCharSequence name );
+  DynamicPropertySymbol getStaticProperty( String name );
 
   List<DynamicPropertySymbol> getStaticProperties();
 
   @SuppressWarnings({"unchecked"})
   List<DynamicPropertySymbol> getMemberProperties();
 
-  DynamicPropertySymbol getMemberProperty( CaseInsensitiveCharSequence name );
+  DynamicPropertySymbol getMemberProperty( String name );
 
   @SuppressWarnings({"unchecked"})
   List<IVarStatement> getStaticFields();
 
-  VarStatement getStaticField( CaseInsensitiveCharSequence name );
+  VarStatement getStaticField( String name );
 
   Map<CharSequence, ISymbol> getMemberFieldIndexByName();
 
   Symbol getStaticThisSymbol();
 
-  Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols();
+  Map<String, ICapturedSymbol> getCapturedSymbols();
 
-  ICapturedSymbol getCapturedSymbol( CaseInsensitiveCharSequence strName );
+  ICapturedSymbol getCapturedSymbol( String strName );
 
   void addCapturedSymbol( ICapturedSymbol sym );
 
@@ -174,7 +173,7 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
 
   void setDefinitionsCompiled();
 
-  VarStatement getMemberField( CaseInsensitiveCharSequence charSequence );
+  VarStatement getMemberField( String charSequence );
 
   IGosuClassInternal getSuperClass();
 
@@ -220,9 +219,7 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
   public GosuClassTypeLoader getTypeLoader();
   boolean isCreateEditorParser();
 
-  public boolean isCompiledToUberModule();
-  public void setCompiledToUberModule( boolean bUber );
-
   void setTypeUsesMap( ITypeUsesMap usesMap );
 
+  void setHasAssertions( boolean bHasAssertions );
 }

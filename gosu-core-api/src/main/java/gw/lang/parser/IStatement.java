@@ -4,8 +4,8 @@
 
 package gw.lang.parser;
 
-import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.reflect.gs.IExternalSymbolMap;
 
 public interface IStatement extends IParsedElement
 {
@@ -24,5 +24,5 @@ public interface IStatement extends IParsedElement
   /**
    * Indicates whether or not control flow is terminal at this statement.
    */
-  ITerminalStatement getLeastSignificantTerminalStatement();
+  ITerminalStatement getLeastSignificantTerminalStatement( boolean[] bAsolute );
 }

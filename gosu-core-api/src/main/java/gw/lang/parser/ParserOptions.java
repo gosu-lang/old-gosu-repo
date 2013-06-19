@@ -22,7 +22,7 @@ public class ParserOptions
   private boolean _bGenRootExprAccess;
   private ISymbolTable _additionalDFSDecls;
   private boolean _captureSymbolsForEval;
-  private Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> _declSymbols;
+  private Map<String, Set<IFunctionSymbol>> _declSymbols;
   private boolean _shouldOptimize = true;
   private IGosuParser _parser;
   private IType _superType;
@@ -99,7 +99,7 @@ public class ParserOptions
     return this;
   }
 
-  public ParserOptions withDeclSymbols( Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> declSymbols )
+  public ParserOptions withDeclSymbols( Map<String, Set<IFunctionSymbol>> declSymbols )
   {
     _declSymbols = declSymbols;
     return this;
@@ -182,7 +182,7 @@ public class ParserOptions
     return _captureSymbolsForEval;
   }
 
-  public Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> getDeclSymbols()
+  public Map<String, Set<IFunctionSymbol>> getDeclSymbols()
   {
     return _declSymbols;
   }

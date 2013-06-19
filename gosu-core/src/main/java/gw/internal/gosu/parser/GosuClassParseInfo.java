@@ -12,7 +12,6 @@ import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.MethodCallStatement;
 import gw.internal.gosu.parser.statements.NoOpStatement;
 import gw.internal.gosu.parser.statements.VarStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IReducedSymbol;
@@ -29,7 +28,6 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuConstructorInfo;
 import gw.lang.reflect.java.GosuTypes;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.fingerprint.FP64;
 
 import java.util.ArrayList;
@@ -48,15 +46,15 @@ public class GosuClassParseInfo {
   transient private ClassStatement _classStmt;
   transient private ParseResultsException _pe;
   transient private List<DynamicFunctionSymbol> _listStaticFunctions;
-  transient private Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> _mapMemberFunctions;
-  transient private Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> _mapConstructorFunctions;
+  transient private Map<String, DynamicFunctionSymbol> _mapMemberFunctions;
+  transient private Map<String, DynamicFunctionSymbol> _mapConstructorFunctions;
   transient private List<DynamicPropertySymbol> _listStaticProperties;
-  transient private Map<CaseInsensitiveCharSequence, DynamicPropertySymbol> _mapMemberProperties;
-  transient private Map<CaseInsensitiveCharSequence, VarStatement> _mapStaticFields;
-  transient private Map<CaseInsensitiveCharSequence, VarStatement> _mapMemberFields;
+  transient private Map<String, DynamicPropertySymbol> _mapMemberProperties;
+  transient private Map<String, VarStatement> _mapStaticFields;
+  transient private Map<String, VarStatement> _mapMemberFields;
   transient private Map<CharSequence, ISymbol> _memberFieldIndexByName;
   transient private Symbol _thisSymbol;
-  transient private Map<CaseInsensitiveCharSequence, ICapturedSymbol> _capturedSymbols;
+  transient private Map<String, ICapturedSymbol> _capturedSymbols;
   transient private long _sourceFingerprint;
 
   transient private BlockExpression _block;
@@ -149,7 +147,7 @@ public class GosuClassParseInfo {
     return _listStaticFunctions;
   }
 
-  public Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> getMemberFunctions() {
+  public Map<String, DynamicFunctionSymbol> getMemberFunctions() {
     return _mapMemberFunctions;
   }
 
@@ -158,41 +156,18 @@ public class GosuClassParseInfo {
     assert function.isClassMember();
     if( function.isStatic() )
     {
-      addStaticFunction(function);
+      addStaticFunction( function );
       return;
     }
     if( _mapMemberFunctions == Collections.EMPTY_MAP )
     {
       //noinspection unchecked
-      _mapMemberFunctions = new LinkedHashMap(2);
+      _mapMemberFunctions = new LinkedHashMap( 2 );
     }
-    _mapMemberFunctions.put( function.getCaseInsensitiveName(), function );
-    CaseInsensitiveCharSequence superGenericName = function.getSuperGenericName();
-    if( superGenericName != null )
-    {
-      // Map from a generic function name that is overridden
-      // e.g.,
-      // abstract class Bar<T>
-      // {
-      //   abstract function foo( t : T ) : void
-      // }
-      // class Foo extends Bar<Fred>
-      // {
-      //   override function foo( f : Fred ) : void
-      //   {
-      //     print( Foo )
-      //   }
-      // }
-      //
-      // var f : Bar<Fred>
-      // f = new Foo()
-      // f.foo( new Fred() ) // if we don't have the superDfs mapped, it will throw an npe because it can't find foo( T ) on Foo
-      //
-      _mapMemberFunctions.put( superGenericName, function );
-    }
+    _mapMemberFunctions.put( (String)function.getName(), function );
   }
 
-  public Map<CaseInsensitiveCharSequence, DynamicFunctionSymbol> getConstructorFunctions() {
+  public Map<String, DynamicFunctionSymbol> getConstructorFunctions() {
     return _mapConstructorFunctions;
   }
 
@@ -203,7 +178,7 @@ public class GosuClassParseInfo {
       //noinspection unchecked
       _mapConstructorFunctions = new LinkedHashMap(2);
     }
-    _mapConstructorFunctions.put(function.getCaseInsensitiveName(), function);
+    _mapConstructorFunctions.put( (String)function.getName(), function);
   }
 
   protected boolean addDefaultConstructor( ISymbolTable symbolTable )
@@ -220,7 +195,7 @@ public class GosuClassParseInfo {
       DynamicFunctionSymbol defCtorFromSuper;
       if( _gosuClass.getSupertype().getGenericType() == JavaTypes.ENUM() )
       {
-        defCtorFromSuper = _gosuClass.getSuperClass().getConstructorFunction(CaseInsensitiveCharSequence.get("Enum(java.lang.String, int)"));
+        defCtorFromSuper = _gosuClass.getSuperClass().getConstructorFunction( (String)"Enum(java.lang.String, int)" );
       }
       else
       {
@@ -258,7 +233,7 @@ public class GosuClassParseInfo {
     {
       dfsCtor.setPrivate( true );
     }
-    _mapConstructorFunctions.put( dfsCtor.getCaseInsensitiveName(), dfsCtor );
+    _mapConstructorFunctions.put( (String)dfsCtor.getName(), dfsCtor );
     return true;
   }
 
@@ -296,7 +271,7 @@ public class GosuClassParseInfo {
         //noinspection unchecked
         _mapConstructorFunctions = new LinkedHashMap(2);
       }
-      _mapConstructorFunctions.put( dfsCtor.getCaseInsensitiveName(), dfsCtor );
+      _mapConstructorFunctions.put( (String)dfsCtor.getName(), dfsCtor );
     }
     finally
     {
@@ -388,7 +363,7 @@ public class GosuClassParseInfo {
     return _listStaticProperties;
   }
 
-  public Map<CaseInsensitiveCharSequence, VarStatement> getMemberFields() {
+  public Map<String, VarStatement> getMemberFields() {
     return _mapMemberFields;
   }
 
@@ -404,7 +379,7 @@ public class GosuClassParseInfo {
       //noinspection unchecked
       _mapMemberProperties = new LinkedHashMap(2);
     }
-    _mapMemberProperties.put( property.getCaseInsensitiveName(), property );
+    _mapMemberProperties.put( (String)property.getName(), property );
   }
 
   private void addStaticField( VarStatement varStmt )
@@ -418,11 +393,11 @@ public class GosuClassParseInfo {
     _mapStaticFields.put( varStmt.getIdentifierName(), varStmt );
   }
 
-  public Map<CaseInsensitiveCharSequence, DynamicPropertySymbol> getMemberProperties() {
+  public Map<String, DynamicPropertySymbol> getMemberProperties() {
     return _mapMemberProperties;
   }
 
-  public Map<CaseInsensitiveCharSequence, VarStatement> getStaticFields() {
+  public Map<String, VarStatement> getStaticFields() {
     return _mapStaticFields;
   }
 
@@ -439,14 +414,14 @@ public class GosuClassParseInfo {
       _mapMemberFields = new LinkedHashMap(2);
     }
     // Static vars must be maintained in the order declared. They must evaluate in that order.
-    CaseInsensitiveCharSequence varName = varStmt.getIdentifierName();
+    String varName = varStmt.getIdentifierName();
     _mapMemberFields.put( varName, varStmt );
     if( !_memberFieldIndexByName.containsKey( varName ) )
     {
       int iIndex = _memberFieldIndexByName.size();
       if( _memberFieldIndexByName == Collections.EMPTY_MAP )
       {
-        _memberFieldIndexByName = new CaseInsensitiveHashMap<CharSequence, ISymbol>( 4 );
+        _memberFieldIndexByName = new HashMap<CharSequence, ISymbol>( 4 );
       }
       _memberFieldIndexByName.put( varName, new MemberFieldSymbol( iIndex, varName ) );
     }
@@ -480,10 +455,10 @@ public class GosuClassParseInfo {
 
   private Symbol makeThisSymbol()
   {
-    return new ReadOnlySymbol( Keyword.KW_this, TypeLord.getConcreteType( _gosuClass ), Symbol.MEMBER_STACK_PROVIDER, null );
+    return new ReadOnlySymbol( Keyword.KW_this.getName(), TypeLord.getConcreteType( _gosuClass ), Symbol.MEMBER_STACK_PROVIDER, null );
   }
 
-  public Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols() {
+  public Map<String, ICapturedSymbol> getCapturedSymbols() {
     return _capturedSymbols;
   }
 
@@ -491,9 +466,9 @@ public class GosuClassParseInfo {
   {
     if( _capturedSymbols.isEmpty() )
     {
-      _capturedSymbols = new HashMap<CaseInsensitiveCharSequence, ICapturedSymbol>( 2 );
+      _capturedSymbols = new HashMap<String, ICapturedSymbol>( 2 );
     }
-    _capturedSymbols.put( sym.getCaseInsensitiveName(), sym );
+    _capturedSymbols.put( (String)sym.getName(), sym );
   }
 
   public static void clear() {

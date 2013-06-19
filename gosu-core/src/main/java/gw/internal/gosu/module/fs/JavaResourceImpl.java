@@ -7,25 +7,19 @@ package gw.internal.gosu.module.fs;
 import gw.fs.IResource;
 import gw.fs.ResourcePath;
 import gw.fs.IDirectory;
-import gw.lang.reflect.module.IFileSystem;
 import gw.config.CommonServices;
 
 import java.io.IOException;
 import java.io.File;
+import java.io.Serializable;
 import java.net.URI;
 
-public abstract class JavaResourceImpl implements IResource {
+public abstract class JavaResourceImpl implements IResource, Serializable {
 
   protected File _file;
-  private IFileSystem _fileSystem;
 
   protected JavaResourceImpl(File file) {
     _file = file.getAbsoluteFile();
-    _fileSystem = CommonServices.getFileSystem();
-  }
-
-  protected IFileSystem getFileSystem() {
-    return _fileSystem;
   }
 
   @Override
@@ -34,7 +28,7 @@ public abstract class JavaResourceImpl implements IResource {
     if (parentFile == null) {
       return null;
     } else {
-      return getFileSystem().getIDirectory(parentFile);
+      return CommonServices.getFileSystem().getIDirectory(parentFile);
     }
   }
 
@@ -110,6 +104,11 @@ public abstract class JavaResourceImpl implements IResource {
 
   @Override
   public boolean create() {
+    return false;
+  }
+
+  @Override
+  public boolean isInJar() {
     return false;
   }
 }

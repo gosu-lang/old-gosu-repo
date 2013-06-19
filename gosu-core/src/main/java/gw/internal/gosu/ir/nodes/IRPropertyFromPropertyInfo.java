@@ -91,6 +91,11 @@ public class IRPropertyFromPropertyInfo implements IRProperty {
           return IRTypeResolver.getDescriptor( m.getEnclosingClass() );
         }
       }
+    } else if (_terminalProperty instanceof IJavaFieldPropertyInfo) {
+      IJavaClassField field = ((IJavaFieldPropertyInfo) _terminalProperty).getField();
+      if (field != null) {
+        return IRTypeResolver.getDescriptor(field.getEnclosingClass());
+      }
     }
     return IRTypeResolver.getDescriptor( _terminalProperty.getOwnersType() );
   }
@@ -116,6 +121,13 @@ public class IRPropertyFromPropertyInfo implements IRProperty {
         } else {
           owningType = _terminalProperty.getOwnersType();
         }
+      }
+    } else if (_terminalProperty instanceof IJavaFieldPropertyInfo) {
+      IJavaClassField field = ((IJavaFieldPropertyInfo) _terminalProperty).getField();
+      if (field != null) {
+        owningType = TypeSystem.get(field.getEnclosingClass());
+      } else {
+        owningType = _terminalProperty.getOwnersType();
       }
     } else {
       owningType = _terminalProperty.getOwnersType();

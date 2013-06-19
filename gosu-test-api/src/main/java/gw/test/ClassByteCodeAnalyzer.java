@@ -45,7 +45,7 @@ public class ClassByteCodeAnalyzer {
       }
     });
 
-    allMethods = new ArrayList<>();
+    allMethods = new ArrayList<Method>();
     // add method of super class first
     Class<?> superclass = clazz.getSuperclass();
     if (superclass != null) {
@@ -53,7 +53,7 @@ public class ClassByteCodeAnalyzer {
     }
     allMethods.addAll(currentClassMethods);
 
-    cache.put(clazz, Collections.unmodifiableList(new ArrayList<>(allMethods)));
+    cache.put(clazz, Collections.unmodifiableList(new ArrayList<Method>(allMethods)));
     return allMethods;
   }
 

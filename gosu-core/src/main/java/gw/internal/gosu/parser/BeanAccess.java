@@ -7,6 +7,7 @@ package gw.internal.gosu.parser;
 import gw.config.CommonServices;
 import gw.internal.gosu.parser.expressions.ConditionalExpression;
 import gw.lang.parser.GosuParserTypes;
+import gw.lang.parser.StandardCoercionManager;
 import gw.lang.reflect.IConstructorType;
 import gw.lang.reflect.MethodList;
 import gw.lang.reflect.gs.IGosuProgram;
@@ -259,10 +260,18 @@ public class BeanAccess
     if( bConvertLhsType )
     {
       lhsValue = CommonServices.getCoercionManager().convertValue(lhsValue, rhsType);
+      if( lhsValue == StandardCoercionManager.NO_DICE )
+      {
+        return false;
+      }
     }
     else
     {
       rhsValue = CommonServices.getCoercionManager().convertValue(rhsValue, lhsType);
+      if( rhsValue == StandardCoercionManager.NO_DICE )
+      {
+        return false;
+      }
     }
     bValue = lhsValue.equals( rhsValue );
     return bValue;
@@ -393,12 +402,12 @@ public class BeanAccess
     }
     else
     {
-      IType componentType = TypeLord.getExpandableComponentType( classBean );
-      if( componentType != null )
+      IType expComponentType = TypeLord.getExpandableComponentType( classBean );
+      if( expComponentType != null && expComponentType != classBean )
       {
         // Allow expressions of the form: <array-of-foo>.<property-of-foo>. The
         // result of evaluating such an expression is of type array-of-property-type.
-        return new ArrayExpansionPropertyInfo( getPropertyInfo( componentType, strProperty, filter, parser, scriptabilityConstraint ) );
+        return new ArrayExpansionPropertyInfo( getPropertyInfo( expComponentType, strProperty, filter, parser, scriptabilityConstraint ) );
       }
     }
 
@@ -417,21 +426,6 @@ public class BeanAccess
       property = beanInfo.getProperty( strMember );
     }
 
-    if( property == null )
-    {
-      CharSequence propertyName = beanInfo.getRealPropertyName( strMember );
-      if( propertyName != null )
-      {
-        if( beanInfo instanceof IRelativeTypeInfo )
-        {
-          property = ((IRelativeTypeInfo)beanInfo).getProperty( classBean, propertyName );
-        }
-        else
-        {
-          property = beanInfo.getProperty( propertyName );
-        }
-      }
-    }
     return property;
   }
 }

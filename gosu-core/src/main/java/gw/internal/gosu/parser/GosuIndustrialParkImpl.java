@@ -141,11 +141,11 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
 
   public ISymbol createSymbol( CharSequence name, IType type, Object value )
   {
-    return new Symbol( name, type, value );
+    return new Symbol( name.toString(), type, value );
   }
   public ISymbol createSymbol( CharSequence name, IType type, IStackProvider stackProvider )
   {
-    return new Symbol( name, type, stackProvider );
+    return new Symbol( name.toString(), type, stackProvider );
   }
 
   public ISymbol createDynamicFunctionSymbol( ISymbolTable symbolTable, String strMemberName, IFunctionType functionType, List<ISymbol> params, IExpression value )
@@ -186,13 +186,15 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
     return (ITemplateType)TypeSystem.getOrCreateTypeReference( new GosuTemplateType( strNamespace, strRelativeName, loader, sourceFile, typeUsesMap, symTable ) );
   }
 
-  public IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, boolean includeCoreResources)
+  public IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files)
   {
-    return new FileSystemGosuClassRepository(module, files, GosuClassTypeLoader.ALL_EXTS, includeCoreResources);
+    return createFileSystemGosuClassRepository(module, files, GosuClassTypeLoader.ALL_EXTS);
   }
-  public IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions, boolean includeCoreResources)
+  public IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions)
   {
-    return new FileSystemGosuClassRepository(module, files, extensions, includeCoreResources);
+    IFileSystemGosuClassRepository repository = new FileSystemGosuClassRepository(module);
+    repository.setSourcePath(files);
+    return repository;
   }
 
   public ITypeUsesMap createTypeUsesMap( List<String> specialTypeUses )
@@ -226,9 +228,9 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
     return new EvaluationException( msg );
   }
 
-  public IModule createModule( IExecutionEnvironment execEnv, String strMemberName, boolean includesGosuCoreAPI )
+  public IModule createModule( IExecutionEnvironment execEnv, String strMemberName )
   {
-    return new Module( execEnv, strMemberName, includesGosuCoreAPI );
+    return new Module( execEnv, strMemberName);
   }
 
   @Override
@@ -238,7 +240,7 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
 
   @Override
   public IClassPath createClassPath(IModule module, boolean includeAllClasses) {
-    return new ClassPath(module);
+    return new ClassPath(module, includeAllClasses ? ClassPath.ALLOW_ALL_FILTER : ClassPath.ONLY_API_CLASSES);
   }
 
   @Override

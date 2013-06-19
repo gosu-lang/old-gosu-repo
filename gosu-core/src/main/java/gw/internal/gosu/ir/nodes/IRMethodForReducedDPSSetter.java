@@ -27,7 +27,7 @@ public class IRMethodForReducedDPSSetter extends IRFeatureBase implements IRMeth
 
   @Override
   public IRType getReturnType() {
-    return IRTypeConstants.pVOID;
+    return IRTypeConstants.pVOID();
   }
 
   @Override

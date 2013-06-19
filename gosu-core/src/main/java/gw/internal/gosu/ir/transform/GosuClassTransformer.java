@@ -6,9 +6,11 @@ package gw.internal.gosu.ir.transform;
 
 import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.gosu.annotations.AnnotationMap;
+import gw.internal.gosu.ir.nodes.GosuClassIRType;
 import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.internal.gosu.ir.nodes.JavaClassIRType;
+import gw.internal.gosu.ir.transform.statement.AssertStatementTransformer;
 import gw.internal.gosu.ir.transform.statement.FieldInitializerTransformer;
 import gw.internal.gosu.ir.transform.util.AccessibilityUtil;
 import gw.internal.gosu.ir.transform.util.IRTypeResolver;
@@ -53,7 +55,6 @@ import gw.lang.ir.statement.IRMethodStatement;
 import gw.lang.ir.statement.IRNoOpStatement;
 import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRStatementList;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IDynamicPropertySymbol;
@@ -65,6 +66,7 @@ import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.parser.statements.IFunctionStatement;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
@@ -105,6 +107,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private EnumOrdinalCounter _enumCounter;
   private IRClass _irClass;
   private GosuClassTransformationContext _context;
+  private boolean _bHasAsserts;
 
   public static IRClass compile( IGosuClassInternal gsClass )
   {
@@ -129,7 +132,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private IRClass compile()
   {
-    if( !_gsClass.isValid() )
+    if( !_gsClass.isValid() /*|| !_gsClass.isDefinitionsCompiled()*/ )
     {
       //noinspection ThrowableResultOfMethodCallIgnored
       throw GosuExceptionUtil.forceThrow( _gsClass.getParseResultsException() );
@@ -261,7 +264,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileStaticInitializer()
   {
     List<IRStatement> initStatements = new ArrayList<IRStatement>();
-    IRMethodCallExpression bootstrapGosuWhenInitiatedViaClassfile = buildMethodCall( JavaClassIRType.get( GosuClassPathThing.class ), "init", false, IRTypeConstants.pBOOLEAN, Collections.<IRType>emptyList(), null, Collections.<IRExpression>emptyList() );
+    IRMethodCallExpression bootstrapGosuWhenInitiatedViaClassfile = buildMethodCall( JavaClassIRType.get( GosuClassPathThing.class ), "init", false, IRTypeConstants.pBOOLEAN(), Collections.<IRType>emptyList(), null, Collections.<IRExpression>emptyList() );
     initStatements.add( new IRMethodCallStatement( bootstrapGosuWhenInitiatedViaClassfile ) );
     List<IRSymbol> syms = new ArrayList<IRSymbol>( 1 );
     if( isProgramOrEnclosedInProgram( getGosuClass() ) )
@@ -280,7 +283,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     {
       initStatements.add( new IRReturnStatement() );
       IRMethodStatement clinit = new IRMethodStatement( new IRStatementList( false, initStatements ),
-                                                        "<clinit>", Opcodes.ACC_STATIC, IRTypeConstants.pVOID, Collections.<IRSymbol>emptyList() );
+                                                        "<clinit>", Opcodes.ACC_STATIC, IRTypeConstants.pVOID(), Collections.<IRSymbol>emptyList() );
       _irClass.addMethod( clinit );
     }
   }
@@ -350,7 +353,12 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private void addCapturedSymbolFields()
   {
-    Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
+    if( _gsClass.isInterface() )
+    {
+      return;
+    }
+
+    Map<String, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
 
     if( capturedSymbols != null )
     {
@@ -449,7 +457,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         {
           name = name + "$$unboxedParam";
         }
-        parameters.add( new IRSymbol( name, getDescriptor( param.getType() ), false ) );
+        parameters.add( makeParamSymbol( param, name ) );
       }
 
       IRStatement methodBody;
@@ -470,11 +478,21 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         methodBody,
         "<init>",
         iModifiers,
-        IRTypeConstants.pVOID,
+              IRTypeConstants.pVOID(),
         parameters );
 
       _irClass.addMethod( methodStatement );
     }
+  }
+
+  private IRSymbol makeParamSymbol( ISymbol param, String name ) {
+    IRSymbol irSym = new IRSymbol( name, getDescriptor( param.getType() ), false );
+    IModifierInfo modifierInfo = param.getModifierInfo();
+    if( modifierInfo != null && modifierInfo.getAnnotations() != null )
+    {
+      irSym.setAnnotations( getIRAnnotations( makeAnnotationInfos( modifierInfo.getAnnotations(), getGosuClass().getTypeInfo() ) ) );
+    }
+    return irSym;
   }
 
   private void maybeGetTypeVarSymbolTypesForConstructor( List<IRSymbol> parameters )
@@ -545,7 +563,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private void maybeGetCapturedSymbolTypes( List<IRSymbol> parameters )
   {
-    Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
+    Map<String, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
     if( capturedSymbols != null )
     {
       for( ICapturedSymbol sym : capturedSymbols.values() )
@@ -1131,7 +1149,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         name = GosuFragmentTransformer.SYMBOLS_PARAM_NAME;
       }
 
-      parameters.add( new IRSymbol( name, getDescriptor( param.getType() ), false ) );
+      parameters.add( makeParamSymbol( param, name ) );
     }
 
     IRStatement methodBody;
@@ -1354,7 +1372,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private void compileEnumValueOfMethod()
   {
-    IRSymbol argSymbol = new IRSymbol( "arg", IRTypeConstants.STRING, false );
+    IRSymbol argSymbol = new IRSymbol( "arg", IRTypeConstants.STRING(), false );
     setUpFunctionContext( true, Collections.singletonList( argSymbol ) );
 
     IRExpression result = callStaticMethod( Enum.class, "valueOf", new Class[]{Class.class, String.class},
@@ -1377,7 +1395,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       new IRStatementList( true, new IRReturnStatement( null, pushThis() ) ),
       "getValue",
       Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-      IRTypeConstants.OBJECT,
+            IRTypeConstants.OBJECT(),
       Collections.<IRSymbol>emptyList()
     );
     _irClass.addMethod( method );
@@ -1386,7 +1404,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileEnumCodePropertyGetter()
   {
     // Don't bother if the class already has the property defined
-    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( CaseInsensitiveCharSequence.get( "Code" ) );
+    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( "Code" );
     if( existingProperty != null && !(existingProperty instanceof EnumCodePropertySymbol) )
     {
       return;
@@ -1399,7 +1417,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       new IRStatementList( true, new IRReturnStatement( null, returnValue ) ),
       "getCode",
       Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-      IRTypeConstants.STRING,
+            IRTypeConstants.STRING(),
       Collections.<IRSymbol>emptyList()
     );
     _irClass.addMethod( method );
@@ -1414,7 +1432,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       new IRStatementList( true, new IRReturnStatement( null, returnValue ) ),
       "getOrdinal",
       Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-      IRTypeConstants.pINT,
+            IRTypeConstants.pINT(),
       Collections.<IRSymbol>emptyList()
     );
     _irClass.addMethod( method );
@@ -1423,7 +1441,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileEnumNamePropertyGetter()
   {
     // Don't bother if the class already has the property defined
-    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( CaseInsensitiveCharSequence.get( "Name" ) );
+    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( (String)"Name" );
     if( existingProperty != null && !(existingProperty instanceof EnumNamePropertySymbol) )
     {
       return;
@@ -1436,7 +1454,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       new IRStatementList( true, new IRReturnStatement( null, returnValue ) ),
       "getName",
       Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-      IRTypeConstants.STRING,
+            IRTypeConstants.STRING(),
       Collections.<IRSymbol>emptyList()
     );
     _irClass.addMethod( method );
@@ -1445,7 +1463,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileEnumDisplayNamePropertyGetter()
   {
     // Don't bother if the class already has the property defined
-    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( CaseInsensitiveCharSequence.get( "DisplayName" ) );
+    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( (String)"DisplayName" );
     if( existingProperty != null && !(existingProperty instanceof EnumDisplayNamePropertySymbol) )
     {
       return;
@@ -1458,7 +1476,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       new IRStatementList( true, new IRReturnStatement( null, returnValue ) ),
       "getDisplayName",
       Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL,
-      IRTypeConstants.STRING,
+            IRTypeConstants.STRING(),
       Collections.<IRSymbol>emptyList()
     );
     _irClass.addMethod( method );
@@ -1471,10 +1489,10 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     List<IRExpression> values = new ArrayList<IRExpression>();
     for( IGenericTypeVariable gv : genTypeVars )
     {
-      values.add( getInstanceField( _gsClass, TYPE_PARAM_PREFIX + gv.getName(), IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(), pushThis() ) );
+      values.add( getInstanceField( _gsClass, TYPE_PARAM_PREFIX + gv.getName(), IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(), pushThis() ) );
     }
 
-    return buildInitializedArray( IRTypeConstants.ITYPE,
+    return buildInitializedArray(IRTypeConstants.ITYPE(),
                                   values );
   }
 
@@ -1496,7 +1514,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       for( IGenericTypeVariable genTypeVar : gsClass.getGenericTypeVariables() )
       {
         statements.add(
-          setInstanceField( gsClass, TYPE_PARAM_PREFIX + genTypeVar.getName(), IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(),
+          setInstanceField( gsClass, TYPE_PARAM_PREFIX + genTypeVar.getName(), IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(),
                             pushThis(),
                             identifier( _context.getSymbol( getTypeVarParamName( genTypeVar ) ) ) ) );
       }
@@ -1512,7 +1530,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       for( IGenericTypeVariable genTypeVar : getTypeVarsForDFS( dfs ) )
       {
         statements.add(
-          setInstanceField( _gsClass, TYPE_PARAM_PREFIX + genTypeVar.getName(), IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(),
+          setInstanceField( _gsClass, TYPE_PARAM_PREFIX + genTypeVar.getName(), IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(),
                             pushThis(),
                             identifier( _context.getSymbol( getTypeVarParamName( genTypeVar ) ) ) ) );
       }
@@ -1522,7 +1540,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   public void initCapturedSymbolFields( List<IRStatement> statements )
   {
-    Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
+    Map<String, ICapturedSymbol> capturedSymbols = _gsClass.getCapturedSymbols();
     if( capturedSymbols != null )
     {
       @SuppressWarnings({"UnusedDeclaration"})
@@ -1568,6 +1586,18 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     {
       compileEnumValuesFieldInitializer( statements );
     }
+
+    if( getGosuClass().hasAssertions() )
+    {
+      statements.add( initializeAssertionsDisabledField() );
+    }
+  }
+
+  private IRStatement initializeAssertionsDisabledField()
+  {
+    return
+      buildFieldSet( _irClass.getThisType(), AssertStatementTransformer.$_ASSERTIONS_DISABLED, IRTypeConstants.pBOOLEAN(), null,
+              buildEquals( buildMethodCall( Class.class, "desiredAssertionStatus", boolean.class, new Class[0], classLiteral( GosuClassIRType.get( getGosuClass() ) ), Collections.<IRExpression>emptyList() ), booleanLiteral( false ) ) );
   }
 
   private void compileEnumValuesFieldInitializer( List<IRStatement> statements )
@@ -1609,7 +1639,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     List<IVarStatement> fieldStmts = new ArrayList<IVarStatement>( fields.size() );
     for( MemberFieldSymbol field : fields )
     {
-      fieldStmts.add( _gsClass.getMemberField( field.getCaseInsensitiveName() ) );
+      fieldStmts.add( _gsClass.getMemberField( (String)field.getName() ) );
     }
     return fieldStmts;
   }
@@ -1763,6 +1793,21 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       args.add( pushConstant( _enumCounter.getNextEnumName() ) );
       args.add( pushConstant( _enumCounter.getNextEnumOrdinal() ) );
     }
+  }
+
+  public void setHasAsserts()
+  {
+    if( _bHasAsserts )
+    {
+      return;
+    }
+    _bHasAsserts = true;
+    IRFieldDecl fieldDecl = new IRFieldDecl( 0x1018,
+            AssertStatementTransformer.$_ASSERTIONS_DISABLED,
+            getDescriptor( JavaTypes.pBOOLEAN() ),
+            null );
+
+    _irClass.addField( fieldDecl );
   }
 
   //

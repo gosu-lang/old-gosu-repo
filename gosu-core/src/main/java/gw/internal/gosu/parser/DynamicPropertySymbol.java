@@ -4,24 +4,17 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IDynamicPropertySymbol;
-import gw.lang.parser.IReducedDynamicFunctionSymbol;
 import gw.lang.parser.IReducedDynamicPropertySymbol;
 import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.ISymbol;
-import gw.lang.reflect.IConstructorInfo;
-import gw.lang.reflect.IDFSBackedFeatureInfo;
-import gw.lang.reflect.IFeatureInfo;
-import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.gs.IGosuClass;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,7 +24,7 @@ public class DynamicPropertySymbol extends AbstractDynamicSymbol implements IDyn
   private DynamicPropertySymbol _dpsParent;
   DynamicFunctionSymbol _dfsGetter;
   DynamicFunctionSymbol _dfsSetter;
-  private CaseInsensitiveCharSequence _varIdentifier;
+  private String _varIdentifier;
 
   public DynamicPropertySymbol( DynamicFunctionSymbol dfsGetterOrSetter, boolean bGetter )
   {
@@ -46,7 +39,7 @@ public class DynamicPropertySymbol extends AbstractDynamicSymbol implements IDyn
     _dfsSetter = bGetter ? null : dfsGetterOrSetter;
     setModifierInfo( dfsGetterOrSetter.getModifierInfo() );
     setClassMember( true );
-    setCaseInsensitiveName( CaseInsensitiveCharSequence.get( getName() ) );
+    setName( (String)getName() );
     _scriptPartId = dfsGetterOrSetter._scriptPartId;
   }
 
@@ -224,7 +217,7 @@ public class DynamicPropertySymbol extends AbstractDynamicSymbol implements IDyn
     return _dpsParent;
   }
 
-  public DynamicFunctionSymbol getFunction( CaseInsensitiveCharSequence strFunctionName )
+  public DynamicFunctionSymbol getFunction( String strFunctionName )
   {
     if( functionNamesEqual( _dfsGetter, strFunctionName ) )
     {
@@ -237,10 +230,10 @@ public class DynamicPropertySymbol extends AbstractDynamicSymbol implements IDyn
     return null;
   }
 
-  private boolean functionNamesEqual( DynamicFunctionSymbol dfs, CaseInsensitiveCharSequence strFunctionName )
+  private boolean functionNamesEqual( DynamicFunctionSymbol dfs, String strFunctionName )
   {
     return dfs != null &&
-           (dfs.getCaseInsensitiveName().equals( strFunctionName ) ||
+           (dfs.getName().equals( strFunctionName ) ||
             dfs.getName().toLowerCase().contains( "_duplicate_" + strFunctionName.toLowerCase() ) );
   }
 
@@ -259,12 +252,12 @@ public class DynamicPropertySymbol extends AbstractDynamicSymbol implements IDyn
     }
   }
 
-  public void setVarIdentifier( CaseInsensitiveCharSequence varIdentifier )
+  public void setVarIdentifier( String varIdentifier )
   {
     _varIdentifier = varIdentifier;
   }
 
-  public CaseInsensitiveCharSequence getVarIdentifier()
+  public String getVarIdentifier()
   {
     return _varIdentifier;
   }

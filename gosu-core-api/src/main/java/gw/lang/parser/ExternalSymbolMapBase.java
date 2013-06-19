@@ -6,6 +6,8 @@ package gw.lang.parser;
 
 import gw.lang.reflect.gs.IExternalSymbolMap;
 
+import java.lang.reflect.Array;
+
 public abstract class ExternalSymbolMapBase implements IExternalSymbolMap {
 
   private boolean _assumeSymbolsRequireExternalSymbolMapArgument;
@@ -16,7 +18,7 @@ public abstract class ExternalSymbolMapBase implements IExternalSymbolMap {
 
   @Override
   public Object getValue(String name) {
-    ISymbol symbol = getSymbol(name);
+    ISymbol symbol = getSymbol( name );
     verifySymbol( name, symbol );
     // Any external symbols that are properties are coming from the code block, so they implicitly take
     // an IExternalSymbolMap as their first argument
@@ -28,8 +30,39 @@ public abstract class ExternalSymbolMapBase implements IExternalSymbolMap {
   }
 
   @Override
+  public Object getValue( String name, int iArrayDims ) {
+    Object value = getValue( name );
+    if( iArrayDims < 0 ) {
+      // special case for pcf
+      return value;
+    }
+    if( value == null ) {
+      return null;
+    }
+    Class valueClass = value.getClass();
+    if( isCapturedSymbol( iArrayDims, value, valueClass ) ) {
+      return ((Object[])value)[0];
+    }
+    return value;
+  }
+
+  private boolean isCapturedSymbol( int iArrayDims, Object value, Class valueClass ) {
+    if( value != null && valueClass.isArray() && Array.getLength(value) == 1 ) {
+      int iValueDims = 0;
+      while( valueClass.isArray() ) {
+        iValueDims++;
+        valueClass = valueClass.getComponentType();
+      }
+      if( iValueDims-1 == iArrayDims ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public void setValue(String name, Object value) {
-    ISymbol symbol = getSymbol(name);
+    ISymbol symbol = getSymbol( name );
     verifySymbol( name, symbol );
     // Any external symbols that are properties are coming from the code block, so they implicitly take
     // an IExternalSymbolMap as their first argument
@@ -69,6 +102,24 @@ public abstract class ExternalSymbolMapBase implements IExternalSymbolMap {
     if( symbol == null ) {
       throw new IllegalStateException( "External symbol not found: " + name );
     }
+  }
+
+  protected String handleCrappyPcfCapitalization( CharSequence name ) {
+    //## todo: Stop doing this and fix all the claim/Claim, policy/Policy etc. parent-child inconsistencies in PCFs
+    //## todo: See also CompiledPcfSymbolTable.handleCrappyPcfCapitalization
+
+    if( name.length() > 1 ) {
+      String strName = null;
+      char c = name.charAt( 0 );
+      if( Character.isUpperCase( c ) ) {
+        strName = Character.toLowerCase( c ) + name.subSequence( 1, name.length() ).toString();
+      }
+      else if( Character.isLowerCase( c ) ) {
+        strName = Character.toUpperCase( c ) + name.subSequence( 1, name.length() ).toString();
+      }
+      return strName;
+    }
+    return null;
   }
 
   protected abstract ISymbol getSymbol(String name);

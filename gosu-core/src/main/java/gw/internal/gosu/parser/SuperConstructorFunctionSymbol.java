@@ -10,7 +10,6 @@ import gw.lang.parser.ISymbol;
 import gw.lang.parser.Keyword;
 import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IConstructorInfo;
-import gw.lang.reflect.gs.IGosuConstructorInfo;
 
 /**
  */
@@ -19,7 +18,7 @@ public class SuperConstructorFunctionSymbol extends DynamicFunctionSymbol implem
   public SuperConstructorFunctionSymbol( DynamicFunctionSymbol dfs )
   {
     super( dfs );
-    setCaseInsensitiveName( getSignatureName( getDisplayName() ) );
+    setName( getSignatureName( getDisplayName() ) );
   }
 
   public ISymbol getLightWeightReference()

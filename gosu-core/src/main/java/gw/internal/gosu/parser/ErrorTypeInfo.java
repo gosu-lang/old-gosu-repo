@@ -52,10 +52,6 @@ public class ErrorTypeInfo implements ITypeInfo
     return new UniversalProperty( propName.toString() );
   }
 
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return propName;
-  }
-
   public MethodList getMethods()
   {
     return MethodList.EMPTY;

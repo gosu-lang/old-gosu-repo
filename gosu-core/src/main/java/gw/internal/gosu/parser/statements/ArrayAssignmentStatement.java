@@ -84,8 +84,9 @@ public final class ArrayAssignmentStatement extends Statement implements IArrayA
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 

@@ -6,7 +6,6 @@ package gw.internal.gosu.parser.statements;
 
 import gw.internal.gosu.parser.DynamicPropertySymbol;
 import gw.lang.reflect.IFeatureInfo;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.statements.IPropertyStatement;
 import gw.lang.parser.statements.ITerminalStatement;
 import gw.internal.gosu.parser.Statement;
@@ -41,8 +40,9 @@ public class PropertyStatement extends Statement implements IPropertyStatement
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 
@@ -67,27 +67,27 @@ public class PropertyStatement extends Statement implements IPropertyStatement
   //***** Delegate to FunctionStatement *****//
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return _propertyGetterOrSetter.getNameOffset( identifierName );
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _propertyGetterOrSetter.setNameOffset( iOffset, identifierName );
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
     return _propertyGetterOrSetter.declares( identifierName ) ||
-           _propertyGetterOrSetter.declares( CaseInsensitiveCharSequence.get( "@" + identifierName.toString() + "()" ) );
+           _propertyGetterOrSetter.declares( (String)("@" + identifierName.toString() + "()") );
   }
 
   public String[] getDeclarations() {
     return new String[] {_propertyGetterOrSetter.getDynamicFunctionSymbol().getDisplayName().replace("@", "")};
   }
 
-  private IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols(CaseInsensitiveCharSequence identifierName)
+  private IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols( String identifierName)
   {
     return _propertyGetterOrSetter.findOwningFeatureInfoOfDeclaredSymbols( identifierName );
   }

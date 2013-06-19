@@ -57,6 +57,11 @@ public class JarEntryFileImpl extends JarEntryResourceImpl implements IFile {
   }
 
   @Override
+  public boolean isInJar() {
+    return true;
+  }
+
+  @Override
   public boolean create() {
     throw new RuntimeException("Not supported");
   }

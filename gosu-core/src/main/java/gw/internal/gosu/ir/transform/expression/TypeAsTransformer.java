@@ -58,7 +58,7 @@ public class TypeAsTransformer extends AbstractExpressionTransformer<ITypeAsExpr
     IType asType = _expr().getType();
     IType lhsType = _expr().getLHS().getType();
 
-    if( _expr().getType().getName().equals(GosuTypes.IMONITORLOCK().getName() ) )
+    if( _expr().getType().getName().equals( GosuTypes.IMONITORLOCK().getName() ) )
     {
       return root;
     }
@@ -72,6 +72,24 @@ public class TypeAsTransformer extends AbstractExpressionTransformer<ITypeAsExpr
         isPrimitiveNumberType( lhsType ) )
     {
       return numberConvert( lhsType, asType, root );
+    }
+
+    if( isPrimitiveNumberType( lhsType ) )
+    {
+      // Handle boxing directly (bypass coercion manager)
+
+      if( asType.isAssignableFrom( TypeSystem.getBoxType( lhsType ) ) )
+      {
+        return boxValue( lhsType, root );
+      }
+      if( isNonBigBoxedNumberType( asType ) )
+      {
+        IType primitiveAsType = TypeSystem.getPrimitiveType( asType );
+        if( isPrimitiveNumberType( primitiveAsType ) )
+        {
+          return boxValueToType( asType, numberConvert( lhsType, primitiveAsType, root ) );
+        }
+      }
     }
 
     IRExpression asPrimitive = maybeMakePrimitive( root );

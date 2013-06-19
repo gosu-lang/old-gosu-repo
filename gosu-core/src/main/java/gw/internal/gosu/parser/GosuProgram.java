@@ -5,7 +5,6 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.expressions.Identifier;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ExternalSymbolMapForMap;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IParsedElement;
@@ -14,7 +13,6 @@ import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITokenizerInstructor;
 import gw.lang.parser.ITypeUsesMap;
-import gw.lang.parser.expressions.IEvalExpression;
 import gw.lang.parser.expressions.IFieldAccessExpression;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IMethodInfo;
@@ -23,13 +21,13 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.*;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.GosuExceptionUtil;
 import org.xml.sax.Attributes;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -136,7 +134,7 @@ public class GosuProgram extends GosuClass implements IGosuProgramInternal
       return;
     }
 
-    CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbolsMap = new CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol>( 8 );
+    HashMap<String, ISymbol> externalSymbolsMap = new HashMap<String, ISymbol>( 8 );
     getParseInfo().setExternalSymbols(new ExternalSymbolMapForMap(externalSymbolsMap));
     Map symbols = symTable.getSymbols();
     if( symbols == null )
@@ -148,7 +146,7 @@ public class GosuProgram extends GosuClass implements IGosuProgramInternal
     {
       if( !(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null )
       {
-        externalSymbolsMap.put( sym.getCaseInsensitiveName(), sym );
+        externalSymbolsMap.put( (String)sym.getName(), sym );
       }
     }
   }

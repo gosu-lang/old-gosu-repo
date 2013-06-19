@@ -62,8 +62,9 @@ public final class BeanMethodCallStatement extends Statement implements IBeanMet
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 

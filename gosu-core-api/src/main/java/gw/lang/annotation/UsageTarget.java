@@ -7,6 +7,7 @@ package gw.lang.annotation;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.ITypeInfo;
 
@@ -14,30 +15,12 @@ import java.lang.annotation.ElementType;
 
 public enum UsageTarget
 {
-  /**
-   * Specifies this modifier applies to everything
-   */
   AllTarget,
-
-  /**
-   * Specifies this modifier applies to a class
-   */
   TypeTarget,
-
-  /**
-   * Specifies this modifier applies to a constructor
-   */
   ConstructorTarget,
-
-  /**
-   * Specifies this modifier applies to a property
-   */
   PropertyTarget,
-
-  /**
-   * Specifies this modifier applies to a method
-   */
-  MethodTarget;
+  MethodTarget,
+  ParameterTarget;
 
   public static UsageTarget convert( ElementType elementType )
   {
@@ -51,6 +34,8 @@ public enum UsageTarget
         return TypeTarget;
       case METHOD:
         return UsageTarget.MethodTarget;
+      case PARAMETER:
+        return UsageTarget.ParameterTarget;
     }
     return AllTarget;
   }
@@ -68,6 +53,10 @@ public enum UsageTarget
     else if( fi instanceof IMethodInfo )
     {
       return MethodTarget;
+    }
+    else if( fi instanceof IParameterInfo )
+    {
+      return ParameterTarget;
     }
     else if( fi instanceof ITypeInfo )
     {

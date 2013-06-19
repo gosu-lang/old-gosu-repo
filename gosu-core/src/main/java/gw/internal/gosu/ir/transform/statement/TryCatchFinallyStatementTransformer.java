@@ -22,10 +22,8 @@ import gw.lang.ir.statement.IRIfStatement;
 import gw.lang.ir.statement.IRThrowStatement;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.parser.EvaluationException;
-import gw.lang.reflect.java.JavaTypes;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -205,7 +203,7 @@ public class TryCatchFinallyStatementTransformer extends AbstractStatementTransf
       List<IRStatement> catchBody = new ArrayList<IRStatement>();
 
       // Store the exception type in a temporary variable
-      IRSymbol exceptionTypeSymbol = new IRSymbol("exceptiontype$$temp$$var", IRTypeConstants.ITYPE, true);
+      IRSymbol exceptionTypeSymbol = new IRSymbol("exceptiontype$$temp$$var", IRTypeConstants.ITYPE(), true);
       cc.putSymbol( exceptionTypeSymbol );
       catchBody.add( buildAssignment( exceptionTypeSymbol, callStaticMethod( TypeSystem.class, "getFromObject", new Class[]{Object.class}, exprList( identifier( exceptionSymbol ) ) ) ) );
 

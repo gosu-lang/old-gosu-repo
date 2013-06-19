@@ -4,30 +4,27 @@
 
 package gw.internal.gosu.parser;
 
+import gw.internal.gosu.parser.statements.StatementList;
+import gw.lang.parser.IBlockClass;
+import gw.lang.parser.ICapturedSymbol;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IDynamicPropertySymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.ICompilableType;
-import gw.lang.parser.expressions.IVarStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
-import gw.lang.parser.ICapturedSymbol;
-import gw.lang.parser.IBlockClass;
-import gw.lang.parser.IDynamicFunctionSymbol;
-import gw.lang.parser.IDynamicPropertySymbol;
-import gw.lang.parser.ISymbol;
-import gw.lang.parser.ISymbolTable;
-import gw.lang.parser.statements.IClassStatement;
-import gw.internal.gosu.parser.statements.StatementList;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 public interface ICompilableTypeInternal extends ICompilableType {
 
   ICompilableTypeInternal getEnclosingType();
 
-  Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols();
+  Map<String, ICapturedSymbol> getCapturedSymbols();
 
-  IVarStatement getMemberField( CaseInsensitiveCharSequence charSequence );
+  IVarStatement getMemberField( String charSequence );
 
   void addBlock(IBlockClass blockClass);
 
@@ -35,15 +32,15 @@ public interface ICompilableTypeInternal extends ICompilableType {
 
   void addCapturedSymbol(ICapturedSymbol capturedSymbol);
 
-  ICapturedSymbol getCapturedSymbol( CaseInsensitiveCharSequence strName );
+  ICapturedSymbol getCapturedSymbol( String strName );
 
-  List<? extends IDynamicFunctionSymbol> getMemberFunctions( CaseInsensitiveCharSequence names );
+  List<? extends IDynamicFunctionSymbol> getMemberFunctions( String names );
 
-  IDynamicPropertySymbol getMemberProperty(CaseInsensitiveCharSequence caseInsensitiveCharSequence);
+  IDynamicPropertySymbol getMemberProperty( String strName );
 
   IType getEnclosingNonBlockType();
 
-  DynamicPropertySymbol getStaticProperty(CaseInsensitiveCharSequence strPropertyName);
+  DynamicPropertySymbol getStaticProperty( String strPropertyName);
 
   int getDepth();
 
@@ -77,4 +74,6 @@ public interface ICompilableTypeInternal extends ICompilableType {
   String getSource();
 
   GosuClassParseInfo getParseInfo();
+
+  boolean hasAssertions();
 }

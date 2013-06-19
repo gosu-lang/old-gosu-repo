@@ -45,11 +45,6 @@ public class NamespaceTypeInfo extends BaseFeatureInfo implements ITypeInfo
     return Collections.emptyList();
   }
 
-  public CharSequence getRealPropertyName( CharSequence propName )
-  {
-    return null;
-  }
-
   public IPropertyInfo getProperty( CharSequence propName )
   {
     return null;

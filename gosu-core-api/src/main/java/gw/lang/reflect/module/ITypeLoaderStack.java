@@ -8,6 +8,7 @@ import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.ITypeLoader;
 import gw.lang.reflect.ITypeRefFactory;
 import gw.lang.UnstableAPI;
+import gw.lang.reflect.RefreshRequest;
 import gw.lang.reflect.gs.TypeName;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public interface ITypeLoaderStack
 
   IDefaultTypeLoader getDefaultTypeLoader();
 
-  void refresh(boolean clearCachedTypes);
+  void refreshed();
 
   void shutdown();
 

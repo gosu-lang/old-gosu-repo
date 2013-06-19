@@ -42,16 +42,18 @@ public class GosuProgramParser implements IGosuProgramParser
     try
     {
       IGosuProgramInternal program;
+      String typeName = makeEvalKey( strSource, enclosingClass, ctxElem );
+      if( ctxElem instanceof EvalExpression )
+      {
+        program = ((EvalExpression)ctxElem).getCachedProgram( typeName );
+        if( program != null )
+        {
+          program.isValid();
+          return new ParseResult( program );
+        }
+      }
 
-//      program = ((EvalExpression)evalExpr).getCachedProgram( strSource );
-//      if( program != null )
-//      {
-//        program.isValid();
-//        return new ParseResult( program );
-//      }
-
-      String typeName = enclosingClass.getName() + '.' + IGosuProgram.NAME_PREFIX + "eval_" + getEvalExprLocationOffset( ctxElem ) + "_" + GosuStringUtil.getSHA1String(strSource);
-      StringSourceFileHandle sfh = new StringSourceFileHandle(typeName, strSource, false, ClassType.Eval );
+      StringSourceFileHandle sfh = new StringSourceFileHandle( typeName, strSource, false, ClassType.Eval );
       sfh.setParentType( enclosingClass.getName() );
       ITypeUsesMap typeUsedMap = getTypeUsedMapFrom( ctxElem );
       if( typeUsedMap != null )
@@ -73,13 +75,24 @@ public class GosuProgramParser implements IGosuProgramParser
       }
       sfh.setExternalSymbols( extSyms );
       program.isValid();
-//      ((EvalExpression)evalExpr).cacheProgram( strSource, program );
+      if( ctxElem instanceof EvalExpression )
+      {
+        ((EvalExpression)ctxElem).cacheProgram( typeName, program );
+      }
       return new ParseResult( program );
     }
     finally
     {
       TypeSystem.unlock();
     }
+  }
+
+  public static String makeEvalKey( String strSource, IType enclosingClass, IParsedElement ctxElem ) {
+    return makeEvalKey( strSource, enclosingClass, getEvalExprLocationOffset( ctxElem ) );
+  }
+
+  public static String makeEvalKey( String source, IType enclosingClass, int iEvalExprOffset ) {
+    return enclosingClass.getName() + '.' + IGosuProgram.NAME_PREFIX + "eval_" + iEvalExprOffset + "_" + GosuStringUtil.getSHA1String( source );
   }
 
   private ITypeUsesMap getTypeUsedMapFrom( IParsedElement ctxElem ) {
@@ -93,7 +106,7 @@ public class GosuProgramParser implements IGosuProgramParser
     return null;
   }
 
-  private int getEvalExprLocationOffset( IParsedElement evalExpr ) {
+  private static int getEvalExprLocationOffset( IParsedElement evalExpr ) {
     IParseTree location = evalExpr.getLocation();
     return location != null ? location.getOffset() : getIndex();
   }

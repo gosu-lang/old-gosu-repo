@@ -14,26 +14,22 @@ import gw.internal.gosu.parser.expressions.NotAWordExpression;
 import gw.internal.gosu.parser.expressions.StringLiteral;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
 import gw.internal.gosu.parser.statements.BeanMethodCallStatement;
+import gw.internal.gosu.parser.statements.ReturnStatement;
 import gw.internal.gosu.parser.statements.StatementList;
 import gw.internal.gosu.parser.statements.VarStatement;
-import gw.internal.gosu.parser.statements.ReturnStatement;
-import gw.lang.IAnnotation;
 import gw.lang.parser.StandardSymbolTable;
-import gw.lang.parser.ISymbol;
 import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.IErrorType;
-import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.lang.reflect.TypeSystemShutdownListener;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.JavaTypes;
 import gw.util.concurrent.LockingLazyVar;
 
@@ -42,13 +38,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 
 public class AnnotationBuilder
 {
   private static final int MAX_STMTS_PER_EVAL_METHOD = 1000;
-  private static final CharSequence ANNOTATION_MAP_BUILDER_VAR_NAME = "builder";
+  private static final String ANNOTATION_MAP_BUILDER_VAR_NAME = "builder";
   public static final LockingLazyVar<Symbol> BUILDER_SYMBOL = new LockingLazyVar<Symbol>() {
     protected Symbol init() {
       return new Symbol(ANNOTATION_MAP_BUILDER_VAR_NAME, annotationMapType(), null) {

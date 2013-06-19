@@ -4,7 +4,6 @@
 
 package gw.lang.reflect;
 
-import gw.lang.annotation.ScriptabilityModifier;
 import gw.lang.parser.ScriptabilityModifiers;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.gs.IGenericTypeVariable;
@@ -27,7 +26,7 @@ public abstract class BaseFeatureInfo implements IAttributedFeatureInfo
 
   transient private volatile List<IAnnotationInfo> _annotations;
 
-  transient private volatile List<ScriptabilityModifier> _scriptablity;
+  transient private volatile Boolean _internalAPI;
 
   static <T> List<T> compactAndLockList(List<T> list) {
     if (list == null || list.isEmpty()) {
@@ -158,18 +157,18 @@ public abstract class BaseFeatureInfo implements IAttributedFeatureInfo
    */
   public List<IAnnotationInfo> getAnnotationsOfType( IType type )
   {
-    return ANNOTATION_HELPER.getAnnotationsOfType( type, getAnnotations() );
+    return ANNOTATION_HELPER.getAnnotationsOfType(type, getAnnotations());
   }
 
   public boolean hasAnnotation( IType type )
   {
-    return ANNOTATION_HELPER.hasAnnotation( type, getAnnotations() );
+    return ANNOTATION_HELPER.hasAnnotation(type, getAnnotations());
   }
 
   @Override
   public IAnnotationInfo getAnnotation( IType type )
   {
-    return ANNOTATION_HELPER.getAnnotation( type, getAnnotations(), type.getDisplayName() );
+    return ANNOTATION_HELPER.getAnnotation(type, getAnnotations(), type.getDisplayName());
   }
 
   @Override
@@ -225,14 +224,7 @@ public abstract class BaseFeatureInfo implements IAttributedFeatureInfo
 
   public boolean isVisible( IScriptabilityModifier constraint )
   {
-    for( ScriptabilityModifier modifier : getScriptability() )
-    {
-      if( modifier.isVisible( constraint ) )
-      {
-        return true;
-      }
-    }
-    return getScriptability().isEmpty();
+    return !isInternalAPI();
   }
 
   public boolean isScriptable()
@@ -243,56 +235,31 @@ public abstract class BaseFeatureInfo implements IAttributedFeatureInfo
   public boolean isHidden()
   {
     try {
-      final List<ScriptabilityModifier> scriptability = getScriptability();
-      return !scriptability.isEmpty() &&
-      scriptability.contains( ScriptabilityModifier.HIDDEN );
+      return isInternalAPI();
     } catch (Exception e) {
       return false;
     }
   }
 
-  public boolean isScriptableTagPresent()
+  public boolean isInternalAPI()
   {
-    return !getScriptability().isEmpty();
-  }
-
-  private List<ScriptabilityModifier> getScriptability()
-  {
-    if( _scriptablity == null )
+    if( _internalAPI == null )
     {
       TypeSystem.lock();
       try
       {
-        if( _scriptablity == null )
+        if( _internalAPI == null )
         {
-          List<ScriptabilityModifier> scriptablity = new ArrayList<ScriptabilityModifier>();
-          List<IAnnotationInfo> annotations = getAnnotationsOfType(JavaTypes.SCRIPTABLE());
-          if( annotations != null && !annotations.isEmpty() )
-          {
-            Object value = annotations.get(0).getFieldValue("value");
-            String[] values = new String[1];
-            if (value instanceof String) {
-              values[0] = (String) value;
-            } else {
-              values = (String[]) value;
-            }
-
-            for (String s : values) {
-              ScriptabilityModifier scriptabilityModifier = ScriptabilityModifier.valueOf(s);
-              scriptablity.add(scriptabilityModifier);
-            }
-            //scriptablity = Arrays.asList(((Scriptable)CommonServices.getGosuIndustrialPark().evaluateAnnotation(ai)).value());
-            scriptablity = compactAndLockList(scriptablity);
-          }
-          _scriptablity = scriptablity;
+          _internalAPI = !getAnnotationsOfType(JavaTypes.INTERNAL_API()).isEmpty();
         }
+        assert _internalAPI != null;
       }
       finally
       {
         TypeSystem.unlock();
       }
     }
-    return _scriptablity;
+    return _internalAPI;
   }
 
   public boolean isAbstract()

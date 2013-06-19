@@ -32,7 +32,7 @@ public class GosuClassCompilingStack
       for( int i = 0; i < list.size(); i++ )
       {
         IType type = list.get( i );
-        if( type.getName().equalsIgnoreCase( typeName ) )
+        if( type.getName().equals( typeName ) )
         {
           return type;
         }

@@ -10,6 +10,7 @@ import gw.internal.gosu.parser.ErrorType;
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.TypeLoaderAccess;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.expressions.Literal;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.statements.ILoopStatement;
 import gw.lang.reflect.IType;
@@ -25,7 +26,6 @@ import java.util.NoSuchElementException;
  */
 public abstract class LoopStatement extends Statement implements ILoopStatement
 {
-
   public static boolean isIteratorType( IType typeIn )
   {
     return typeIn.isArray() ||
@@ -172,6 +172,12 @@ public abstract class LoopStatement extends Statement implements ILoopStatement
     }
 
     return 0;
+  }
+
+  public boolean isConditionLiteralTrue() {
+    return getExpression() instanceof Literal &&
+           getExpression().isCompileTimeConstant() &&
+           CommonServices.getCoercionManager().makePrimitiveBooleanFrom( getExpression().evaluate() );
   }
 
   static class ArrayIterator implements Iterator

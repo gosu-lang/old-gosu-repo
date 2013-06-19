@@ -24,6 +24,6 @@ public class IRArrayLengthExpression extends IRExpression {
 
   @Override
   public IRType getType() {
-    return IRTypeConstants.pINT;
+    return IRTypeConstants.pINT();
   }
 }

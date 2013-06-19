@@ -41,7 +41,7 @@ public class IRMethodCallExpressionCompiler extends AbstractBytecodeCompiler {
       // but using INVOKEINTERFACE to invoke an Object method not defined directly on the interface will result in an
       // IncompatibleClassChangeException at runtime in the IBM VM, and using INVOKEVIRTUAL with an interface type
       // as the root will result in such an exception at runtime in both the Sun and IBM VMs
-      type = IRTypeConstants.OBJECT;
+      type = IRTypeConstants.OBJECT();
       opCode = Opcodes.INVOKEVIRTUAL;
     } else {
       type = expression.getRoot().getType();

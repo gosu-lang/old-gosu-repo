@@ -33,8 +33,9 @@ public class TypeLoaderStatement extends Statement implements ITypeLoaderStateme
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 

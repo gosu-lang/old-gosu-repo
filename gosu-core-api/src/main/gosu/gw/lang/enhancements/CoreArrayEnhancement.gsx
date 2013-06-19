@@ -52,7 +52,7 @@ enhancement CoreArrayEnhancement<T> : T[] {
    * are copied from this array.  This is cheaper than
    * toList().
    */
-  internal function fastList() : java.util.List<T> {
+  public function fastList() : java.util.List<T> {
     if( GosuObjectUtil.isJavaReferenceArray( this ) ) {
       return Arrays.asList<T>( this )
     } else {

@@ -6,175 +6,124 @@ package gw.lang.reflect;
 
 import gw.config.CommonServices;
 import gw.lang.GosuShop;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultArrayTypeInfo implements ITypeInfo
-{
+public class DefaultArrayTypeInfo extends TypeInfoBase implements IRelativeTypeInfo {
   private IType _type;
-  private LockingLazyVar<MethodList> _methods;
-  private Map<String, IPropertyInfo> _properties;
-  private ArrayList<IPropertyInfo> _propertiesList;
+  private LockingLazyVar<List<IPropertyInfo>> _declaredProperties;
+  private final FeatureManager _fm;
 
+  public DefaultArrayTypeInfo( IDefaultArrayType type ) {
+    _type = type;
 
-  public DefaultArrayTypeInfo( IType defaultArrayIntrinsicType )
-  {
-    _type = defaultArrayIntrinsicType;
+    _declaredProperties =
+      new LockingLazyVar<List<IPropertyInfo>>()
+          {
+            protected List<IPropertyInfo> init()
+            {
+              return Collections.singletonList( GosuShop.createLengthProperty( DefaultArrayTypeInfo.this ) );
+            }
+          };
 
-    _methods =
-      new LockingLazyVar<MethodList>()
-      {
-        protected MethodList init()
-        {
-          MethodList methods = new MethodList();
-          CommonServices.getEntityAccess().addEnhancementMethods(_type, methods );
-          return methods;
-        }
-      };
-
-    _properties = new CaseInsensitiveHashMap<String, IPropertyInfo>();
-    _properties.put( "length", makeLengthProperty() );
-    CommonServices.getEntityAccess().addEnhancementProperties(_type, _properties, false );
-    _propertiesList = new ArrayList<IPropertyInfo>( _properties.values() );
+    _fm = new FeatureManager( this, true );
   }
 
-  private IPropertyInfo makeLengthProperty()
-  {
-    return GosuShop.createLengthProperty(this);
+  protected void unloadTypeInfo() {
+    _fm.clear();
   }
 
-  public List<? extends IPropertyInfo> getProperties()
-  {
-    return _propertiesList;
+  public List<? extends IPropertyInfo> getProperties() {
+    return getProperties( null );
   }
 
-  public IPropertyInfo getProperty( CharSequence propName )
-  {
-    //noinspection SuspiciousMethodCalls
-    return _properties.get( propName );
+  public IPropertyInfo getProperty( CharSequence propName ) {
+    return getProperty( null, propName );
   }
 
-  public CharSequence getRealPropertyName(CharSequence propName)
-  {
-    IPropertyInfo property = getProperty( propName );
-    return property == null ? null : property.getName();
+  public MethodList getMethods() {
+    return getMethods( null );
   }
 
-  @SuppressWarnings({"unchecked"})
-  public MethodList getMethods()
-  {
-    return _methods.get();
+  public List<? extends IConstructorInfo> getConstructors() {
+    return getDeclaredConstructors();
   }
 
-  public IMethodInfo getMethod( CharSequence methodName, IType... params )
-  {
-    //noinspection unchecked
-    return FIND.method( getMethods(), methodName, params );
+  public List<? extends IEventInfo> getEvents() {
+    return getOwnersType().getSupertype().getTypeInfo().getEvents();
   }
 
-  @SuppressWarnings({"unchecked"})
-  public List getConstructors()
-  {
-    return Collections.EMPTY_LIST;
+  public IEventInfo getEvent( CharSequence strEvent ) {
+    return getOwnersType().getSupertype().getTypeInfo().getEvent( strEvent );
   }
 
-  public IConstructorInfo getConstructor( IType... params )
-  {
-    return null;
-  }
-
-  public IMethodInfo getCallableMethod( CharSequence strMethod, IType... params )
-  {
-    //noinspection unchecked
-    return FIND.callableMethod( getMethods(), strMethod, params );
-  }
-
-  public IConstructorInfo getCallableConstructor( IType... params )
-  {
-    //noinspection unchecked
-    return FIND.callableConstructor( getConstructors(), params );
-  }
-
-  @SuppressWarnings({"unchecked"})
-  public List getEvents()
-  {
-    return Collections.EMPTY_LIST;
-  }
-
-  public IEventInfo getEvent( CharSequence strEvent )
-  {
-    return null;
-  }
-
-  public List<IAnnotationInfo> getAnnotations()
-  {
+  public List<IAnnotationInfo> getDeclaredAnnotations() {
     return Collections.emptyList();
   }
 
-  public List<IAnnotationInfo> getDeclaredAnnotations()
-  {
-    return Collections.emptyList();
-  }
-
-  public List<IAnnotationInfo> getAnnotationsOfType( IType type )
-  {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public IAnnotationInfo getAnnotation( IType type )
-  {
-    return null;
-  }
-
-  @Override
-  public boolean hasDeclaredAnnotation( IType type )
-  {
+  public boolean hasAnnotation( IType type ) {
     return false;
   }
 
-  public boolean hasAnnotation( IType type )
-  {
-    return false;
-  }
-
-  public IFeatureInfo getContainer()
-  {
-    return null;
-  }
-
-  public IType getOwnersType()
-  {
+  public IType getOwnersType() {
     return _type;
+  }
+
+  public IRelativeTypeInfo.Accessibility getAccessibilityForType( IType whosaskin ) {
+    return Accessibility.PUBLIC;
+  }
+
+  public List<? extends IConstructorInfo> getDeclaredConstructors() {
+    return Collections.emptyList();
+  }
+
+  public List<? extends IMethodInfo> getDeclaredMethods() {
+    return MethodList.EMPTY;
+  }
+
+  public List<? extends IPropertyInfo> getDeclaredProperties() {
+    return _declaredProperties.get();
+  }
+
+  public IConstructorInfo getConstructor( IType whosAskin, IType[] params ) {
+    List<? extends IConstructorInfo> ctors = getConstructors( whosAskin );
+    return FIND.constructor( ctors, params );
+  }
+  public List<? extends IConstructorInfo> getConstructors( IType whosaskin ) {
+    return _fm.getConstructors( getAccessibilityForType( whosaskin ) );
+  }
+
+  public IMethodInfo getMethod( IType whosaskin, CharSequence methodName, IType... params ) {
+    MethodList methods = getMethods( whosaskin );
+    return FIND.method( methods, methodName, params );
+  }
+  public MethodList getMethods( IType whosaskin ) {
+    return _fm.getMethods( getAccessibilityForType( whosaskin ) );
+  }
+
+  public IPropertyInfo getProperty( IType whosaskin, CharSequence propName ) {
+    return _fm.getProperty( getAccessibilityForType( whosaskin ), propName );
+  }
+  public List<? extends IPropertyInfo> getProperties( IType whosaskin ) {
+    return _fm.getProperties( getAccessibilityForType( whosaskin ) );
   }
 
   /**
    */
-  public String getName()
-  {
+  public String getName() {
     return _type.getRelativeName();
   }
 
-  public String getDisplayName()
-  {
+  public String getDisplayName() {
     return _type.getComponentType().getTypeInfo().getDisplayName() + "[]";
   }
 
-  public String getDescription()
-  {
+  public String getDescription() {
     return "Array of " + _type.getComponentType().getRelativeName() + " objects";
-  }
-
-  public boolean isDeprecated() {
-    return false;
-  }
-
-  public String getDeprecatedReason() {
-    return null;
   }
 }

@@ -23,23 +23,13 @@ public class ClassInfoUtil {
   }
 
   public static IType getActualReturnType(IJavaClassType genericType, TypeVarToTypeMap actualParamByVarName, boolean bKeepTypeVars) {
-//    TypeSystem.pushModule(genericType.getModule()); // it is wrong to push this module
-//    try {
-      return genericType.getActualType(actualParamByVarName, bKeepTypeVars);
-//    } finally {
-//      TypeSystem.popModule(genericType.getModule());
-//    }
+    return genericType.getActualType(actualParamByVarName, bKeepTypeVars);
   }
 
   public static IType[] getActualTypes(IJavaClassType[] genericTypes, TypeVarToTypeMap actualParamByVarName, boolean bKeepTypeVars) {
     IType[] types = new IType[genericTypes.length];
     for (int i = 0; i < types.length; i++) {
-//      TypeSystem.pushModule(genericTypes[i].getModule()); // it is wrong to push this module
-//      try {
-        types[i] = genericTypes[i].getActualType(actualParamByVarName, bKeepTypeVars);
-//      } finally {
-//        TypeSystem.popModule(genericTypes[i].getModule());
-//      }
+      types[i] = genericTypes[i].getActualType(actualParamByVarName, bKeepTypeVars);
     }
     return types;
   }

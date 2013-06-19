@@ -48,6 +48,7 @@ import gw.lang.reflect.module.IModule;
 import java.io.File;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -200,13 +201,13 @@ public class GosuShop
     return CommonServices.getGosuIndustrialPark().createTemplate( strNamespace, strRelativeName, loader, sourceFile, typeUsesMap, symTable );
   }
 
-  public static IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, boolean includeCoreResources)
+  public static IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files)
   {
-    return CommonServices.getGosuIndustrialPark().createFileSystemGosuClassRepository(module, files, includeCoreResources);
+    return CommonServices.getGosuIndustrialPark().createFileSystemGosuClassRepository(module, files);
   }
-  public static IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions, boolean includeCoreResources)
+  public static IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions)
   {
-    return CommonServices.getGosuIndustrialPark().createFileSystemGosuClassRepository(module, files, extensions, includeCoreResources);
+    return CommonServices.getGosuIndustrialPark().createFileSystemGosuClassRepository(module, files, extensions);
   }
 
   public static ITypeUsesMap createTypeUsesMap( List<String> specialTypeUses )
@@ -227,9 +228,9 @@ public class GosuShop
     return CommonServices.getGosuIndustrialPark().createPropertyDelegate(container, prop);
   }
 
-  public static IModule createModule( IExecutionEnvironment execEnv, String strMemberName, boolean includesGosuCoreAPI )
+  public static IModule createModule( IExecutionEnvironment execEnv, String strMemberName )
   {
-    return CommonServices.getGosuIndustrialPark().createModule( execEnv, strMemberName, includesGosuCoreAPI );
+    return CommonServices.getGosuIndustrialPark().createModule( execEnv, strMemberName );
   }
 
   public static IModule createGlobalModule(IExecutionEnvironment execEnv)

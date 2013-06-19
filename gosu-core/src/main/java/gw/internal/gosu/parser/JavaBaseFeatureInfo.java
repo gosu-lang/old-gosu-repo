@@ -53,60 +53,13 @@ public abstract class JavaBaseFeatureInfo extends BaseFeatureInfo
 
   public boolean isVisible( IScriptabilityModifier constraint )
   {
-    boolean visible;
-    if (isScriptableTagPresent()) {
-      visible = super.isVisible(constraint);
-    } else {
-      if (isPublishInGosu() && !isDefaultEnumFeature()) {
-        visible = false;
-      } else {
-        visible = isVisibleViaFeatureDescriptor(constraint);
-      }
-    }
-
+    boolean visible = super.isVisible(constraint) && isVisibleViaFeatureDescriptor(constraint);
     return visible || isProxyClassCompiling();
-  }
-
-  @SuppressWarnings({"unchecked"})
-  private boolean isPublishInGosu() {
-    IJavaAnnotatedElement annotatedElement = getAnnotatedElement();
-    if( annotatedElement instanceof Member )
-    {
-      return ((Member)getAnnotatedElement()).getDeclaringClass().isAnnotationPresent( PublishInGosu.class);
-    }
-    if (annotatedElement instanceof IJavaClassField) {
-      return annotatedElement.getEnclosingClass().isAnnotationPresent(PublishInGosu.class);
-    }
-    if (annotatedElement instanceof IJavaClassMethod) {
-      return annotatedElement.getEnclosingClass().isAnnotationPresent(PublishInGosu.class);
-    }
-    if (annotatedElement instanceof IJavaClassConstructor) {
-      return annotatedElement.getEnclosingClass().isAnnotationPresent(PublishInGosu.class);
-    }
-    if (annotatedElement instanceof IJavaClassInfo) {
-      return annotatedElement.isAnnotationPresent(PublishInGosu.class);
-    }
-
-    if (annotatedElement == null) {
-      return false;
-    }
-    
-    throw new IllegalStateException( "Unexpected type: " + annotatedElement );
   }
 
   public boolean isHidden()
   {
-    boolean bHidden;
-    if (isScriptableTagPresent()) {
-      bHidden = super.isHidden();
-    } else {
-      if (isPublishInGosu() && !isDefaultEnumFeature()) {
-        bHidden = true;
-      } else {
-        bHidden = isHiddenViaFeatureDescriptor();
-      }
-    }
-
+    boolean bHidden = super.isHidden() || isHiddenViaFeatureDescriptor();
     return bHidden && !isProxyClassCompiling();
   }
 

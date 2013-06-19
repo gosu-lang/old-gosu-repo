@@ -6,18 +6,20 @@ package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.statements.ReturnStatement;
+import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IStatement;
-import gw.lang.parser.statements.IStatementList;
-import gw.lang.parser.statements.INoOpStatement;
 import gw.lang.parser.statements.IFunctionStatement;
+import gw.lang.parser.statements.INoOpStatement;
+import gw.lang.parser.statements.IStatementList;
+import gw.lang.parser.statements.ITerminalStatement;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.gs.IProgramInstance;
 import gw.lang.reflect.gs.IExternalSymbolMap;
+import gw.lang.reflect.gs.IProgramInstance;
 import gw.util.GosuExceptionUtil;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 
@@ -29,7 +31,11 @@ import java.util.List;
  */
 public abstract class Statement extends ParsedElement implements IStatement
 {
+  private static final LeastSigTerminal EMPTY_LST = new LeastSigTerminal( null, false );
+
   public static final Object VOID_RETURN_VALUE = new Object(){};
+
+  private LeastSigTerminal _cachedLeastSigTerm;
 
   public Statement()
   {
@@ -86,7 +92,8 @@ public abstract class Statement extends ParsedElement implements IStatement
     return TypeLord.findLeastUpperBound( returnTypes );
   }
 
-  protected List getExcludedReturnTypeElements() {
+  protected List getExcludedReturnTypeElements()
+  {
     return Arrays.asList(IFunctionStatement.class, BlockExpression.class);
   }
 
@@ -111,6 +118,55 @@ public abstract class Statement extends ParsedElement implements IStatement
     else
     {
       return !(this instanceof INoOpStatement);
+    }
+  }
+
+  @Override
+  public void setParent( IParsedElement rootElement )
+  {
+    super.setParent( rootElement );
+    _cachedLeastSigTerm = null;
+  }
+
+  @Override
+  public final ITerminalStatement getLeastSignificantTerminalStatement( boolean[] bAbsolute ) {
+    if( _cachedLeastSigTerm == null ) {
+      ITerminalStatement stmt = getLeastSignificantTerminalStatement_internal( bAbsolute );
+      if( stmt == null ) {
+        _cachedLeastSigTerm = EMPTY_LST;
+      }
+      else {
+        _cachedLeastSigTerm = new LeastSigTerminal( stmt, bAbsolute[0] );
+      }
+    }
+    bAbsolute[0] = _cachedLeastSigTerm._bAbsolute;
+    return _cachedLeastSigTerm._stmt;
+  }
+
+  protected abstract ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute );
+
+  public static ITerminalStatement getLeastSignificant( ITerminalStatement... termStmts ) {
+    ITerminalStatement ret = null;
+
+    for( ITerminalStatement stmt : termStmts ) {
+      if( stmt != null ) {
+        ret = ret == null
+              ? stmt
+              : ret.getTerminalType().ordinal() < stmt.getTerminalType().ordinal()
+                ? ret
+                : stmt;
+      }
+    }
+    return ret;
+  }
+
+  private static class LeastSigTerminal {
+    private ITerminalStatement _stmt;
+    private boolean _bAbsolute;
+
+    public LeastSigTerminal( ITerminalStatement stmt, boolean bAbsolute ) {
+      _stmt = stmt;
+      _bAbsolute = bAbsolute;
     }
   }
 }

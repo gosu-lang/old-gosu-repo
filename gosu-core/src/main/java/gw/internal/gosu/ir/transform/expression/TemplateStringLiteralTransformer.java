@@ -62,7 +62,7 @@ public class TemplateStringLiteralTransformer extends AbstractExpressionTransfor
         templateBody.setImplicit( true );
 
         // invoke toString on the string builder
-        IRMethodCallExpression toString = buildMethodCall( sbType, "toString", false, IRTypeConstants.STRING, Collections.EMPTY_LIST, identifier( symbol ), Collections.EMPTY_LIST );
+        IRMethodCallExpression toString = buildMethodCall( sbType, "toString", false, IRTypeConstants.STRING(), Collections.EMPTY_LIST, identifier( symbol ), Collections.EMPTY_LIST );
         template.addElement( toString );
         template.setImplicit( true );
 

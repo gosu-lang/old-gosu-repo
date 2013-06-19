@@ -48,11 +48,11 @@ public class CollectionInitializerExpression extends Expression implements IColl
     // Convert to an array for compile-time constant e.g., {a,b,c} is legal array expr for Annotation args
     Class<?> arrayClass = getArrayClass( getType() );
     List<IExpression> values = getValues();
-    Object[] instance = (Object[])Array.newInstance( arrayClass.getComponentType(), values.size() );
-    for( int i = 0; i < values.size(); i++ )
+    Object instance = Array.newInstance( arrayClass.getComponentType(), values.size() );
+    for( int i = 0; i < Array.getLength( instance ); i++ )
     {
       IExpression expr = values.get( i );
-      instance[i] = expr.evaluate();
+      Array.set( instance, i, expr.evaluate() );
     }
     return instance;
   }

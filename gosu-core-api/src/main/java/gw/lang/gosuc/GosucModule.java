@@ -59,11 +59,6 @@ public class GosucModule implements INativeModule, Serializable {
   }
 
   @Override
-  public boolean isGosuModule() {
-    return true;
-  }
-
-  @Override
   public IDirectory getOutputPath() {
     return _outputPath != null ? GosucUtil.getDirectoryForPath(_outputPath) : null;
   }

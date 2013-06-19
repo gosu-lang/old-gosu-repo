@@ -107,7 +107,7 @@ public class GosuClassProxyFactory
         gsAdapterClass = (IGosuClassInternal)outerProxy.getInnerClass( type.getRelativeName().substring( type.getRelativeName().indexOf( '.' ) + 1 ) );
         if( gsAdapterClass == null )
         {
-          TypeSystem.refresh( (ITypeRef)outerProxy, true );
+          TypeSystem.refresh( (ITypeRef)outerProxy);
           gsAdapterClass = (IGosuClassInternal)outerProxy.getInnerClass( type.getRelativeName().substring( type.getRelativeName().indexOf( '.' ) + 1 ) );
         }
       }
@@ -141,11 +141,11 @@ public class GosuClassProxyFactory
     return loader.makeNewClass(
         new LazyStringSourceFileHandle(type, new Callable<StringBuilder>() {
           public StringBuilder call() {
-            module.getExecutionEnvironment().pushModule( module );
+            TypeSystem.pushModule( module );
             try {
               return genJavaInterfaceProxy(type);
             } finally {
-              module.getExecutionEnvironment().popModule( module );
+              TypeSystem.popModule( module );
             }
           }
         }));
@@ -166,13 +166,13 @@ public class GosuClassProxyFactory
       {
         public StringBuilder call()
         {
-          module.getExecutionEnvironment().pushModule( module );
+          TypeSystem.pushModule( module );
           try {
             return genJavaClassProxy( type );
           } 
           finally
           {
-            module.getExecutionEnvironment().popModule( module );
+            TypeSystem.popModule( module );
           }
         }
       } ) );

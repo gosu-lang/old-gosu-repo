@@ -6,6 +6,7 @@ package gw.internal.gosu.parser.statements;
 import gw.internal.gosu.parser.Expression;
 import gw.lang.parser.statements.IReturnStatement;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.TerminalType;
 import gw.util.GosuExceptionUtil;
 
 /**
@@ -52,10 +53,15 @@ public final class ReturnStatement extends TerminalStatement implements IReturnS
     _value = value;
   }
 
+  @Override
+  public TerminalType getTerminalType() {
+    return TerminalType.ReturnOrThrow;
+  }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = true;
     return this;
   }
 

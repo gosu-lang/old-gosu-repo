@@ -25,6 +25,6 @@ public class IRCharacterLiteral extends IRExpression
   @Override
   public IRType getType()
   {
-    return IRTypeConstants.pCHAR;
+    return IRTypeConstants.pCHAR();
   }
 }

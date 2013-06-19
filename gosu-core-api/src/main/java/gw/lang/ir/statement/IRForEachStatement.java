@@ -4,6 +4,7 @@
 
 package gw.lang.ir.statement;
 
+import gw.lang.ir.IRAbstractLoopStatement;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.expression.IRIdentifier;
@@ -13,7 +14,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 @UnstableAPI
-public class IRForEachStatement extends IRStatement implements IRLoopStatement {
+public class IRForEachStatement extends IRAbstractLoopStatement
+{
 
   // init
   private List<IRStatement> _initializers = new ArrayList<IRStatement>();
@@ -91,7 +93,8 @@ public class IRForEachStatement extends IRStatement implements IRLoopStatement {
   }
 
   @Override
-  public IRTerminalStatement getLeastSignificantTerminalStatement() {
+  public IRTerminalStatement getLeastSignificantTerminalStatement()
+  {
     return null;
   }
 }

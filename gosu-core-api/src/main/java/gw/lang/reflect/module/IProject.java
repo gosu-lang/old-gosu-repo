@@ -15,4 +15,6 @@ public interface IProject
   boolean isDisposed();
 
   boolean isHeadless();
+
+  boolean isShadowMode();
 }

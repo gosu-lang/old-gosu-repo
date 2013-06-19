@@ -13,10 +13,9 @@ import gw.lang.reflect.MethodInfoBuilder;
 import gw.lang.reflect.MethodList;
 import gw.lang.reflect.ParameterInfoBuilder;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.CaseInsensitiveHashMap;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +24,7 @@ import java.util.Map;
  */
 public class PropertiesTypeInfo extends BaseTypeInfo {
 
-  private final Map<CharSequence,IPropertyInfo> _properties = new CaseInsensitiveHashMap<CharSequence, IPropertyInfo>();
+  private final Map<CharSequence,IPropertyInfo> _properties = new HashMap<CharSequence, IPropertyInfo>();
   private final MethodList _methods;
   
   public PropertiesTypeInfo(PropertiesType type) {
@@ -61,11 +60,6 @@ public class PropertiesTypeInfo extends BaseTypeInfo {
   @Override
   public IPropertyInfo getProperty(CharSequence propName) {
     return _properties.get(propName);
-  }
-
-  @Override
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return FIND.findCorrectString(propName, _properties.keySet());
   }
 
   @Override

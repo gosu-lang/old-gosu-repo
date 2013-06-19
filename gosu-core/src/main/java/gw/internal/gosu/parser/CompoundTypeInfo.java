@@ -66,11 +66,6 @@ public class CompoundTypeInfo extends BaseTypeInfo implements IRelativeTypeInfo
     return _propertiesByName.get( propName );
   }
 
-  public CharSequence getRealPropertyName( CharSequence propName )
-  {
-    return FIND.findCorrectString( propName, _propertiesByName.keySet() );
-  }
-
   /**
    */
   public MethodList getMethods()
@@ -222,7 +217,7 @@ public class CompoundTypeInfo extends BaseTypeInfo implements IRelativeTypeInfo
         // Implies private members, which means everything.
         accessibility = IRelativeTypeInfo.Accessibility.PRIVATE.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.PRIVATE : accessibility;
       }
-      else if( whosAskin.getNamespace() != null && whosAskin.getNamespace().equalsIgnoreCase( type.getNamespace() ) )
+      else if( whosAskin.getNamespace() != null && whosAskin.getNamespace().equals( type.getNamespace() ) )
       {
         accessibility = IRelativeTypeInfo.Accessibility.INTERNAL.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.INTERNAL : accessibility;
       }
@@ -230,7 +225,7 @@ public class CompoundTypeInfo extends BaseTypeInfo implements IRelativeTypeInfo
       {
         IType genOwnerType = TypeLord.getPureGenericType( type );
         String strGenericOwnerClass = genOwnerType.getName();
-        if( IGosuClass.ProxyUtil.getNameSansProxy( whosAskin ).equalsIgnoreCase( strGenericOwnerClass ) )
+        if( IGosuClass.ProxyUtil.getNameSansProxy( whosAskin ).equals( strGenericOwnerClass ) )
         {
           accessibility = IRelativeTypeInfo.Accessibility.INTERNAL.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.INTERNAL : accessibility;
         }

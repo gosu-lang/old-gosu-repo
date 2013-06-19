@@ -26,8 +26,11 @@ public interface IParsedElement
 
   List<IParseIssue> getImmediateParseIssues();
 
+  IParseIssue getImmediateParseIssue( ResourceKey errKey );
+
   boolean hasParseExceptions();
   boolean hasParseException( ResourceKey errKey );
+  boolean hasImmediateParseIssue( ResourceKey errKey );
 
   List<IParseIssue> getParseExceptions();
 
@@ -79,9 +82,7 @@ public interface IParsedElement
 
   IParsedElement findAncestorParsedElementByType( Class... parsedElementClasses );
 
-  IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement parsedElement, CaseInsensitiveCharSequence identifierName );
-
-  String getFileName();
+  IParsedElementWithAtLeastOneDeclaration findDeclaringStatement( IParsedElement parsedElement, String identifierName );
 
   List<IToken> getTokens();
 

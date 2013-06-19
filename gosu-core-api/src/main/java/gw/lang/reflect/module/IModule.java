@@ -25,15 +25,17 @@ public interface IModule
 
   IDirectory getOutputPath();
 
-  void update();
-  
   /**
    * @return A unique name relative to all other modules in a given execution 
    *   environment.
    */
   String getName();
 
-  void addRoot(IDirectory rootDir);
+  void setName(String name);
+
+  List<IDirectory> getRoots();
+
+  void setRoots(List<IDirectory> roots);
 
   /**
    * @return A list of dependencies for this module. The list may contain both 
@@ -41,17 +43,13 @@ public interface IModule
    */
   List<Dependency> getDependencies();
 
+  void setDependencies(List<Dependency> newDeps);
+
   void addDependency( Dependency dependency );
 
   void removeDependency( Dependency d );
 
-  void removeDependency( IModule module );
-
-  void clearDependencies();
-
   ITypeLoaderStack getModuleTypeLoader();
-
-  List<? extends IDirectory> getRoots();
 
   /**
    * @return The path[s] having source files that should be exposed to this 
@@ -61,21 +59,18 @@ public interface IModule
 
   void setSourcePath( List<IDirectory> path );
 
-  /**
-   * @return the path representing all resource roots visible to this module (a superset of {@link #getSourcePath()})
-   */
-  List<IDirectory> getFullResourcePath();
+  List<IDirectory> getJavaClassPath();
 
-  void addGosuApiPath( List<String> paths );
+  void setJavaClassPath(List<IDirectory> paths);
 
   /**
-   * @param paths The class paths this module's Java class loader uses.
+   * Configure both source and Java classpaths of the module in a semi-automated way. First parameter
+   * is Java classpath. Second parameter is extended with all paths from Java classpath that are marked
+   * to have Gosu "sources" (through MANIFEST.MF with Contains-Sources header) and used as Gosu source path.
+   *
+   * @param classpath
    */
-  void setJavaClasspath( List<URL> paths );
-
-  void setJavaClasspathFromFiles( List<String> paths );
-
-  List<String> getJavaClassPath();
+  void configurePaths(List<IDirectory> classpath, List<IDirectory> sourcePaths);
 
   /**
    * @return The module/project from the execution environment that corresponds
@@ -85,14 +80,6 @@ public interface IModule
   Object getNativeModule();
 
   void setNativeModule( INativeModule nativeModule );
-
-  boolean isGosuModule();
-
-  String getClassNameForFile(File classFile);
-
-  String getTemplateNameForFile(File templateFile);
-
-  String getProgramNameForFile(File programFile);
 
   /**
    * Returns typeloaders of the given class that are local to this module as well as such
@@ -106,14 +93,16 @@ public interface IModule
 
   IModule[] getModuleTraversalList();
 
-  boolean includesGosuCoreAPI();
-
   IFileSystemGosuClassRepository getFileRepository();
-
-  void setDependencies(List<Dependency> newDeps);
 
   String pathRelativeToRoot(IResource resource);
 
-  IResource getSourceRoot(IResource resource);
+  /**
+   * Get class loader, associated with this module.
+   * @return
+   */
+  ClassLoader getModuleClassLoader();
+
+  void disposeLoader();
 }
 

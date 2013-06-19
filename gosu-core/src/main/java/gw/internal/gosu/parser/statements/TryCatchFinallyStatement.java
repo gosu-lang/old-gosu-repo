@@ -5,7 +5,6 @@ package gw.internal.gosu.parser.statements;
 
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.statements.ITryCatchFinallyStatement;
 import gw.lang.parser.statements.ITerminalStatement;
 
@@ -30,12 +29,12 @@ public final class TryCatchFinallyStatement extends Statement implements ITryCat
   private Statement _tryStatement;
   private List<CatchClause> _catchStatements;
   private Statement _finallyStatement;
-  private Map<CaseInsensitiveCharSequence,Integer> _offsetByName;
+  private Map<String,Integer> _offsetByName;
 
 
   public TryCatchFinallyStatement()
   {
-    _offsetByName = new HashMap<CaseInsensitiveCharSequence,Integer>();
+    _offsetByName = new HashMap<String,Integer>();
   }
 
   public Statement getTryStatement()
@@ -83,27 +82,21 @@ public final class TryCatchFinallyStatement extends Statement implements ITryCat
     }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    if( _tryStatement == null )
-    {
-      return null;
-    }
-
-    ITerminalStatement tryStmtTerminal = _tryStatement.getLeastSignificantTerminalStatement();
-    if( tryStmtTerminal != null )
-    {
-      if( _catchStatements == null )
-      {
-        return tryStmtTerminal;
-      }
-      ITerminalStatement catchStmtTerminal = _catchStatements.get( _catchStatements.size() - 1 ).getLeastSignificantTerminalStatement();
-      if( catchStmtTerminal != null )
-      {
-        return catchStmtTerminal;
+    boolean[] bTry = {false};
+    ITerminalStatement termRet = _tryStatement == null ? null : _tryStatement.getLeastSignificantTerminalStatement( bTry );
+    bAbsolute[0] = bTry[0];
+    if( _catchStatements != null ) {
+      for( CatchClause catchClause : _catchStatements ) {
+        boolean[] bCatch = {false};
+        ITerminalStatement catchTerm = catchClause.getLeastSignificantTerminalStatement( bCatch );
+        termRet = getLeastSignificant( termRet, catchTerm );
+        bAbsolute[0] = bAbsolute[0] && bCatch[0];
       }
     }
-    return null;
+    bAbsolute[0] = termRet != null && bAbsolute[0];
+    return termRet;
   }
 
   /**

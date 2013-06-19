@@ -4,12 +4,12 @@
 
 package gw.internal.gosu.parser.statements;
 
-import java.util.List;
-
 import gw.internal.gosu.parser.Statement;
+import gw.lang.parser.statements.ITerminalStatement;
 import gw.lang.parser.statements.IUsesStatement;
 import gw.lang.parser.statements.IUsesStatementList;
-import gw.lang.parser.statements.ITerminalStatement;
+
+import java.util.List;
 
 public class UsesStatementList extends Statement implements IUsesStatementList
 {
@@ -36,8 +36,9 @@ public class UsesStatementList extends Statement implements IUsesStatementList
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 

@@ -14,7 +14,6 @@ public class GosuPathEntry {
 
   private IDirectory _root;
   private List<? extends IDirectory> _srcs;
-  private List<String> _typeloaders;
 
   /**
    * Constructs a new GosuPathEntry with the specified data.  None of the arguments
@@ -22,21 +21,16 @@ public class GosuPathEntry {
    *
    * @param root the root IDirectory for this path entry
    * @param srcs the set of IDirectories for this entry that should be considered to be source directories
-   * @param typeloaders the set of custom typeloaders that should be instantiated with this set of resources
    */
-  public GosuPathEntry(IDirectory root, List<? extends IDirectory> srcs, List<String> typeloaders) {
+  public GosuPathEntry(IDirectory root, List<? extends IDirectory> srcs) {
     if (root == null) {
       throw new IllegalArgumentException("The root argument cannot be null");
     }
     if (srcs == null) {
       throw new IllegalArgumentException("The srcs argument cannot be null");
     }
-    if (typeloaders == null) {
-      throw new IllegalArgumentException("The typeloaders argument cannot be null");
-    }
     _root = root;
     _srcs = srcs;
-    _typeloaders = typeloaders;
   }
 
   /**
@@ -58,15 +52,6 @@ public class GosuPathEntry {
   }
 
   /**
-   * Returns the typeloaders for this path entry.  This method will never return null.
-   *
-   * @return the fully-qualified names of the typeloaders
-   */
-  public List<String> getTypeloaders() {
-    return _typeloaders;
-  }
-
-  /**
    * Returns a String representation of this path entry suitable for use in debugging.
    *
    * @return a debug String representation of this object
@@ -78,17 +63,10 @@ public class GosuPathEntry {
     for (IDirectory src : _srcs) {
       sb.append("  src: ").append(src.toJavaFile().getAbsolutePath()).append("\n");
     }
-    for (String loader : _typeloaders) {
-      sb.append("  loader: ").append(loader).append("\n");
-    }
     return sb.toString();
   }
 
   public String toString() {
     return _root.toString(); 
-  }
-
-  public void removeTypeLoader(String typeLoader) {
-    _typeloaders.remove(typeLoader);
   }
 }

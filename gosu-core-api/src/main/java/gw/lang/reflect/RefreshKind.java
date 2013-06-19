@@ -8,5 +8,4 @@ public enum RefreshKind {
   CREATION,
   MODIFICATION,
   DELETION,
-  CLEAN,
 }

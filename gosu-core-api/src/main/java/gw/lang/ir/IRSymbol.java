@@ -6,11 +6,14 @@ package gw.lang.ir;
 
 import gw.lang.UnstableAPI;
 
+import java.util.List;
+
 @UnstableAPI
 public class IRSymbol {
   private String _name;
   private IRType _type;
   private boolean _temp;
+  private List<IRAnnotation> _annotations;
 
   public IRSymbol(String name, IRType type, boolean temp) {
     _name = name;
@@ -28,6 +31,15 @@ public class IRSymbol {
 
   public boolean isTemp() {
     return _temp;
+  }
+
+  public void setAnnotations( List<IRAnnotation> irAnnotations )
+  {
+    _annotations = irAnnotations;
+  }
+  public List<IRAnnotation> getAnnotations()
+  {
+    return _annotations;
   }
 
   @Override

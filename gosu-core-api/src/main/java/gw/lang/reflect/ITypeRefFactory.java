@@ -23,5 +23,4 @@ public interface ITypeRefFactory
 
   List<ITypeRef> getSubordinateRefs(String topLevelTypeName);
 
-  List<ITypeRef> huntForTypesToKill( boolean bLimitlessHunt );
 }

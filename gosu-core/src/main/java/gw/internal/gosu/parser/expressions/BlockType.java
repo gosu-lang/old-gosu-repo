@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.parser.expressions;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.FunctionType;
@@ -20,8 +19,8 @@ import java.util.List;
  */
 public class BlockType extends FunctionType implements IBlockType
 {
-  private CaseInsensitiveCharSequence _relativeSignature;
-  private CaseInsensitiveCharSequence _relativeSignatureSansBlock;
+  private String _relativeSignature;
+  private String _relativeSignatureSansBlock;
   private String[] _argNames;
   private IExpression[] _defValues;
 
@@ -77,7 +76,7 @@ public class BlockType extends FunctionType implements IBlockType
     return getRelativeParamSignature( true ).toString() + ":" + getReturnType().getRelativeName();
   }
 
-  public CaseInsensitiveCharSequence getRelativeParamSignature( boolean bSansBlock )
+  public String getRelativeParamSignature( boolean bSansBlock )
   {
     if( _relativeSignature != null )
     {
@@ -86,8 +85,8 @@ public class BlockType extends FunctionType implements IBlockType
 
     if( getParameterTypes().length == 0 )
     {
-      _relativeSignature = CaseInsensitiveCharSequence.get( getParamSignature() );
-      _relativeSignatureSansBlock = CaseInsensitiveCharSequence.get( "()" );
+      _relativeSignature = getParamSignature();
+      _relativeSignatureSansBlock = "()";
     }
     else
     {
@@ -101,8 +100,8 @@ public class BlockType extends FunctionType implements IBlockType
       }
       strParams += ")";
 
-      _relativeSignature = CaseInsensitiveCharSequence.get( super.getName() + strParams );
-      _relativeSignatureSansBlock = CaseInsensitiveCharSequence.get( strParams );
+      _relativeSignature = super.getName() + strParams;
+      _relativeSignatureSansBlock = strParams;
     }
     return bSansBlock ? _relativeSignatureSansBlock : _relativeSignature;
   }

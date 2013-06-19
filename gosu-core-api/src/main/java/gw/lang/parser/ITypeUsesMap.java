@@ -18,7 +18,13 @@ public interface ITypeUsesMap extends Cloneable, Serializable
    * used by this parser. The set of types includes both those declared in
    * #uses statements and those set via setDefaultTypeUses.
    */
-  public Set getTypeUses();
+  public Set<String> getTypeUses();
+
+  /**
+   * Returns the set of strings representing the namespaces that are currently
+   * used by this parser.
+   */
+  public Set<String> getNamespaces();
 
   /**
    * Adds a type to the current set of types. Can be a complete type or a
@@ -85,4 +91,6 @@ public interface ITypeUsesMap extends Cloneable, Serializable
    * @return if a type wit the given name can be resolved via this type uses map.
    */
   boolean containsType(String qualifiedName);
+
+  void addToSpecialTypeUses( String strType );
 }

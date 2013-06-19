@@ -12,7 +12,6 @@ import gw.lang.reflect.java.JavaTypes;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ISymbol;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IScope;
 import gw.lang.parser.StandardScope;
 import gw.lang.parser.ICapturedSymbol;
@@ -35,7 +34,7 @@ public final class BlockExpression extends Expression implements IBlockExpressio
 {
   private List<ISymbol> _args;
   private IParsedElement _blockBody;
-  private Map<CaseInsensitiveCharSequence, ICapturedSymbol> _capturedSymbols;
+  private Map<String, ICapturedSymbol> _capturedSymbols;
   private StandardScope _scope;
   private IType _blockReturnType;
   private IBlockClassInternal _blockClass;
@@ -149,7 +148,7 @@ public final class BlockExpression extends Expression implements IBlockExpressio
     return _args;
   }
 
-  public ICapturedSymbol getCapturedSymbol( CaseInsensitiveCharSequence strName )
+  public ICapturedSymbol getCapturedSymbol( String strName )
   {
     return _capturedSymbols.get( strName );
   }
@@ -158,9 +157,9 @@ public final class BlockExpression extends Expression implements IBlockExpressio
   {
     if( _capturedSymbols.isEmpty() )
     {
-      _capturedSymbols = new HashMap<CaseInsensitiveCharSequence, ICapturedSymbol>( 2 );
+      _capturedSymbols = new HashMap<String, ICapturedSymbol>( 2 );
     }
-    _capturedSymbols.put( sym.getCaseInsensitiveName(), sym );
+    _capturedSymbols.put( (String)sym.getName(), sym );
   }
 
   public boolean isWithinScope( ISymbol sym, ISymbolTable symbolTable )
@@ -213,7 +212,7 @@ public final class BlockExpression extends Expression implements IBlockExpressio
     return getBlockGosuClass();
   }
 
-  public Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols()
+  public Map<String, ICapturedSymbol> getCapturedSymbols()
   {
     return _capturedSymbols;
   }

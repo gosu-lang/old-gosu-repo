@@ -116,6 +116,11 @@ public class URLFileImpl implements IFile {
   }
 
   @Override
+  public boolean isInJar() {
+    return false;
+  }
+
+  @Override
   public boolean create() {
     throw new UnsupportedOperationException();
   }

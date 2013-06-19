@@ -83,7 +83,10 @@ public class CompileTimeExpressionParser
 
     while(t.getType() != Token.EOF) {
       String text = t.getText();
-      if(t.getType() != JavaLexer.IDENTIFIER) {
+      if(t.getType() != JavaLexer.IDENTIFIER &&
+         t.getType() != JavaLexer.STRINGLITERAL &&
+         t.getType() != JavaLexer.CHARLITERAL)
+      {
         text = text.replaceAll("_", "");
       }
       if(t.getType() == JavaLexer.BINLITERAL) {

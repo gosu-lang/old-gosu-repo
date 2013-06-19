@@ -5,19 +5,16 @@
 package gw.lang.reflect;
 
 import gw.config.CommonServices;
-import gw.lang.parser.ICoercer;
 import gw.lang.GosuShop;
-import gw.lang.parser.ILanguageLevel;
+import gw.lang.parser.ICoercer;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public interface ITypeInfo extends IAnnotatedFeatureInfo
 {
@@ -31,23 +28,13 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
   public List<? extends IPropertyInfo> getProperties();
 
   /**
-   * Get a property mapped to the specified name. The name is case-insensitive.
+   * Get a property mapped to the specified name.
    *
-   * @param propName The case-insensitive property name.
+   * @param propName The property name.
    *
    * @return An IPropertyInfo corresponding to the property name.
    */
   public IPropertyInfo getProperty( CharSequence propName );
-
-  /**
-   * Returns the correct case for a property name.
-   *
-   * This will search all properties for a property that matches the given name, in a case insensitive manner.
-   *
-   * @param propName a poorly cased property name
-   * @return the correct case for a property name or null if the property does not exist
-   */
-  public CharSequence getRealPropertyName(CharSequence propName);
 
   /**
    * @return An <b>unmodifiable random access</b> list of <code>IMethodInfo</code>
@@ -64,11 +51,11 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
    * method in number, order, and type. If null, <code>params</code> is treated
    * as an empty array.
    *
-   * @param methodName The name of the method to find. The name is case-insensitive.
+   * @param methodName The name of the method to find.
    * @param params     Represents the <i>exact</i> number, order, and type of parameters
    *                   in the method. A null value here is treated as an empty array.
    *
-   * @return A IMethodInfo matching the case-insensitive name and parameter types.
+   * @return A IMethodInfo matching the name and parameter types.
    */
   public IMethodInfo getMethod( CharSequence methodName, IType... params );
 
@@ -78,11 +65,11 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
    * <p/>
    * If there is a tie with method names then this will throw an illegal argument exception.
    *
-   * @param method The name of the method to find. The name is case-insensitive.
+   * @param method The name of the method to find.
    * @param params Represents the <i>exact</i> number, order, and type of parameters
    *               in the method. A null value here is treated as an empty array.
    *
-   * @return A IMethodInfo matching the case-insensitive name and parameter types.
+   * @return A IMethodInfo matching the name and parameter types.
    */
   public IMethodInfo getCallableMethod( CharSequence method, IType... params );
 
@@ -124,9 +111,9 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
   public List<? extends IEventInfo> getEvents();
 
   /**
-   * Get an event mapped to the specified name. The name is case-insensitive.
+   * Get an event mapped to the specified name.
    *
-   * @param event The case-insensitive event name.
+   * @param event The event name.
    *
    * @return An IEventInfo corresponding to the event name.
    */
@@ -145,7 +132,7 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       for( int i = 0; i < methods.size; i++ )
       {
         IMethodInfo methodInfo = (IMethodInfo) methods.data[i];
-        if( ILanguageLevel.Util.equalsIgnoreCase( methodInfo.getDisplayName(), method.toString() ) ) {
+        if( methodInfo.getDisplayName().equals( method.toString() ) ) {
           IParameterInfo[] paramInfos = methodInfo.getParameters();
           if (areParamsEqual( paramInfos, params )) {
             return methodInfo;
@@ -198,7 +185,7 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       for( int i = 0; i < methods.size; i++ )
       {
         IMethodInfo methodInfo = (IMethodInfo) methods.data[i];
-        if( ILanguageLevel.Util.equalsIgnoreCase( methodInfo.getDisplayName(), method.toString() ) &&
+        if( methodInfo.getDisplayName().equals( method.toString() ) &&
             methodInfo.getParameters().length == params.length )
         {
           mis.put( new FunctionType( methodInfo ), methodInfo );
@@ -284,25 +271,6 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       return cis.get( rawFunctionType );
     }
 
-    public static CharSequence findCorrectString(CharSequence string, Collection<? extends CharSequence> collection)
-    {
-      if (collection == null || string == null) {
-        return null;
-      }
-
-      if( ILanguageLevel.Util.STANDARD_GOSU() ) {
-        return string;
-      }
-
-      for (CharSequence charSequence : collection) {
-        if (charSequence != null && string.toString().equalsIgnoreCase(charSequence.toString())) {
-          return charSequence;
-        }
-      }
-
-      return null;
-    }
-
     public static boolean areParamsEqual( IParameterInfo srcArgs[],
                                           IType testArgs[] )
     {
@@ -314,6 +282,13 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
           IType testParamType = testArgs[j];
 
           // If one of the types is a paramerized type and the other is the generic version, down cast the param type.
+
+          while( methodParamType.isArray() && testParamType.isArray() )
+          {
+            methodParamType = methodParamType.getComponentType();
+            testParamType = testParamType.getComponentType();
+          }
+
           if( methodParamType.isParameterizedType() && !testParamType.isParameterizedType() )
           {
             methodParamType = TypeSystem.getPureGenericType( methodParamType );
@@ -328,26 +303,25 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
             testParamType = getConcreteBoundingType( testParamType );
           }
 
-          if ( methodParamType.isParameterizedType()) {
-            // PL-17056 - We want to make sure that if the method parameter is Foo<T> and the argument
-            // we're trying to match is Foo<Object> that we still treat it as a match, though we want to
-            // not treat it as a match if we have  Foo<T extends String> and Foo<Object>.  So we want to make sure the
-            // base types match and that the generic parameterization on the test type is assignable to the
-            // generic parameterization on the parameter type, for each type parameter.  And if we do that,
-            // we have to get the concrete bounding type for any type variables in the method parameter type's
-            // type parameters.  Trying saying that 10 times fast . . .
-            if (!TypeSystem.getPureGenericType(methodParamType).equals(TypeSystem.getPureGenericType(testParamType))) {
+          if( methodParamType.isParameterizedType() )
+          {
+            if( !TypeSystem.getPureGenericType( methodParamType ).equals( TypeSystem.getPureGenericType( testParamType ) ) )
+            {
               return false;
             }
 
             IType[] methodTypeParameters = methodParamType.getTypeParameters();
             IType[] testTypeParameters = testParamType.getTypeParameters();
-            for (int i = 0; i < methodTypeParameters.length; i++) {
-              if (!getConcreteBoundingType(methodTypeParameters[i]).isAssignableFrom(testTypeParameters[i])) {
+            for( int i = 0; i < methodTypeParameters.length; i++ )
+            {
+              if( !getConcreteBoundingType( methodTypeParameters[i] ).isAssignableFrom( testTypeParameters[i] ) )
+              {
                 return false;
               }
             }
-          } else if( !methodParamType.equals( testParamType ) ) {
+          }
+          else if( !methodParamType.equals( testParamType ) )
+          {
             return false;
           }
         }
@@ -359,9 +333,12 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
 
     private static boolean typeVarsAreFromDifferentMethods( IType methodParamType, IType testParamType )
     {
-      if ( methodParamType instanceof ITypeVariableArrayType && testParamType instanceof ITypeVariableArrayType ) {
+      if( methodParamType instanceof ITypeVariableArrayType && testParamType instanceof ITypeVariableArrayType )
+      {
         return typeVarsAreFromDifferentMethods( methodParamType.getComponentType(), testParamType.getComponentType() );
-      } else {      
+      }
+      else
+      {
         return testParamType instanceof ITypeVariableType &&
                testParamType.getEnclosingType() instanceof FunctionType &&
                methodParamType instanceof ITypeVariableType &&
@@ -383,6 +360,8 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       return type;
     }
 
+    //## todo: Rewrite this piece of total shit.  Maybe use this technique: http://stackoverflow.com/questions/14315437/get-best-matching-overload-from-set-of-overloads
+    //## todo: Note it'll be easier to manage if the best match is designed to have the _lowest_ score.  Again the link above provides a decent strategy.
     public static List<MethodScore> scoreMethods( List<? extends IInvocableType> listFunctionTypes, List<IType> argTypes, List<IType> inferringTypes )
     {
       ArrayList<MethodScore> scores = new ArrayList<MethodScore>();

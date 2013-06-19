@@ -11,6 +11,7 @@ import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.lang.ir.IRExpression;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbolTable;
+import gw.lang.reflect.gs.ICompilableType;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.IProgramInstance;
@@ -18,11 +19,12 @@ import gw.lang.reflect.IType;
 import gw.lang.parser.IGosuProgramParser;
 import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.ICapturedSymbol;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IParseResult;
 import gw.config.CommonServices;
 import gw.util.GosuExceptionUtil;
+import gw.util.GosuStringUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +35,7 @@ import java.lang.reflect.Constructor;
  */
 public class EvalExpressionTransformer extends EvalBasedTransformer<EvalExpression>
 {
-  public static final List<EvalExpression> EVAL_EXPRESSIONS = Collections.synchronizedList( new ArrayList<EvalExpression>() );
+  public static final Map<String, EvalExpression> EVAL_EXPRESSIONS = Collections.synchronizedMap( new HashMap<String, EvalExpression>() );
 
   public static IRExpression compile( TopLevelTransformationContext cc, EvalExpression expr )
   {
@@ -48,34 +50,44 @@ public class EvalExpressionTransformer extends EvalBasedTransformer<EvalExpressi
 
   protected IRExpression compile_impl()
   {
-    int iEvalExprId = getEvalExpressionId( _expr() );
-
-    return callStaticMethod( EvalExpressionTransformer.class, "compileAndRunEvalSource", new Class[]{Object.class, Object.class, Object[].class, IType[].class, IType.class, int.class},
+    putEvalExpression( _expr() );
+    return callStaticMethod( EvalExpressionTransformer.class, "compileAndRunEvalSource", new Class[]{Object.class, Object.class, Object[].class, IType[].class, IType.class, int.class, int.class, String.class},
             exprList(
                     boxValue( _expr().getType(), ExpressionTransformer.compile( _expr().getExpression(), _cc() ) ),
                     pushEnclosingContext(),
                     pushCapturedSymbols( getGosuClass(), _expr().getCapturedForBytecode() ),
                     pushEnclosingFunctionTypeParamsInArray( _expr() ),
                     pushType( getGosuClass() ),
-                    pushConstant( iEvalExprId )
+                    pushConstant( _expr().getLineNum() ),
+                    pushConstant( _expr().getColumn() ),
+                    pushConstant( _expr().toString() )
             ));
   }
 
-  public static int getEvalExpressionId( EvalExpression expr )
+  private void putEvalExpression( EvalExpression evalExpr )
   {
-    int iEvalExprId;
     synchronized( EVAL_EXPRESSIONS )
     {
-      iEvalExprId = EVAL_EXPRESSIONS.size();
-      EVAL_EXPRESSIONS.add( expr );
+      int iLine = _expr().getLineNum();
+      int iColumnNum = _expr().getColumn();
+      EVAL_EXPRESSIONS.put( makeEvalKey( getGosuClass(), iLine, iColumnNum, _expr().toString() ), evalExpr );
     }
-    return iEvalExprId;
+  }
+
+  public static String makeEvalKey( IType enclosingClass, int iLineNum, int iColumnNum, String evalExprText ) {
+    return enclosingClass.getName() + '.' + IGosuProgram.NAME_PREFIX + "eval_" + iLineNum + ":" + iColumnNum + ":" + GosuStringUtil.getSHA1String( evalExprText );
   }
 
   public static Object compileAndRunEvalSource( Object source, Object outer, Object[] capturedValues,
-                                                IType[] immediateFuncTypeParams, IType enclosingClass, int iEvalExprId )
+                                                IType[] immediateFuncTypeParams, IType enclosingClass,
+                                                int iLineNum, int iColumn, String evalExprText )
   {
-    EvalExpression evalExpr = EVAL_EXPRESSIONS.get( iEvalExprId );
+    String evalExprKey = makeEvalKey( enclosingClass, iLineNum, iColumn, evalExprText );
+    EvalExpression evalExpr = EVAL_EXPRESSIONS.get( evalExprKey );
+    if( evalExpr == null && enclosingClass instanceof ICompilableType ) {
+      ((ICompilableType)enclosingClass).compile(); // force compilation of enclosing class indirectly compiles eval-expr which caches the expr
+      evalExpr = EVAL_EXPRESSIONS.get( evalExprKey );
+    }
     return compileAndRunEvalSource( source, outer, capturedValues, immediateFuncTypeParams, enclosingClass, evalExpr );
   }
 
@@ -171,7 +183,7 @@ public class EvalExpressionTransformer extends EvalBasedTransformer<EvalExpressi
     {
       // Note: must add the captured symbols in the order of the eval class' ctor, which is the order of the values in its map of captured symbols.
 
-      Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbolsByName = gp.getCapturedSymbols();
+      Map<String, ICapturedSymbol> capturedSymbolsByName = gp.getCapturedSymbols();
       if( capturedSymbolsByName != null )
       {
         for( ICapturedSymbol sym : capturedSymbolsByName.values() )

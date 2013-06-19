@@ -5,10 +5,7 @@
 package gw.internal.gosu.parser;
 
 import gw.lang.parser.TypeVarToTypeMap;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeRef;
-import gw.lang.reflect.RefreshKind;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.*;
 import gw.lang.reflect.module.IModule;
 
 import java.io.IOException;
@@ -38,6 +35,7 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
   transient private String _typeName;
   transient volatile private IType _type;
   transient private IModule _module;
+  transient private ITypeLoader _loader;
   transient private String _pureGenericTypeName;
   transient private IType _componentType;
   transient private IType[] _typeParameters;
@@ -47,7 +45,6 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
   transient volatile private boolean _bStale;
   transient volatile private boolean _bReloading;
   transient private boolean _deleted;
-  transient private long _lastUsedTime;
   transient private boolean _bReloadable = true;
 
   private void writeObject(ObjectOutputStream os) throws IOException {
@@ -119,6 +116,7 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
       {
         _type = type;
         _module = type.getTypeLoader().getModule();
+        _loader = type.getTypeLoader();
         _typeName = _type.getName();
         _bParameterized = _type.isParameterizedType();
         if( _bParameterized )
@@ -133,7 +131,6 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
         _bStale = false;
         _deleted = false;
         _mdChecksum = TypeSystem.getRefreshChecksum();
-        _lastUsedTime = System.currentTimeMillis();
       }
       finally
       {
@@ -177,17 +174,20 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
     return envModule;
   }
 
+  public ITypeLoader getTypeLoaderDirectly() {
+    return _loader;
+  }
+
   public void _setStale(RefreshKind refreshKind)
   {
     // Fragments and any blocks or inner classes thereof, can't be re-resolved.
     // If this flag is set, _setStale() is therefor a no-op
-    if (!isReloadable() && refreshKind != RefreshKind.CLEAN) {
+    if (!isReloadable()) {
       return;
     }
 
     _type = null;
     _bStale = true;
-    _lastUsedTime = 0;
 
     if (refreshKind == RefreshKind.DELETION) {
       _deleted = true;
@@ -298,7 +298,6 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
 
   final protected void _reload()
   {
-    _lastUsedTime = System.currentTimeMillis();
     checkNotDeleted();
     if( !isStale() )
     {
@@ -447,13 +446,6 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
    */
   public String _getTypeNameInternal() {
     return _typeName;
-  }
-
-  public long getLastUsedTime() {
-    return _lastUsedTime;
-  }
-  public final boolean isOlderThanSeconds( int iSeconds ) {
-    return System.currentTimeMillis() - _lastUsedTime >= (iSeconds * 1000);
   }
 
   public boolean isTypeRefreshedOutsideOfLock(IType type) {

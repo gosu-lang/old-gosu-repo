@@ -9,30 +9,32 @@ import gw.fs.IDirectory;
 import gw.fs.IDirectoryUtil;
 import gw.fs.IFile;
 import gw.fs.IResource;
-import gw.lang.parser.ISource;
 import gw.lang.parser.FileSource;
+import gw.lang.parser.ISource;
 import gw.lang.reflect.ITypeLoader;
-import gw.lang.reflect.RefreshRequest;
 import gw.lang.reflect.RefreshKind;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.RefreshRequest;
 import gw.lang.reflect.gs.ClassType;
+import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.ISourceFileHandle;
-import gw.lang.reflect.gs.StringSourceFileHandle;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IModule;
 import gw.util.DynamicArray;
-import gw.util.cache.FqnCache;
+import gw.util.Extensions;
 import gw.util.Pair;
 import gw.util.StreamUtil;
+import gw.util.cache.FqnCache;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,80 +50,71 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
   private final Map<String, FqnCache> _missCaches = new HashMap<String, FqnCache>();
   public static final String RESOURCE_LOCATED_W_CLASSES = "gw/config/default.xml";
 
-  private IModule _module;
-  private String[] _extensions;
-  private boolean _includeCoreResources;
+  private final IModule _module;
 
-  private List<ClassPathEntry> _sourcePath;
+  // Source paths
+  private List<ClassPathEntry> _sourcePath = new CopyOnWriteArrayList<ClassPathEntry>();
+  private String[] _extensions = new String[0];
+
+  // Types and packages in the source paths
   private PackageToClassPathEntryTreeMap _rootNode;
   private Set<String> _allTypeNames;
 
-  public FileSystemGosuClassRepository( IModule module, IDirectory[] classpath, String[] allowableExtensions, boolean includeCoreResources )
+  public FileSystemGosuClassRepository(IModule module)
   {
     _module = module;
-    _extensions = allowableExtensions;
-    for (String extension : _extensions) {
-      _missCaches.put(extension, new FqnCache());
-    }
-    _includeCoreResources = includeCoreResources;
-    _sourcePath = new CopyOnWriteArrayList<ClassPathEntry>();
-    initSourcePath(classpath);
+    _extensions = GosuClassTypeLoader.ALL_EXTS;
   }
 
+  @Override
   public IModule getModule()
   {
     return _module;
   }
 
-  private IDirectory resolveGosuAPIJarLocation() {
-    File classRoot = TypeSystem.getResourceFileResolver().resolveToFile(RESOURCE_LOCATED_W_CLASSES);
-    // alright, that sucks. let's try to look it up via the web paths
-    if (classRoot == null || !classRoot.exists()) {
-      String[] paths = CommonServices.getEntityAccess().getWebServerPaths().split(File.pathSeparator);
-      for (String path : paths) {
-        if (path.endsWith("gw-gosu-core-api.jar")) {
-          File file = new File(path);
-          if (file.exists()) {
-            classRoot = file;
-          }
-        }
-      }
+  @Override
+  public IDirectory[] getSourcePath()
+  {
+    IDirectory[] sourcepath = new IDirectory[_sourcePath.size()];
+    int i = 0;
+    for( ClassPathEntry e : _sourcePath)
+    {
+      sourcepath[i++] = e.getPath();
     }
-    return CommonServices.getFileSystem().getIDirectory(classRoot);
+    return sourcepath;
   }
 
   @Override
-  public List<IDirectory> getClassPath()
+  public void setSourcePath(IDirectory[] sourcePath)
   {
-    List<IDirectory> classpath = new ArrayList<IDirectory>( _sourcePath.size() );
-    for( ClassPathEntry e : _sourcePath)
+    if( areDifferent( sourcePath, _sourcePath) )
     {
-      classpath.add( e.getPath() );
+      _sourcePath.clear();
+
+      Set<String> extensions = new HashSet<String>();
+      extensions.add(".java");
+      extensions.addAll(Arrays.asList(GosuClassTypeLoader.ALL_EXTS));
+
+      // Scan for potential extensions
+      for( IDirectory file : sourcePath )
+      {
+        _sourcePath.add( new ClassPathEntry( file, isTestFolder(file)) );
+        List<String> sourceFileExtensions = Extensions.getExtensions(file, Extensions.CONTAINS_SOURCES);
+        for (String ext : sourceFileExtensions) {
+          extensions.add('.' + ext);
+        }
+      }
+      _extensions = extensions.toArray(new String[extensions.size()]);
+
+      reset();
     }
-    return classpath;
   }
 
   @Override
   public ISourceFileHandle findClass(String strQualifiedClassName, String[] extensions)
   {
     IClassFileInfo fileInfo = findFileInfoOnDisk( strQualifiedClassName, extensions );
-    if( fileInfo == null )
-    {
-      return null;
-    }
-    else
-    {
-      IFile file = fileInfo.getFile();
-      ISourceFileHandle sfh = null;
-      if (file != null) {
-        sfh = CommonServices.getPlatformHelper().getSourceFileHandle(file, strQualifiedClassName);
-      }
-      if( sfh != null )
-      {
-        return sfh;
-      }
-      return fileInfo.getSourceFileHandle();
-    }
+    return fileInfo != null ? fileInfo.getSourceFileHandle() : null;
   }
 
   @Override
@@ -475,19 +468,7 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
     }
   }
 
-  @Override
-  public void addResourcesToClassPath( List<IDirectory> resourceRootDirs )
-  {
-    if( resourceRootDirs != null )
-    {
-      for( IDirectory resourceRootDir : resourceRootDirs )
-      {
-        _sourcePath.add( new ClassPathEntry( resourceRootDir, false ) );
-      }
-    }
-  }
-
-  public static final class FileSystemSourceFileHandle implements IFileSystemSourceFileHandle
+  public static final class FileSystemSourceFileHandle implements ISourceFileHandle
   {
     ISource _source;
     boolean _isTestClass;
@@ -592,17 +573,17 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
       return name.substring( 0, name.lastIndexOf( '.' ) );
     }
 
-    @Override
-    public IDirectory getParentFile()
-    {
-      return _fileInfo.getParentFile();
-    }
-
-    @Override
-    public ClassFileInfo getFileInfo()
-    {
-      return _fileInfo;
-    }
+//    @Override
+//    public IDirectory getParentFile()
+//    {
+//      return _fileInfo.getParentFile();
+//    }
+//
+//    @Override
+//    public ClassFileInfo getFileInfo()
+//    {
+//      return _fileInfo;
+//    }
 
     @Override
     public void setOffset( int iOffset )
@@ -669,20 +650,7 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
       _fileType = fileType;
       _innerClassParts = innerClassParts;
       _isTestClass = isTestClass;
-
-      if( outerSfh instanceof FileSystemSourceFileHandle )
-      {
-        ClassFileInfo fileInfo = ((FileSystemSourceFileHandle)outerSfh).getFileInfo();
-        _file = fileInfo.getFile();
-      }
-      else if( outerSfh instanceof StringSourceFileHandle )
-      {
-        String filePath = outerSfh.getFilePath();
-        if( filePath != null && !filePath.isEmpty() )
-        {
-          _file = CommonServices.getFileSystem().getIFile( new File( filePath ) );
-        }
-      }
+      _file = outerSfh.getFile();
     }
 
     @Override
@@ -832,36 +800,6 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
     }
   }
 
-  @Override
-  public String[] getExtensions() {
-    return _extensions;
-  }
-
-  @Override
-  public void setSourcePath(IDirectory[] sourcePath)
-  {
-    if( areDifferent( sourcePath, _sourcePath) )
-    {
-      initSourcePath(sourcePath);
-    }
-  }
-
-  private void initSourcePath(IDirectory[] classpath)
-  {
-    _sourcePath.clear();
-    for( IDirectory file : classpath )
-    {
-      _sourcePath.add( new ClassPathEntry( file, isTestFolder(file)) );
-    }
-
-    if( _includeCoreResources )
-    {
-      includeGosuResources();
-    }
-
-    reset();
-  }
-
   private boolean areDifferent(IDirectory[] cp1, List<ClassPathEntry> cp2) {
     if (cp1.length != cp2.size()) {
       return true;
@@ -874,95 +812,19 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
     return false;
   }
 
-  private void includeGosuResources() {
-    //Include class resources
-    IDirectory classRoot = resolveGosuAPIJarLocation();
-    _sourcePath.add( new ClassPathEntry( classRoot, false ) );
-
-    //## todo - remove this hack when gsrc is gone
-    //Should include gsrc resources
-    File gsrcRoot = TypeSystem.getResourceFileResolver().resolveToFile("gw/lang/IDisposable.gs");
-    if (gsrcRoot != null && gsrcRoot.exists() )
-    {
-      _sourcePath.add( new ClassPathEntry( CommonServices.getFileSystem().getIDirectory(gsrcRoot), false ) );
-    } else {
-      //If we didn't find gsrc via the classpath, attempt to look it up from the
-      // class root (which works in an IntelliJ environment)  Ugh.
-      if (classRoot != null && classRoot.exists()) {
-        IDirectory potentialSrcDir = classRoot.getParent().dir("gsrc");
-        if (potentialSrcDir.exists()) {
-          _sourcePath.add(new ClassPathEntry(potentialSrcDir, false));
-        }
-      }
-    }
-  }
-
   private static boolean isTestFolder(IDirectory file) {
     return file.toString().endsWith( "gtest" );
   }
 
   @Override
   public String getResourceName(URL url) {
-    IFile file;
-    if (url.getProtocol().equals("file")) {
-      file = CommonServices.getFileSystem().getIFile(toJavaFile(url));
-    } else  if (url.getProtocol().equals("jar")) {
-      // Jar file URLs are of the form:
-      // jar:file:/foo/bar/baz!/entry/path.gs
-      // So we need to strip off the "file:" path of the path, split it into the root path and the entry path,
-      // recover the IDirectory representing the jar file, and then recover the IFile representing the entry
-      String path = url.getPath();
-      if (!path.startsWith("file:")) {
-        throw new IllegalArgumentException("Cannot handle a jar URL with a path that doesn't start with 'file:' " + url.getPath());
-      }
-      int entryStart = path.indexOf("!");
-      if (entryStart == -1) {
-        throw new IllegalArgumentException("Cannot handle a jar URL with a path that doesn't contain the ! character to mark the entry " + url.getPath());
-      }
-      String entryPath = path.substring(entryStart + 2, path.length());
-      String rootPath = path.substring(5, entryStart);
-
-      File jarFile = new File(rootPath);
-      IDirectory jarDir = CommonServices.getFileSystem().getIDirectory(jarFile);
-      file = jarDir.file(entryPath);
-    } else {
-      throw new UnsupportedOperationException("modules for now are only supported as physical files/dirs or as jars");
-    }
-
-    String resourceName = null;
-    for (IDirectory sourceEntry : _module.getSourcePath()) {
-      if (file.isDescendantOf(sourceEntry)) {
-        resourceName = sourceEntry.relativePath(file);
-        break;
-      }
-    }
-
-    // maybe this resource is under config/ (we can kill this when we kill config/)
-    if (resourceName == null) {
-      for (IDirectory root : _module.getRoots() ) {
-        String relativePathFromTrueRoot = root.relativePath(file);
-        if (relativePathFromTrueRoot != null && relativePathFromTrueRoot.startsWith(IModule.CONFIG_RESOURCE_PREFIX)) {
-          resourceName = relativePathFromTrueRoot;
-          break;
-        }
-      }
-    }
-
+    IFile file = CommonServices.getFileSystem().getIFile(url);
+    String resourceName = _module.pathRelativeToRoot(file);
     if (resourceName == null) {
       throw new RuntimeException("Could not find resource " + url);
     }
 
     return resourceName;
-  }
-
-  private static File toJavaFile(URL url) {
-    try {
-      return new File(url.toURI()).getCanonicalFile();
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   public List<Pair<String, IFile>> findAllFilesByExtension(String extension) {

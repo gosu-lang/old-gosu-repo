@@ -4,10 +4,8 @@
 
 package gw.internal.gosu.parser;
 
-import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
-import gw.internal.gosu.module.DefaultSingleModule;
 import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IClassPath;
@@ -23,7 +21,6 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -41,14 +38,9 @@ public class ClassPath implements IClassPath
     loadClasspathInfo();
   }
 
-  public ClassPath(IModule module)
+  public ArrayList<IDirectory> getPaths()
   {
-    this(module, ClassPath.ALLOW_ALL_FILTER);
-  }
-
-  public ArrayList<String> getPaths()
-  {
-    return new ArrayList<String>(module.getJavaClassPath());
+    return new ArrayList<IDirectory>(module.getJavaClassPath());
   }
 
   public boolean contains(String fqn) {
@@ -63,51 +55,14 @@ public class ClassPath implements IClassPath
 
   private void loadClasspathInfo()
   {
-      if (module instanceof DefaultSingleModule) {
-        loadTheOldWay();
-      } else {
-        loadTheNewWay();
-      }
-  }
-
-  private void loadTheOldWay() {
-    ArrayList<String> rawJavaClasspath = ((DefaultSingleModule)module).getRawJavaClasspath();
-    for( int i = 0; i < rawJavaClasspath.size(); i++ )
-    {
-      String strPaths = rawJavaClasspath.get(i);
-      ClassPathFilter filter = i == 0 ? ONLY_API_CLASSES : ALLOW_ALL_FILTER;
-      StringTokenizer tokenizer = new StringTokenizer( strPaths, File.pathSeparator );
-      while( tokenizer.hasMoreTokens() )
-      {
-        String strPath = tokenizer.nextToken();
-        addClassNames( strPath, filter );
-      }
-    }
-  }
-
-  private void loadTheNewWay() {
-    List<String> javaClassPath = module.getJavaClassPath();
-    String[] paths = javaClassPath.toArray(new String[javaClassPath.size()]);
+    List<IDirectory> javaClassPath = module.getJavaClassPath();
+    IDirectory[] paths = javaClassPath.toArray(new IDirectory[javaClassPath.size()]);
     for (int i = 0; i < paths.length; i++) {
-      addClassNames(paths[i], filter);
+      addClassNames(paths[i], paths[i], filter);
     }
   }
 
-  private void addClassNames(String strPath, ClassPathFilter filter)
-  {
-    File path = new File( strPath );
-    if( path.isFile() )
-    {
-      addClassNamesFromZip( path, filter );
-    }
-    else if( path.isDirectory() )
-    {
-      IDirectory dir = CommonServices.getFileSystem().getIDirectory(path);
-      addClassNamesFromDir( dir, dir, filter );
-    }
-  }
-
-  private void addClassNamesFromDir(final IDirectory root, IDirectory dir, final ClassPathFilter filter)
+  private void addClassNames(final IDirectory root, IDirectory dir, final ClassPathFilter filter)
   {
     for (IFile file : dir.listFiles()) {
       if( isClassFileName( file.getName() ) )
@@ -120,35 +75,8 @@ public class ClassPath implements IClassPath
       }
     }
     for (IDirectory subDir : dir.listDirs()) {
-      addClassNamesFromDir(root, subDir, filter);
+      addClassNames(root, subDir, filter);
     }
-  }
-
-  private void addClassNamesFromZip(File zipFile, ClassPathFilter filter)
-  {
-    ZipFile zip;
-    try
-    {
-      zip = new ZipFile( zipFile );
-    }
-    catch( IOException e )
-    {
-      return;
-    }
-    for( Enumeration iter = zip.entries(); iter.hasMoreElements(); )
-    {
-      ZipEntry entry = (ZipEntry)iter.nextElement();
-      String entryName = entry.getName();
-      if( entryName.endsWith( CLASS_FILE_EXT ) )
-      {
-        entryName = makeClassNameFromFileName( entryName );
-        if( isValidClassName( entryName ) )
-        {
-          putClassName( entryName, filter );
-        }
-      }
-    }
-    return;
   }
 
   private void putClassName(String strClassName, ClassPathFilter filter)
@@ -192,7 +120,7 @@ public class ClassPath implements IClassPath
 
   private String getClassNameFromFile( IDirectory root, IFile file )
   {
-    String strQualifiedClassName = root.getPath().relativePath(file.getPath());
+    String strQualifiedClassName = root.relativePath(file);
     if( !isClassFileName( strQualifiedClassName ) )
     {
       throw new IllegalArgumentException(
@@ -202,7 +130,7 @@ public class ClassPath implements IClassPath
     strQualifiedClassName =
       strQualifiedClassName.substring( 0, strQualifiedClassName.length() -
                                           CLASS_FILE_EXT.length() );
-    return strQualifiedClassName.replace(File.separatorChar, '.');
+    return strQualifiedClassName.replace('/', '.');
   }
 
   private boolean isClassFileName( String strFileName )
@@ -212,7 +140,16 @@ public class ClassPath implements IClassPath
 
   private boolean isValidClassName( String strClassName )
   {
-    return !strClassName.endsWith("package-info");
+    if (strClassName.endsWith("package-info")) {
+      return false;
+    }
+    // look for private or anonymous inner classes
+    int index = strClassName.lastIndexOf('$');
+    if (index >= 0 && index < strClassName.length() - 1 &&
+            Character.isDigit(strClassName.charAt(index + 1))) {
+      return false;
+    }
+    return true;
   }
 
   public boolean hasNamespace(String namespace) {

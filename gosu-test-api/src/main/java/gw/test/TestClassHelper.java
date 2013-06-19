@@ -51,7 +51,7 @@ public class TestClassHelper {
       }
     });
 
-    allMethods = new ArrayList<>();
+    allMethods = new ArrayList<Method>();
     // add method of super class first
     Class<? super T> superclass = clazz.getSuperclass();
     if (superclass != null && !superclass.getClass().equals(TestCase.class)) {
@@ -59,7 +59,7 @@ public class TestClassHelper {
     }
     allMethods.addAll(currentClassMethods);
 
-    cache.put(clazz, Collections.unmodifiableList(new ArrayList<>(allMethods)));
+    cache.put(clazz, Collections.unmodifiableList(new ArrayList<Method>(allMethods)));
     return allMethods;
   }
 

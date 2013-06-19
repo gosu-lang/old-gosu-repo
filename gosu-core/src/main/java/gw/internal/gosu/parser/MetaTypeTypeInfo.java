@@ -30,11 +30,11 @@ import gw.lang.reflect.PropertyInfoDelegate;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.IModule;
-import gw.util.CaseInsensitiveHashMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -58,7 +58,7 @@ public class MetaTypeTypeInfo extends BaseFeatureInfo implements IRelativeTypeIn
     super( intrType );
     _declaredMethods = new ConcurrentHashMap<IModule, List<IMethodInfo>>();
     _declaredProperties = new ConcurrentHashMap<IModule, List<IPropertyInfo>>();
-    _fm = new FeatureManager( this, false );
+    _fm = new FeatureManager( this, true );
   }
 
   /**
@@ -89,12 +89,6 @@ public class MetaTypeTypeInfo extends BaseFeatureInfo implements IRelativeTypeIn
   public IPropertyInfo getProperty( CharSequence propName )
   {
     return getProperty( null, propName );
-  }
-
-  @Override
-  public CharSequence getRealPropertyName( CharSequence propName )
-  {
-    return FIND.findCorrectString( propName, _fm.getPropertyNames( Accessibility.PRIVATE ) );
   }
 
   @Override
@@ -179,7 +173,7 @@ public class MetaTypeTypeInfo extends BaseFeatureInfo implements IRelativeTypeIn
 
   private Map<CharSequence, IPropertyInfo> mergeProperties( ITypeInfo typeTypeInfo )
   {
-    Map<CharSequence, IPropertyInfo> propertiesByName = new CaseInsensitiveHashMap<CharSequence, IPropertyInfo>();
+    Map<CharSequence, IPropertyInfo> propertiesByName = new HashMap<CharSequence, IPropertyInfo>();
     if( !getOwnersType().isLiteral() ||
         getOwnersType().getType() instanceof IMetaType )
     {
@@ -308,7 +302,7 @@ public class MetaTypeTypeInfo extends BaseFeatureInfo implements IRelativeTypeIn
   private boolean canAccessPrivateMembers( IType ownersClass, IType whosAskin )
   {
     return getOwnersType() == whosAskin ||
-           getTopLevelTypeName( whosAskin ).equalsIgnoreCase( getTopLevelTypeName( ownersClass ) );
+           getTopLevelTypeName( whosAskin ).equals( getTopLevelTypeName( ownersClass ) );
   }
 
   private String getTopLevelTypeName( IType type )

@@ -16,8 +16,6 @@ public interface IReducedDynamicFunctionSymbol extends IReducedSymbol {
 
   String getName();
 
-  CaseInsensitiveCharSequence getCaseInsensitiveName();
-
   IScriptPartId getScriptPart();
 
   boolean isStatic();

@@ -231,9 +231,9 @@ public class TestExecutionManager {
     }
     TestInfo testInfo = _testInfos.get(testClass.getTypeName());
 
-    // If this test is being run from an IDE, there may be no testInfo available
     if (testInfo == null) {
-      testInfo = new TestInfo(testClass.getTotalNumTestMethods());
+      Integer testsCount = TestClass.getNumberOfInstancesOfTestClassCreated(testClass.getTypeName());
+      testInfo = new TestInfo(testsCount);
       _testInfos.put(testClass.getTypeName(), testInfo);
     }
 
@@ -257,8 +257,8 @@ public class TestExecutionManager {
   private void maybeCallAfterTestSuite(TestClass test) {
     TestInfo testInfo = _testInfos.get(test.getTypeName());
     if (testInfo != null
-        && testInfo.isAtLastTest()
-        && isLastTestClassInSuite(test)) {
+            && testInfo.isAtLastTest()
+            && isLastTestInSuite(test)) {
       _environment.afterTestSuite();
       printTestRunTime("Suite", (System.nanoTime() - _suiteStartTimeNs));
     }
@@ -270,9 +270,19 @@ public class TestExecutionManager {
     }
   }
 
-  private boolean isLastTestClassInSuite(TestClass test) {
-    return _testWrappers == null ||
-           (_testWrappers.size() > 0 && test.getTypeName().equals(_testWrappers.get(_testWrappers.size() - 1).getName()));
+  private boolean isLastTestInSuite(TestClass test) {
+    boolean isLastTestInSuite = false;
+
+    if (_testWrappers == null) {
+      isLastTestInSuite = true;
+    } else if (_testWrappers.size() > 0) {
+      final String testTypeName = test.getTypeName();
+      final String testClassName = test.getClass().getName();
+      final String testWrapperName = _testWrappers.get(_testWrappers.size() - 1).getName();
+      isLastTestInSuite = testTypeName.equals(testWrapperName) || testClassName.equals(testWrapperName);
+    }
+
+    return isLastTestInSuite;
   }
 
   public final boolean hasTimeOut() {

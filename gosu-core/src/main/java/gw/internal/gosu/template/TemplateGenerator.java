@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.template;
 
-import gw.config.CommonServices;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.TypelessScriptPartId;
@@ -23,7 +22,6 @@ import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ScriptabilityModifiers;
 import gw.lang.parser.IParseTree;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IFunctionSymbol;
@@ -47,7 +45,6 @@ import gw.util.Stack;
 import gw.util.GosuEscapeUtil;
 import gw.util.StreamUtil;
 import gw.util.GosuStringUtil;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.io.IOException;
@@ -253,12 +250,12 @@ public class TemplateGenerator implements ITemplateGenerator
             if (!exceptions.isEmpty()) {
               throw exceptions.get(0);
             }
-            _program = compile( strCompiledSource, symTable, new HashMap<CaseInsensitiveCharSequence, Set<IFunctionSymbol>>(), null, null, null );
-            if( _fqn == null )
-            {
-              _program.getGosuProgram().setThrowaway( true );
-            }
+            _program = compile( new java.util.Stack<IScriptPartId>(), strCompiledSource, symTable, new HashMap<String, Set<IFunctionSymbol>>(), null, null, null );
             _compileTimeSymbolTable = symTable.copy();
+          }
+          if( _fqn == null )
+          {
+            _program.getGosuProgram().setThrowaway( true );
           }
         }
         _program.evaluate(extractExternalSymbols( _compileTimeSymbolTable, symTable ));
@@ -280,10 +277,10 @@ public class TemplateGenerator implements ITemplateGenerator
 
   public void compile(ISymbolTable symTable) throws TemplateParseException
   {
-    compile(symTable, new HashMap<CaseInsensitiveCharSequence, Set<IFunctionSymbol>>(), null, null, _ctxInferenceMgr);
+    compile( new java.util.Stack<IScriptPartId>(), symTable, new HashMap<String, Set<IFunctionSymbol>>(), null, null, _ctxInferenceMgr );
   }
 
-  public void compile(ISymbolTable symTable, Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, Stack<BlockExpression> blocks, ContextInferenceManager ctxInferenceMgr) throws TemplateParseException {
+  public void compile( java.util.Stack<IScriptPartId> scriptPartIdStack, ISymbolTable symTable, Map<String, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, Stack<BlockExpression> blocks, ContextInferenceManager ctxInferenceMgr) throws TemplateParseException {
     symTable.pushScope();
     if (ctxInferenceMgr != null) {
       ctxInferenceMgr.suspendRefCollection();
@@ -305,7 +302,7 @@ public class TemplateGenerator implements ITemplateGenerator
             Symbol s = new Symbol( param.getName(), param.getType(), null );
             symTable.putSymbol(s);
           }
-          _program = compile( strCompiledSource, symTable, dfsDeclByName, typeUsesMap, blocks, ctxInferenceMgr );
+          _program = compile( scriptPartIdStack, strCompiledSource, symTable, dfsDeclByName, typeUsesMap, blocks, ctxInferenceMgr );
           _compileTimeSymbolTable = symTable.copy();
         }
       }
@@ -329,9 +326,12 @@ public class TemplateGenerator implements ITemplateGenerator
    * @throws gw.lang.parser.exceptions.ParseException
    *
    */
-  private Program compile(String strCompiledSource, ISymbolTable symbolTable, Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, Stack<BlockExpression> blocks, ContextInferenceManager ctxInferenceMgr) throws ParseResultsException
+  private Program compile( java.util.Stack<IScriptPartId> scriptPartIdStack, String strCompiledSource, ISymbolTable symbolTable, Map<String, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, Stack<BlockExpression> blocks, ContextInferenceManager ctxInferenceMgr) throws ParseResultsException
   {
     IGosuParser parser = GosuParserFactory.createParser(symbolTable, ScriptabilityModifiers.SCRIPTABLE);
+    for( IScriptPartId id: scriptPartIdStack ) {
+      ((GosuParser)parser).pushScriptPart( id );
+    }
     parser.setScript( strCompiledSource );
     if(parser instanceof GosuParser) {
       parser.setDfsDeclInSetByName(dfsDeclByName);
@@ -366,7 +366,7 @@ public class TemplateGenerator implements ITemplateGenerator
       }
 
       // clear out private DFS that may have made their way into the dfsDecldsByName (jove this is ugly)
-      for (Entry<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDecls : parser.getDfsDecls().entrySet()) {
+      for (Entry<String, Set<IFunctionSymbol>> dfsDecls : parser.getDfsDecls().entrySet()) {
         for (Iterator<IFunctionSymbol> it = dfsDecls.getValue().iterator(); it.hasNext(); ) {
           IFunctionSymbol fs = it.next();
           if (fs instanceof Symbol && ((Symbol) fs).isPrivate()) {
@@ -376,7 +376,7 @@ public class TemplateGenerator implements ITemplateGenerator
       }
     }
     IScriptPartId scriptPart;
-    ISymbol thisSymbol = symbolTable.getSymbol( Keyword.KW_this.getCICS() );
+    ISymbol thisSymbol = symbolTable.getSymbol( Keyword.KW_this.getName() );
     if( thisSymbol != null && thisSymbol.getType() instanceof IGosuClass )
     {
       scriptPart = new ScriptPartId( thisSymbol.getType(), GS_TEMPLATE_PARSED );
@@ -428,11 +428,11 @@ public class TemplateGenerator implements ITemplateGenerator
     }
   }
 
-  public void verify( IGosuParser parser, Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap) throws ParseResultsException
+  public void verify( IGosuParser parser, Map<String, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap) throws ParseResultsException
   {
     verify( parser, dfsDeclByName, typeUsesMap, false );
   }
-  private IProgram verify( IGosuParser parser, Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, boolean bDoNotThrowParseResultsException ) throws ParseResultsException
+  private IProgram verify( IGosuParser parser, Map<String, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, boolean bDoNotThrowParseResultsException ) throws ParseResultsException
   {
     assert _scriptStr != null : "Cannot verify a template after it has been compiled";
     ISymbolTable symTable = parser.getSymbolTable();
@@ -486,8 +486,8 @@ public class TemplateGenerator implements ITemplateGenerator
 
   private IProgram verify( IGosuParser parser, boolean bDoNotThrowParseResultException ) throws ParseResultsException
   {
-    HashMap<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> dfsMap = new HashMap<CaseInsensitiveCharSequence, Set<IFunctionSymbol>>();
-    dfsMap.put(CaseInsensitiveCharSequence.get(PRINT_METHOD), Collections.<IFunctionSymbol>singleton(new DynamicFunctionSymbol(parser.getSymbolTable(),
+    HashMap<String, Set<IFunctionSymbol>> dfsMap = new HashMap<String, Set<IFunctionSymbol>>();
+    dfsMap.put( (String)PRINT_METHOD, Collections.<IFunctionSymbol>singleton(new DynamicFunctionSymbol(parser.getSymbolTable(),
             PRINT_METHOD,
             new FunctionType(PRINT_METHOD, GosuParserTypes.NULL_TYPE(), new IType[]{GosuParserTypes.STRING_TYPE(), GosuParserTypes.BOOLEAN_TYPE()}),
             Arrays.<ISymbol>asList(new Symbol("content", GosuParserTypes.STRING_TYPE(), null), new Symbol("escape", GosuParserTypes.BOOLEAN_TYPE(), null)),
@@ -682,7 +682,8 @@ public class TemplateGenerator implements ITemplateGenerator
   }
 
   private void addText( StringBuilder strTarget, String strText ) {
-    if (!GosuStringUtil.isEmpty(strText)) {
+    if(!GosuStringUtil.isEmpty(strText))
+    {
       strText = escapeForGosuStringLiteral(strText);
       strTarget.append(PRINT_METHOD).append("((\"").append(strText).append("\") as String, false)\r\n");
     }
@@ -690,7 +691,10 @@ public class TemplateGenerator implements ITemplateGenerator
 
   private void addExpression( StringBuilder strTarget, String strExpression )
   {
-    strTarget.append(PRINT_METHOD).append("((").append(strExpression).append(") as String, true)\r\n");
+    if( strExpression.trim().length() != 0 )
+    {
+      strTarget.append(PRINT_METHOD).append("((").append(strExpression).append(") as String, true)\r\n");
+    }
   }
 
   private void addScriptlet( StringBuilder strTarget, String strScript )
@@ -824,13 +828,13 @@ public class TemplateGenerator implements ITemplateGenerator
   }
 
   private IExternalSymbolMap extractExternalSymbols( ISymbolTable compileTimeSymbolTable, ISymbolTable runtimeSymbolTable ) {
-    CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbolsMap = new CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol>( 8 );
+    HashMap<String, ISymbol> externalSymbolsMap = new HashMap<String, ISymbol>( 8 );
     putSymbols( compileTimeSymbolTable, externalSymbolsMap );
     putSymbols( runtimeSymbolTable, externalSymbolsMap ); // overwrite compile time symbols with the runtime stuff.  yeesh
     return new ExternalSymbolMapForMap(externalSymbolsMap);
   }
 
-  private void putSymbols( ISymbolTable symTable, CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbolsMap )
+  private void putSymbols( ISymbolTable symTable, HashMap<String, ISymbol> externalSymbolsMap )
   {
     Map symbols = symTable.getSymbols();
     if( symbols != null )
@@ -840,7 +844,7 @@ public class TemplateGenerator implements ITemplateGenerator
       {
         if( !(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null )
         {
-          externalSymbolsMap.put( sym.getCaseInsensitiveName(), sym );
+          externalSymbolsMap.put( (String)sym.getName(), sym );
         }
       }
     }

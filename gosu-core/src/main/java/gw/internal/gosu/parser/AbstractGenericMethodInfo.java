@@ -5,10 +5,7 @@
 package gw.internal.gosu.parser;
 
 import gw.lang.Throws;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IReducedSymbol;
-import gw.lang.reflect.*;
-import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IAnnotationInfo;
@@ -16,15 +13,16 @@ import gw.lang.reflect.IExceptionInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IGenericMethodInfo;
+import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.IDFSBackedFeatureInfo;
+import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuClass;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 /**
  */
@@ -253,15 +251,10 @@ public class AbstractGenericMethodInfo extends GosuBaseAttributedFeatureInfo imp
   protected List<IGosuAnnotation> getGosuAnnotations()
   {
     IModifierInfo modifierInfo = ((GosuClassTypeInfo)getGosuClass().getTypeInfo()).getModifierInfo( this );
-    return modifierInfo != null ? (List<IGosuAnnotation>) modifierInfo.getAnnotations() : Collections.<IGosuAnnotation>emptyList();
+    return modifierInfo != null ? modifierInfo.getAnnotations() : Collections.<IGosuAnnotation>emptyList();
   }
 
   public List<IReducedSymbol> getArgs() {
     return getDfs().getArgs();
   }
-
-  public CaseInsensitiveCharSequence getCaseInsensitiveName() {
-    return getDfs().getCaseInsensitiveName();
-  }
-
 }

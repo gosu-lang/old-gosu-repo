@@ -4,17 +4,16 @@
 
 package gw.lang.reflect;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.DynamicArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 public class MethodList extends DynamicArray<IMethodInfo> {
   public static final MethodList EMPTY = new MethodList();
 
-  private CaseInsensitiveHashMap<CaseInsensitiveCharSequence, DynamicArray<IMethodInfo>> map = new CaseInsensitiveHashMap<CaseInsensitiveCharSequence, DynamicArray<IMethodInfo>>();
+  private HashMap<String, DynamicArray<IMethodInfo>> map = new HashMap<String, DynamicArray<IMethodInfo>>();
 
   public MethodList() {
   }
@@ -54,7 +53,7 @@ public class MethodList extends DynamicArray<IMethodInfo> {
   }
 
   private void addToMap(IMethodInfo method) {
-    CaseInsensitiveCharSequence displayName = CaseInsensitiveCharSequence.get(method.getDisplayName());
+    String displayName = (String)method.getDisplayName();
     DynamicArray<IMethodInfo> methods = map.get(displayName);
     if (methods == null) {
       methods = new DynamicArray<IMethodInfo>(1);
@@ -66,7 +65,7 @@ public class MethodList extends DynamicArray<IMethodInfo> {
   @Override
   public IMethodInfo remove(int index) {
     IMethodInfo oldMethod = get(index);
-    CaseInsensitiveCharSequence displayName = CaseInsensitiveCharSequence.get(oldMethod.getDisplayName());
+    String displayName = (String)oldMethod.getDisplayName();
     DynamicArray<IMethodInfo> methods = map.get(displayName);
     int i = methods.indexOf(oldMethod);
     methods.remove(i);
@@ -77,7 +76,7 @@ public class MethodList extends DynamicArray<IMethodInfo> {
   @Override
   public IMethodInfo set(int index, IMethodInfo method) {
     IMethodInfo oldMethod = get(index);
-    CaseInsensitiveCharSequence displayName = CaseInsensitiveCharSequence.get(method.getDisplayName());
+    String displayName = (String)method.getDisplayName();
     DynamicArray<IMethodInfo> methods = map.get(displayName);
     int i = methods.indexOf(oldMethod);
     methods.set(i, method);
@@ -87,7 +86,7 @@ public class MethodList extends DynamicArray<IMethodInfo> {
 
 
   public DynamicArray<? extends IMethodInfo> getMethods(String name) {
-    DynamicArray<IMethodInfo> methodInfoList = map.get(CaseInsensitiveCharSequence.get(name));
+    DynamicArray<IMethodInfo> methodInfoList = map.get( name );
     return methodInfoList != null ? methodInfoList : DynamicArray.EMPTY;
   }
 

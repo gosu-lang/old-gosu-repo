@@ -9,6 +9,7 @@ import gw.lang.ir.statement.IRWhileStatement;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.statements.WhileStatement;
+import gw.lang.parser.statements.ITerminalStatement;
 
 public class WhileStatementTransformer extends AbstractStatementTransformer<WhileStatement>
 {
@@ -36,7 +37,14 @@ public class WhileStatementTransformer extends AbstractStatementTransformer<Whil
       whileLoop.setLoopTest( ExpressionTransformer.compile( _stmt().getExpression(), _cc() ) );
 
       // execute body
+
+      boolean[] bAbsolute = {false};
+      ITerminalStatement terminalStmt = _stmt().getLeastSignificantTerminalStatement(bAbsolute);
       whileLoop.setBody( _cc().compile(_stmt().getStatement() ) );
+      if( terminalStmt == _stmt() && bAbsolute[0] )
+      {
+        _cc().getCurrentFunction().setLoopImplicitReturn( true );
+      }
 
       return whileLoop;
     }

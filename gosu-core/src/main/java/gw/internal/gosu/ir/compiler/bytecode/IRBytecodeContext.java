@@ -4,19 +4,19 @@
 
 package gw.internal.gosu.ir.compiler.bytecode;
 
-import gw.util.GosuExceptionUtil;
-import gw.internal.ext.org.objectweb.asm.MethodVisitor;
 import gw.internal.ext.org.objectweb.asm.Label;
-import gw.util.Stack;
+import gw.internal.ext.org.objectweb.asm.MethodVisitor;
+import gw.internal.gosu.compiler.NamedLabel;
+import gw.lang.ir.IRElement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
-import gw.lang.ir.IRElement;
-import gw.lang.ir.statement.IRTryCatchFinallyStatement;
 import gw.lang.ir.statement.IRTerminalStatement;
-import gw.internal.gosu.compiler.NamedLabel;
+import gw.lang.ir.statement.IRTryCatchFinallyStatement;
+import gw.util.GosuExceptionUtil;
+import gw.util.Stack;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class IRBytecodeContext {
   private MethodVisitor _mv;
@@ -61,6 +61,21 @@ public class IRBytecodeContext {
     }
   }
 
+  public int getLocalCount()
+  {
+    return _allLocalVars.size();
+  }
+
+  public int getMaxScopeSize()
+  {
+    int iMax = 0;
+    for( IRCompilerLocalVar local : _allLocalVars )
+    {
+      iMax = Math.max( local.getScope().getLocalVars().size(), iMax );
+    }
+    return iMax;
+  }
+
   private boolean isOutOfScope( IRCompilerLocalVar lv )
   {
     return !lv.getScope().isActive();
@@ -98,7 +113,10 @@ public class IRBytecodeContext {
   }
 
   public void indexThis(IRType type) {
-    getLocalVar( new IRSymbol( "this", type, false) );
+    Label label = new Label();
+    visitLabel( label );
+    IRCompilerLocalVar thisVar = getLocalVar( new IRSymbol( "this", type, false ) );
+    thisVar.setStartLabel( label );
   }
 
   public void indexSymbols(List<IRSymbol> symbols) {

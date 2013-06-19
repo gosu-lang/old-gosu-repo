@@ -4,9 +4,9 @@
 
 package gw.internal.gosu.parser.statements;
 
+import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.Statement;
-import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.lang.parser.statements.IBreakStatement;
 import gw.lang.parser.statements.ISwitchStatement;
 import gw.lang.parser.statements.ITerminalStatement;
@@ -84,51 +84,69 @@ public final class SwitchStatement extends Statement implements ISwitchStatement
   }
 
   /**
-   * The switch statement has a non-null terminal stmt iff:
-   * 1) There are no case stmts or all the the case stmts have non-break terminator and
-   * 2) The default stmt exists and has a non-break terminator
+   * bAbsolute is true iff there are no break terminals anywhere in any cases and
+   * the default clause's terminator is non-break and absolute
    */
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    if( _defaultStatements == null || _defaultStatements.isEmpty() )
-    {
-      return null;
-    }
-    ContinueStatement caseStmtContinue = null;
+    ITerminalStatement termRet = null;
+    bAbsolute[0] = true;
+    boolean bBreak = false;
     if( _cases != null )
     {
-      outer:
       for( int i = 0; i < _cases.length; i++ )
       {
         List caseStatements = _cases[i].getStatements();
         if( caseStatements != null && caseStatements.size() > 0 )
         {
+          boolean bCaseAbs = true;
           for( int iStmt = 0; iStmt < caseStatements.size(); iStmt++ )
           {
-            ITerminalStatement terminalStmt = ((Statement)caseStatements.get( iStmt )).getLeastSignificantTerminalStatement();
-            if( terminalStmt != null && !(terminalStmt instanceof IBreakStatement) )
+            boolean[] bCsr = {false};
+            ITerminalStatement terminalStmt = ((Statement)caseStatements.get( iStmt )).getLeastSignificantTerminalStatement( bCsr );
+            if( terminalStmt != null )
             {
-              if( terminalStmt instanceof ContinueStatement )
-              {
-                caseStmtContinue = (ContinueStatement)terminalStmt;
+              bCaseAbs = bCsr[0];
+              if( !(terminalStmt instanceof IBreakStatement) ) {
+                termRet = getLeastSignificant( termRet, terminalStmt );
               }
-              continue outer;
+              else {
+                bAbsolute[0] = bCaseAbs = false;
+                bBreak = true;
+              }
+              //## todo: this can be true iff the switch-expr type is an enum and all the constants are covered in the cases and they all have the same absolute non-break terminal (not an unusual use-case)
             }
           }
-          return null;
+          bAbsolute[0] = bAbsolute[0] && bCaseAbs;
         }
       }
     }
-    for( int i = 0; i < _defaultStatements.size(); i++ )
-    {
-      ITerminalStatement terminalStmt = _defaultStatements.get( i ).getLeastSignificantTerminalStatement();
-      if( terminalStmt != null && !(terminalStmt instanceof IBreakStatement) )
-      {
-        return caseStmtContinue != null ? caseStmtContinue : terminalStmt;
+    boolean bDefaultContributed = false;
+    if( _defaultStatements != null && _defaultStatements.size() > 0 ) {
+      if( !bBreak ) {
+        // If none of the cases have a break, the cases all either fall through to the default clause
+        // or never flow to the next stmt following this switch.  Therefore, the default clause's terminal,
+        // if one is present, establishes the switch's terminal.
+        bAbsolute[0] = true;
       }
+      boolean bDefaultAbs = false;
+      for( int i = 0; i < _defaultStatements.size(); i++ )
+      {
+        boolean[] bCsr = {false};
+        ITerminalStatement terminalStmt = _defaultStatements.get( i ).getLeastSignificantTerminalStatement( bCsr );
+        if( terminalStmt != null ) {
+          if( !(terminalStmt instanceof IBreakStatement) ) {
+            bDefaultAbs = bCsr[0];
+            termRet = getLeastSignificant( termRet, terminalStmt );
+            bDefaultContributed = true;
+          }
+        }
+      }
+      bAbsolute[0] = bAbsolute[0] && bDefaultAbs;
     }
-    return null;
+    bAbsolute[0] = bAbsolute[0] && termRet != null && bDefaultContributed;
+    return termRet;
   }
 
   @Override

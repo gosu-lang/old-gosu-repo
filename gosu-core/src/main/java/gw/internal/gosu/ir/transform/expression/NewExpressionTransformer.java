@@ -4,25 +4,23 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRSymbol;
-import gw.lang.ir.IRElement;
-import gw.lang.ir.IRType;
 import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
-import gw.lang.ir.expression.IRCompositeExpression;
-import gw.lang.ir.expression.IRNewMultiDimensionalArrayExpression;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.expressions.NewExpression;
-import gw.lang.parser.IExpression;
+import gw.lang.ir.IRElement;
+import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRSymbol;
+import gw.lang.ir.expression.IRCompositeExpression;
+import gw.lang.ir.expression.IRNewMultiDimensionalArrayExpression;
 import gw.lang.parser.expressions.IInitializerExpression;
-import gw.lang.reflect.IConstructorInfo;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.IRelativeTypeInfo;
-import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.IConstructorHandler;
+import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -141,13 +139,16 @@ public class NewExpressionTransformer extends AbstractExpressionTransformer<NewE
 
     IRExpression constructorCall;
 
-    List<IRExpression> explicitArgs = pushArguments( irConstructor );
-    List<IRElement> newExprElements = handleNamedArgs( explicitArgs, _expr().getNamedArgOrder() );
+    List<IRElement> newExprElements;
 
     if( irConstructor.isBytecodeMethod() &&
         isBytecodeType( type ) && 
         !_cc().shouldUseReflection( irConstructor.getOwningIType(), irConstructor.getAccessibility() ) )
     {
+      List<IRExpression> explicitArgs = new ArrayList<IRExpression>();
+      pushArgumentsWithCasting( irConstructor, _expr().getArgs(), explicitArgs );
+      newExprElements = handleNamedArgs( explicitArgs, _expr().getNamedArgOrder() );
+
       // Invoke the constructor
       List<IRExpression> args = new ArrayList<IRExpression>();
       if( isNonStaticInnerClass( type ) )
@@ -162,6 +163,10 @@ public class NewExpressionTransformer extends AbstractExpressionTransformer<NewE
     }
     else
     {
+      List<IRExpression> explicitArgs = new ArrayList<IRExpression>();
+      pushArgumentsNoCasting( irConstructor, _expr().getArgs(), explicitArgs );
+      newExprElements = handleNamedArgs( explicitArgs, _expr().getNamedArgOrder() );
+
       // Call the IConstructorInfo dynamically
       constructorCall = callConstructorInfo( type, ci, explicitArgs );
     }
@@ -224,29 +229,5 @@ public class NewExpressionTransformer extends AbstractExpressionTransformer<NewE
                                         exprList( collectArgsIntoObjArray( explicitArgs ) ) );
 
     return checkCast( rootType, instance );
-  }
-
-  private List<IRExpression> pushArguments( IRMethod irConstructor )
-  {
-    final IExpression[] args = _expr().getArgs();
-    List<IRExpression> explicitArgs = Collections.emptyList();
-    if( args != null && args.length > 0 )
-    {
-      explicitArgs = new ArrayList<IRExpression>( args.length );
-      List<IRType> paramClasses = irConstructor.getExplicitParameterTypes();
-      for( int i = 0; i < args.length; i++ )
-      {
-        IExpression arg = args[i];
-        IRExpression irArg = ExpressionTransformer.compile(arg, _cc());
-
-        IRType paramClass = paramClasses.get( i );
-        if( !paramClass.isAssignableFrom( irArg.getType() ) )
-        {
-          irArg = buildCast( paramClass, irArg );
-        }
-        explicitArgs.add( irArg );
-      }
-    }
-    return explicitArgs;
   }
 }

@@ -35,7 +35,7 @@ public class NumericLiteralTransformer extends AbstractExpressionTransformer<Num
     if( type == JavaTypes.BIG_DECIMAL() ||
         type == JavaTypes.BIG_INTEGER() )
     {
-      return buildNewExpression( getDescriptor( type ), Arrays.asList(IRTypeConstants.STRING), Collections.singletonList( stringLiteral( _expr().getValue().toString() ) ) );
+      return buildNewExpression( getDescriptor( type ), Arrays.asList(IRTypeConstants.STRING()), Collections.singletonList( stringLiteral( _expr().getValue().toString() ) ) );
     }
     else
     {

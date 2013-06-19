@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.expressions.ExistsExpression;
 import gw.internal.gosu.parser.Expression;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRSymbol;
-import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
 import gw.lang.ir.expression.IRCompositeExpression;
 import gw.lang.ir.statement.IRAssignmentStatement;
@@ -39,7 +38,7 @@ public class ExistsExpressionTransformer extends AbstractExpressionTransformer<E
     {
 
       // boolean to hold if an element matches
-      IRSymbol booleanVal = _cc().makeAndIndexTempSymbol( IRTypeConstants.pBOOLEAN );
+      IRSymbol booleanVal = _cc().makeAndIndexTempSymbol(IRTypeConstants.pBOOLEAN());
       IRAssignmentStatement initBoolean = buildAssignment( booleanVal, booleanLiteral( false ) );
 
 

@@ -246,14 +246,14 @@ public class FileSystemImpl extends BaseService implements IFileSystem {
       }
       else if ( _url.getProtocol().equals( "jar" ) ) {
         JarURLConnection urlConnection;
-        JarFile jarFile;
+        URL jarFileUrl;
         try {
           urlConnection = (JarURLConnection) _url.openConnection();
-          jarFile = urlConnection.getJarFile();
+          jarFileUrl = urlConnection.getJarFileURL();
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-        File dir = new File(jarFile.getName());
+        File dir = new File(jarFileUrl.getFile());
 
         IDirectory jarFileDirectory;
         synchronized (CACHED_FILE_SYSTEM_LOCK) {

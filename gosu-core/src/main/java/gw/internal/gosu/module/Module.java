@@ -6,15 +6,16 @@ package gw.internal.gosu.module;
 
 import gw.config.CommonServices;
 import gw.fs.IDirectory;
-import gw.fs.IFile;
 import gw.fs.IResource;
 import gw.internal.gosu.parser.DefaultTypeLoader;
 import gw.internal.gosu.parser.FileSystemGosuClassRepository;
+import gw.internal.gosu.parser.IModuleClassLoader;
+import gw.internal.gosu.parser.ModuleClassLoader;
 import gw.internal.gosu.parser.ModuleTypeLoader;
 import gw.internal.gosu.properties.PropertiesTypeLoader;
-import gw.lang.GosuShop;
 import gw.lang.reflect.ITypeLoader;
 import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.TypeSystemShutdownListener;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.IGosuClassRepository;
@@ -24,64 +25,52 @@ import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.INativeModule;
 import gw.util.Extensions;
 import gw.util.GosuExceptionUtil;
+import gw.util.concurrent.LocklessLazyVar;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class Module implements IModule
 {
-  private IExecutionEnvironment _execEnv;
-
+  private final IExecutionEnvironment _execEnv;
   private String _strName;
-  private List<Dependency> _dependencies;
-  private volatile IModule[] _traversalList;
+
+  private List<Dependency> _dependencies = new ArrayList<Dependency>();
+  private LocklessLazyVar<IModule[]> _traversalList = new LocklessLazyVar<IModule[]>() {
+    @Override
+    protected IModule[] init() {
+      return buildTraversalList();
+    }
+  };
   private ModuleTypeLoader _modTypeLoader;
 
-  private List<IDirectory> _roots;
-  protected List<IDirectory> _explicitSourceRoots;
-  protected ResourceRoots _allResourceRoots;
-  protected Set<String> _allSourceExtensions;
-  protected List<String> _classpath;
+  // Paths
+  private List<IDirectory> _roots = new ArrayList<IDirectory>();
+  protected List<IDirectory> _classpath = new ArrayList<IDirectory>();
+
   private INativeModule _nativeModule;
+  private ClassLoader _moduleClassLoader;
+  private ClassLoader _extensionsClassLoader;
 
-  protected boolean _includesGosuCoreAPI;
-  private IFileSystemGosuClassRepository _fileRepository;
-  private URLClassLoader _extensionsClassLoader;
-  private List<ITypeLoader> _extensionTypeLoaders; //## todo: curiously, we don't seem to be using these here
+  private final IFileSystemGosuClassRepository _fileRepository = new FileSystemGosuClassRepository(this);
 
-  public Module( IExecutionEnvironment execEnv, String strName, boolean includesGosuCoreAPI )
+  public Module(IExecutionEnvironment execEnv, String strName)
   {
     _execEnv = execEnv;
-    reset( strName, includesGosuCoreAPI );
-  }
-
-  public void reset( String strName, boolean includesGosuCoreAPI )
-  {
     _strName = strName;
-    _dependencies = new ArrayList<Dependency>();
-    _includesGosuCoreAPI = includesGosuCoreAPI;
-    _roots = new ArrayList<IDirectory>();
-    _allResourceRoots = null;
-    _explicitSourceRoots = new ArrayList<IDirectory>();
-    _extensionTypeLoaders = new ArrayList<ITypeLoader>();
   }
 
   public final IExecutionEnvironment getExecutionEnvironment()
   {
     return _execEnv;
-  }
-
-  public boolean includesGosuCoreAPI() {
-    return _includesGosuCoreAPI;
   }
 
   @Override
@@ -92,37 +81,17 @@ public class Module implements IModule
   @Override
   public void setDependencies(List<Dependency> newDeps) {
     _dependencies = new ArrayList<Dependency>(newDeps);
-    update();
+    _traversalList.clear();
   }
 
   @Override
-  public void update() {
-    // create default traversal list
-    List<IModule> traversalList = new ArrayList<IModule>();
-    buildTraversalList(this, traversalList);
-    // make sure that the jre module is last
-    IModule jreModule = getExecutionEnvironment().getJreModule();
-    if (traversalList.remove(jreModule)) {
-      traversalList.add(jreModule);
-    }
-    IModule globalModule = getExecutionEnvironment().getGlobalModule();
-    if (this != globalModule) {
-      traversalList.add(0, globalModule);
-    }
-    _traversalList = traversalList.toArray(new IModule[traversalList.size()]);
-
-    // create prefix traversal lists
-//    _traversalListsByPrefix = createTraversalPrefixMap();
+  public List<IDirectory> getRoots() {
+    return _roots;
   }
 
   @Override
-  public String getName()
-  {
-    return _strName;
-  }
-
-  public void addRoot(IDirectory rootDir) {
-    _roots.add(rootDir);
+  public void setRoots(List<IDirectory> roots) {
+    _roots = new ArrayList<IDirectory>(roots);
   }
 
   @Override
@@ -135,82 +104,53 @@ public class Module implements IModule
   public void addDependency( Dependency d )
   {
     _dependencies.add(d);
+    _traversalList.clear();
   }
 
   public void removeDependency( Dependency d )
   {
-    _dependencies.remove( d );
-  }
-
-  public void removeDependency( IModule module ) {
-    int size = _dependencies.size();
-    for(int i = 0; i < size; ++i) {
-      Dependency d = _dependencies.get(i);
-      if(d.getModule() == module) {
-        _dependencies.remove(i);
-        break;
-      }
-    }
-  }
-
-  @Override
-  public void clearDependencies()
-  {
-    _dependencies.clear();
+    _dependencies.remove(d);
+    _traversalList.clear();
   }
 
   @Override
   public List<IDirectory> getSourcePath()
   {
-    maybeComputeSourcePathAndExtensions();
-    return _allResourceRoots.getAllSourceRoots();
+    return Arrays.asList(_fileRepository.getSourcePath());
   }
 
   @Override
-  public List<IDirectory> getFullResourcePath()
+  public void setSourcePath( List<IDirectory> sourcePaths )
   {
-    maybeComputeSourcePathAndExtensions();
-    return _allResourceRoots.getAllResourceRoots();
+    List<IDirectory> sources = new ArrayList<IDirectory>(sourcePaths);
+    sources.addAll(getAdditionalSourceRoots());
+    _fileRepository.setSourcePath(sources.toArray(new IDirectory[sourcePaths.size()]));
   }
 
-  private void maybeComputeSourcePathAndExtensions() {
-    if (_allResourceRoots == null) {
-      _allResourceRoots = new ResourceRoots();
-      _allResourceRoots.addAllAsSourceRoots(_explicitSourceRoots);
-      _allSourceExtensions = new HashSet<String>();
-      Collections.addAll(_allSourceExtensions, GosuClassTypeLoader.ALL_EXTS);
-      _allSourceExtensions.add(".java");
-
-      // add the extension typeloader source paths and extensions
-      populateExtensionSourcePathsAndExtensions();
+  @Override
+  public ClassLoader getModuleClassLoader() {
+    if (_moduleClassLoader == null) {
+      _moduleClassLoader = ModuleClassLoader.create(this);
     }
+    return _moduleClassLoader;
   }
 
-  private void populateExtensionSourcePathsAndExtensions() {
-    List<String> javaClassPath = getJavaClassPath();
-    for (String path : javaClassPath) {
-      try {
-        IDirectory root = CommonServices.getFileSystem().getIDirectory(new File(path).toURI().toURL());
-        List<String> sourceFileExtensions = Extensions.getExtensions(new File(path), Extensions.CONTAINS_SOURCES);
-        for (String ext : sourceFileExtensions) {
-          _allSourceExtensions.add('.' + ext);
-        }
-        boolean hasExtensions = sourceFileExtensions.size() > 0;
-        _allResourceRoots.add(root, hasExtensions);
-      } catch (MalformedURLException e) {
-        throw new RuntimeException(e);
+  @Override
+  public void disposeLoader() {
+    if (_moduleClassLoader instanceof IModuleClassLoader) {
+      ((IModuleClassLoader) _moduleClassLoader).dispose();
+    }
+    _moduleClassLoader = null;
+  }
+
+  private static void scanPaths(List<IDirectory> paths, Set<String> extensions, List<IDirectory> roots) {
+    extensions.add(".java");
+    extensions.addAll(Arrays.asList(GosuClassTypeLoader.ALL_EXTS));
+    for (IDirectory root : paths) {
+      List<String> sourceFileExtensions = Extensions.getExtensions(root, Extensions.CONTAINS_SOURCES);
+      if (!sourceFileExtensions.isEmpty()) {
+        roots.add(root);
       }
-    }
-  }
-
-  @Override
-  public void setSourcePath( List<IDirectory> path )
-  {
-    _explicitSourceRoots = path;
-    _allResourceRoots = null;
-    if (_fileRepository != null) { // if it was already created
-      List<IDirectory> sourcePath = getSourcePath();
-      _fileRepository.setSourcePath(sourcePath.toArray(new IDirectory[sourcePath.size()]));
     }
   }
 
@@ -231,32 +171,27 @@ public class Module implements IModule
   }
 
   @Override
-  public void setJavaClasspath( List<URL> urls )
+  public void configurePaths(List<IDirectory> classpath, List<IDirectory> sourcePaths)
   {
-    setJavaClasspathFromFiles(GosuShop.urls2paths(urls));
-  }
+    // Scan....
+    List<IDirectory> sourceRoots = new ArrayList<IDirectory>(sourcePaths);
+    Set<String> extensions = new HashSet<String>();
+    scanPaths(classpath, extensions, sourceRoots);
 
-  public void addGosuApiPath( List<String> paths )
-  {
-    File file = TypeSystem.getResourceFileResolver().resolveToFile(FileSystemGosuClassRepository.RESOURCE_LOCATED_W_CLASSES);
-    paths.add(file.getAbsolutePath());
-  }
-
-  @Override
-  public void setJavaClasspathFromFiles( List<String> paths )
-  {
-    _classpath = maybeExpand(paths);
-    _allResourceRoots = null; // need to recalculate the source roots now
-    if (_fileRepository != null) { // need to update the repository paths
-      List<IDirectory> src = getSourcePath();
-      _fileRepository.setSourcePath(src.toArray(new IDirectory[src.size()]));
-    }
+    // FIXME: extensions...
+    setSourcePath(sourceRoots);
+    setJavaClassPath(classpath);
   }
 
   @Override
-  public List<String> getJavaClassPath()
+  public List<IDirectory> getJavaClassPath()
   {
     return _classpath;
+  }
+
+  @Override
+  public void setJavaClassPath( List<IDirectory> classpath ) {
+    _classpath = classpath;
   }
 
   @Override
@@ -277,69 +212,7 @@ public class Module implements IModule
     _nativeModule = nativeModule;
   }
 
-  @Override
-  public String getClassNameForFile( File classFile )
-  {
-    GosuClassTypeLoader typeLoader = getModuleTypeLoader().getTypeLoader(GosuClassTypeLoader.class);
-    IFileSystemGosuClassRepository repo = (IFileSystemGosuClassRepository)typeLoader.getRepository();
-    IFile classIFile = CommonServices.getFileSystem().getIFile( classFile );
-    List<IDirectory> classPath = repo.getClassPath();
-    IDirectory root = null;
-    for (IDirectory folder : classPath) {
-      if (classIFile.isDescendantOf(folder) ) {
-        root = folder;
-        break;
-      }
-    }
-    if (root == null) {
-      return null;
-    }
-    return repo.getClassNameFromFile( root, classIFile, repo.getExtensions() );
-  }
-
-  public String getTemplateNameForFile( File templateFile )
-  {
-    IFile programIFile = CommonServices.getFileSystem().getIFile(templateFile);
-    GosuClassTypeLoader typeLoader = getModuleTypeLoader().getTypeLoader( GosuClassTypeLoader.class );
-    IFileSystemGosuClassRepository repo = (IFileSystemGosuClassRepository)typeLoader.getRepository();
-    List<IDirectory> classPath = repo.getClassPath();
-    IDirectory root = null;
-    for (IDirectory folder : classPath) {
-      if (programIFile.isDescendantOf(folder) ) {
-        root = folder;
-        break;
-      }
-    }
-    if (root == null) {
-      return null;
-    }
-    return repo.getClassNameFromFile( root, programIFile, new String[] {GosuClassTypeLoader.GOSU_TEMPLATE_FILE_EXT} );
-  }
-
-  public String getProgramNameForFile( File programFile )
-  {
-    IFile programIFile = CommonServices.getFileSystem().getIFile(programFile);
-    GosuClassTypeLoader typeLoader = getModuleTypeLoader().getTypeLoader(GosuClassTypeLoader.class);
-    IFileSystemGosuClassRepository repo = (IFileSystemGosuClassRepository)typeLoader.getRepository();
-    List<IDirectory> classPath = repo.getClassPath();
-    IDirectory root = null;
-    for (IDirectory folder : classPath) {
-      if (programIFile.isDescendantOf(folder) ) {
-        root = folder;
-        break;
-      }
-    }
-    if (root == null) {
-      return null;
-    }
-    return repo.getClassNameFromFile( root, programIFile, new String[] {GosuClassTypeLoader.GOSU_PROGRAM_FILE_EXT} );
-  }
-
   public void initializeTypeLoaders() {
-    List<IDirectory> src = getSourcePath();
-    Set<String> extensions = getSourceExtensions();
-    _fileRepository = new FileSystemGosuClassRepository(this, src.toArray(new IDirectory[src.size()]), extensions.toArray(new String[extensions.size()]), _includesGosuCoreAPI);
-
     maybeCreateModuleTypeLoader();
     createStandardTypeLoaders();
     if( CommonServices.getEntityAccess().getLanguageLevel().isStandard() ) {
@@ -358,11 +231,10 @@ public class Module implements IModule
   }
 
   protected void createExtenxioTypeloadersImpl() {
-    for( String additionalTypeLoader : getExtensionTypeLoaderNames())
-    {
+    Set<String> typeLoaders = getExtensionTypeloaderNames();
+    for( String additionalTypeLoader : typeLoaders) {
       try {
-        ITypeLoader typeLoader = createAndPushTypeLoader(_fileRepository, additionalTypeLoader, getExtensionClassLoader());
-        _extensionTypeLoaders.add(typeLoader);
+        createAndPushTypeLoader(_fileRepository, additionalTypeLoader);
       } catch (Throwable e) {
         System.err.println("==> WARNING: Cannot create extension typeloader " + additionalTypeLoader + ". " + e.getMessage());
 //        e.printStackTrace(System.err);
@@ -371,37 +243,20 @@ public class Module implements IModule
     }
   }
 
-  private Set<String> getExtensionTypeLoaderNames() {
+  private Set<String> getExtensionTypeloaderNames() {
     Set<String> set = new HashSet<String>();
-    for (URL url : getExtensionURLs()) {
-      Extensions.getExtensions(set, new File(url.getFile()), "Gosu-Typeloaders");
+    for (IModule m : getModuleTraversalList()) {
+      for (IDirectory dir : m.getJavaClassPath()) {
+        Extensions.getExtensions(set, dir, "Gosu-Typeloaders");
+      }
     }
     return set;
   }
 
-  private ClassLoader getExtensionClassLoader() {
-    if (_extensionsClassLoader == null) {
-      _extensionsClassLoader = new ExtensionClassLoader(Module.this.getExtensionURLs(), Module.this.getClass().getClassLoader());
-    }
-    return _extensionsClassLoader;
-  }
-
-  private URL[] getExtensionURLs() {
-    List<URL> urls = new ArrayList<URL>();
-    for (String path : _classpath) {
-      try {
-        urls.add(new File(path).toURI().toURL());
-      } catch (MalformedURLException e) {
-        //ignore
-      }
-    }
-    return urls.toArray(new URL[urls.size()]);
-  }
-
   protected void createStandardTypeLoaders()
   {
-    TypeSystem.pushTypeLoader( this, new GosuClassTypeLoader( this, _fileRepository ) );
-    TypeSystem.pushTypeLoader( this, new PropertiesTypeLoader( this ) );
+    CommonServices.getTypeSystem().pushTypeLoader( this, new GosuClassTypeLoader( this, _fileRepository ) );
+    CommonServices.getTypeSystem().pushTypeLoader( this, new PropertiesTypeLoader( this ) );
   }
 
   protected void maybeCreateModuleTypeLoader() {
@@ -412,10 +267,27 @@ public class Module implements IModule
   }
 
   public final IModule[] getModuleTraversalList() {
-    return _traversalList;
+    return _traversalList.get();
   }
 
-  protected void buildTraversalList(final IModule theModule, List<IModule> traversalList) {
+  private IModule[] buildTraversalList() {
+    // create default traversal list
+    List<IModule> traversalList = new ArrayList<IModule>();
+    traverse(this, traversalList);
+    // make sure that the jre module is last
+    IModule jreModule = getExecutionEnvironment().getJreModule();
+    if (traversalList.remove(jreModule)) {
+      traversalList.add(jreModule);
+    }
+    IModule globalModule = getExecutionEnvironment().getGlobalModule();
+    if (this != globalModule) {
+      traversalList.add(0, globalModule);
+    }
+    return traversalList.toArray(new IModule[traversalList.size()]);
+  }
+
+
+  protected void traverse(final IModule theModule, List<IModule> traversalList) {
     traversalList.add(theModule);
     for (Dependency dependency : theModule.getDependencies()) {
       IModule dependencyModule = dependency.getModule();
@@ -423,7 +295,7 @@ public class Module implements IModule
       // traverse all direct dependency and indirect exported dependencies
       if (!traversalList.contains(dependencyModule) &&
               (dependency.isExported() || theModule == this)) {
-        buildTraversalList(dependencyModule, traversalList);
+        traverse(dependencyModule, traversalList);
       }
     }
   }
@@ -431,6 +303,9 @@ public class Module implements IModule
   @Override
   public <T extends ITypeLoader> List<? extends T> getTypeLoaders(Class<T> typeLoaderClass) {
     List<T> results = new ArrayList<T>();
+    if (_modTypeLoader == null) {
+      return results;
+    }
     for (ITypeLoader loader : getModuleTypeLoader().getTypeLoaderStack()) {
       if (typeLoaderClass.isInstance(loader)) {
         results.add(typeLoaderClass.cast(loader));
@@ -439,21 +314,12 @@ public class Module implements IModule
     return results;
   }
 
-  @Override
-  public boolean isGosuModule() {
-    return _nativeModule == null || _nativeModule.isGosuModule();
-  }
-
-  private ITypeLoader createAndPushTypeLoader(IFileSystemGosuClassRepository classRepository, String className, ClassLoader classLoader)
+  private ITypeLoader createAndPushTypeLoader(IFileSystemGosuClassRepository classRepository, String className)
   {
     ITypeLoader typeLoader = null;
     try
     {
-      if (classLoader == null) {
-        boolean standard = CommonServices.getEntityAccess().getLanguageLevel().isStandard();
-        classLoader = standard ? TypeSystem.getGosuClassLoader().getActualLoader() : null;
-      }
-      Class loaderClass = Class.forName( className, true, classLoader );
+      Class loaderClass = getExtensionClassLoader().loadClass( className );
       CommonServices.getGosuInitializationHooks().beforeTypeLoaderCreation( loaderClass );
 
       Constructor constructor = getConstructor( loaderClass, IModule.class );
@@ -499,7 +365,7 @@ public class Module implements IModule
     }
     if( typeLoader != null )
     {
-      TypeSystem.pushTypeLoader( this, typeLoader );
+      CommonServices.getTypeSystem().pushTypeLoader( this, typeLoader );
       CommonServices.getGosuInitializationHooks().afterTypeLoaderCreation();
     }
     else
@@ -511,6 +377,27 @@ public class Module implements IModule
         "  <init>(gw.lang.reflect.gs.IGosuClassRepository)\n" );
     }
     return typeLoader;
+  }
+
+  private ClassLoader getExtensionClassLoader() {
+    if (_extensionsClassLoader == null) {
+      _extensionsClassLoader = ExtensionClassLoader.create(getExtensionURLs());
+    }
+    return _extensionsClassLoader;
+  }
+
+  private URL[] getExtensionURLs() {
+    List<URL> urls = new ArrayList<URL>();
+    for (IModule m : getModuleTraversalList()) {
+      for (IDirectory path : m.getJavaClassPath()) {
+        try {
+          urls.add(path.toURI().toURL());
+        } catch (MalformedURLException e) {
+          //ignore
+        }
+      }
+    }
+    return urls.toArray(new URL[urls.size()]);
   }
 
   private Constructor getConstructor( Class loaderClass, Class... argTypes )
@@ -525,26 +412,6 @@ public class Module implements IModule
     }
   }
 
-  private static List<String> maybeExpand( List<String> paths )
-  {
-    LinkedHashSet<String> expanded = new LinkedHashSet<String>();
-    for( String path : paths )
-    {
-      for( String pathElement : path.split( File.pathSeparator ) )
-      {
-        if( pathElement.length() > 0 )
-        {
-          IResource resource = CommonServices.getFileSystem().getIFile(new File(pathElement));
-          if (resource == null) {
-            resource = CommonServices.getFileSystem().getIDirectory(new File(pathElement));
-          }
-          expanded.add(resource.getPath().getPathString());
-        }
-      }
-    }
-    return new ArrayList<String>( expanded );
-  }
-
   public boolean equals(Object o) {
     if (!(o instanceof IModule)) {
       return false;
@@ -557,54 +424,56 @@ public class Module implements IModule
     return _strName.hashCode();
   }
 
+  @Override
+  public String getName()
+  {
+    return _strName;
+  }
+
+  @Override
   public void setName(String name) {
     _strName = name;
   }
 
-  public Set<String> getSourceExtensions() {
-    maybeComputeSourcePathAndExtensions();
-    return _allSourceExtensions;
+  protected List<IDirectory> getAdditionalSourceRoots() {
+    return Collections.emptyList();
   }
 
+  /**
+   * Singleton extension classloader. Used for loading typeloaders.
+   */
   private static class ExtensionClassLoader extends URLClassLoader {
+    private static final LocklessLazyVar<ExtensionClassLoader> INSTANCE
+            = new LocklessLazyVar<ExtensionClassLoader>() {
+      @Override
+      protected ExtensionClassLoader init() {
+        return new ExtensionClassLoader(ExtensionClassLoader.class.getClassLoader());
+      }
+    };
 
-    public ExtensionClassLoader(URL[] extensionURLs, ClassLoader parent) {
-      super(extensionURLs, parent);
+    static {
+      TypeSystem.addShutdownListener(new TypeSystemShutdownListener() {
+        @Override
+        public void shutdown() {
+          INSTANCE.clear();
+        }
+      });
     }
 
-    @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-      try {
-        // delegate first
-        return super.loadClass(name, resolve);
-      } catch (ClassNotFoundException e) {
-        // if we missed, let's try to load locally
-        synchronized (this) {
-          Class c = this.findLoadedClass(name);
-          if (c == null) {
-            try {
-              c = this.findClass(name);
-            } catch (ClassNotFoundException e2) {
-              //ignore
-            }
-          }
-          if (c != null) {
-            if (resolve) {
-              this.resolveClass(c);
-            }
-            return c;
-          }
-        }
-        throw e;
+    public static ClassLoader create(URL[] urls) {
+      ExtensionClassLoader loader = INSTANCE.get();
+      for (URL url : urls) {
+        loader.addURL(url);
       }
+      return loader;
+    }
+
+    private ExtensionClassLoader(ClassLoader parent) {
+      super(new URL[0], parent);
     }
   }
 
   @Override
-  public List<? extends IDirectory> getRoots() {
-    return _roots;
-  }
-
   public String pathRelativeToRoot(IResource resource) {
     for (IDirectory root : getSourcePath()) {
       if (resource.isDescendantOf(root)) {
@@ -618,40 +487,4 @@ public class Module implements IModule
     }
     return null;
   }
-
-  @Override
-  public IResource getSourceRoot(IResource resource) {
-    for (IDirectory root : _explicitSourceRoots) {
-      if (resource.isDescendantOf(root)) {
-        return root;
-      }
-    }
-    return null;
-  }
-
-  protected static class ResourceRoots {
-    private List<IDirectory> _allSourceRoots = new ArrayList<IDirectory>();
-    private List<IDirectory> _allResourceRoots = new ArrayList<IDirectory>();
-
-    protected void addAllAsSourceRoots(List<IDirectory> dirs) {
-      _allSourceRoots.addAll(dirs);
-      _allResourceRoots.addAll(dirs);
-    }
-
-    protected void add(IDirectory dir, boolean sourceRootOnly) {
-      if (sourceRootOnly) {
-        _allSourceRoots.add(dir);
-      }
-      _allResourceRoots.add(dir);
-    }
-
-    public List<IDirectory> getAllSourceRoots() {
-      return _allSourceRoots;
-    }
-
-    public List<IDirectory> getAllResourceRoots() {
-      return _allResourceRoots;
-    }
-  }
-
 }

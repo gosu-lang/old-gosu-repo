@@ -17,7 +17,6 @@ import java.util.List;
 public class ReducedSymbol implements IReducedSymbol {
 
   private boolean _isStatic;
-  protected CaseInsensitiveCharSequence _caseInsensitiveName;
   private IType _type;
   private String _name;
   private String _displayName;
@@ -35,7 +34,6 @@ public class ReducedSymbol implements IReducedSymbol {
     _name = sym.getName();
     _displayName = sym.getDisplayName();
     _type = sym.getType();
-    _caseInsensitiveName = sym.getCaseInsensitiveName();
     _scriptPartId = sym.getScriptPart();
     _modifiers = sym.getModifierInfo().getModifiers();
     _symClass = sym.getClass();
@@ -51,7 +49,6 @@ public class ReducedSymbol implements IReducedSymbol {
     _name = arg.getName();
     _displayName = _name;
     _type = arg.getType();
-    _caseInsensitiveName = CaseInsensitiveCharSequence.get( _name );
     _scriptPartId = arg.getScriptPart();
     _defValue = arg.getDefaultValueExpression();
     _modifiers = arg.getModifiers();
@@ -137,10 +134,6 @@ public class ReducedSymbol implements IReducedSymbol {
     _type = type;
   }
 
-  public CaseInsensitiveCharSequence getCaseInsensitiveName() {
-    return _caseInsensitiveName;
-  }
-
   public IScriptPartId getScriptPart() {
     return _scriptPartId;
   }
@@ -168,8 +161,6 @@ public class ReducedSymbol implements IReducedSymbol {
 
     if (_isStatic != that._isStatic) return false;
     if (_modifiers != that._modifiers) return false;
-    if (_caseInsensitiveName != null ? !_caseInsensitiveName.equals(that._caseInsensitiveName) : that._caseInsensitiveName != null)
-      return false;
     if (_displayName != null ? !_displayName.equals(that._displayName) : that._displayName != null) return false;
     if (_fullDescription != null ? !_fullDescription.equals(that._fullDescription) : that._fullDescription != null) return false;
     if (_globalScope != that._globalScope) return false;

@@ -4,19 +4,25 @@
 
 package gw.config;
 
-import gw.lang.reflect.ITemporaryFileProvider;
 import gw.lang.reflect.module.IModule;
 
 import java.io.File;
-import java.net.URL;
-import java.util.List;
 
-public interface IPlatformHelper extends IService, ITemporaryFileProvider {
+public interface IPlatformHelper extends IService {
 
   boolean isInIDE();
 
-  void refresh(IModule module, boolean clearCachedTypes);
+  boolean shouldCacheTypeNames();
+
+  void refresh(IModule module);
 
   boolean isPathIgnored(String relativePath);
 
+  File getIndexFile(String id);
+
+  File getIDEACachesDirFile();
+
+  public String getIDEACachesDir();
+
+  public File getIDEACorruptionMarkerFile();
 }

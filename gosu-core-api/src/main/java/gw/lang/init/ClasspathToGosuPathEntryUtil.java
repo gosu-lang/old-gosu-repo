@@ -59,15 +59,15 @@ public class ClasspathToGosuPathEntryUtil {
   }
 
   private static IDirectory executeOnSourceDirectory(IDirectory dir, SourceDirectoryBlock block){
-    IFile moduleFile = dir.file("module.xml");
+    IFile moduleFile = dir.file("pom.xml");
     IDirectory foundModule = null;
-      if (moduleFile.exists()) {
+      if (moduleFile != null && moduleFile.exists()) {
         // This entry is itself a module, so return that
         block.doIt(dir, moduleFile);
       } else if (!dir.getName().endsWith(".jar")) {
         IDirectory parentDir = dir.getParent();
         if (parentDir != null) {
-          IFile parentModuleFile = parentDir.file("module.xml");
+          IFile parentModuleFile = parentDir.file("pom.xml");
           if (parentModuleFile.exists() && moduleContainsSourceDir(parentModuleFile, dir)) {
             // Module.xml file in the parent directory, so that directory is a module
             block.doIt(parentDir, parentModuleFile);
@@ -88,7 +88,7 @@ public class ClasspathToGosuPathEntryUtil {
 
   private static boolean moduleContainsSourceDir(IFile moduleFile, IDirectory dir) {
     for (IDirectory iDirectory : ModuleFileUtil.createPathEntryForModuleFile(moduleFile).getSources()) {
-      if(iDirectory.getName().equals(dir.getName())){
+      if(iDirectory.equals(dir)){
         return true;
       }
     }
@@ -123,7 +123,7 @@ public class ClasspathToGosuPathEntryUtil {
     public void doIt(IDirectory dir, IFile moduleFile) {
       if (!moduleAlreadyIncluded(dir, _pathEntries)) {
         if (moduleFile == null) {
-          _pathEntries.add(new GosuPathEntry(dir, Collections.singletonList(dir), Collections.<String>emptyList()));
+          _pathEntries.add(new GosuPathEntry(dir, Collections.singletonList(dir)));
         } else {
           _pathEntries.add(GosuShop.createPathEntryFromModuleFile(moduleFile));
         }

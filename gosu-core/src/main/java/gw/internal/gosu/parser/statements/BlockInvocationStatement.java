@@ -8,6 +8,7 @@ import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.lang.parser.statements.IBlockInvocationStatement;
 import gw.lang.parser.expressions.IBlockInvocation;
+import gw.lang.parser.statements.ITerminalStatement;
 
 public class BlockInvocationStatement extends Statement implements IBlockInvocationStatement
 {
@@ -41,8 +42,9 @@ public class BlockInvocationStatement extends Statement implements IBlockInvocat
   }
 
   @Override
-  public TerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 

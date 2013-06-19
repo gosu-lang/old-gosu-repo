@@ -14,6 +14,4 @@ public interface ITypeLiteralExpression extends ILiteralExpression, Cloneable
   void setType( IType strFqn );
 
   IExpression getPackageExpression();
-  int getRelativeTypeStart();
-  int getRelativeTypeEnd();
 }

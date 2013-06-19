@@ -4,13 +4,15 @@
 
 package gw.lang.ir.statement;
 
+import gw.lang.ir.IRAbstractLoopStatement;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.expression.IRBooleanLiteral;
 import gw.lang.UnstableAPI;
 
 @UnstableAPI
-public class IRWhileStatement extends IRStatement implements IRLoopStatement {
+public class IRWhileStatement extends IRAbstractLoopStatement
+{
 
   // test
   private IRExpression _test;
@@ -40,15 +42,23 @@ public class IRWhileStatement extends IRStatement implements IRLoopStatement {
     setParentToThis( irStatement );
   }
 
+  public boolean isLoopCondLiteralTrue()
+  {
+    return _test instanceof IRBooleanLiteral && ((IRBooleanLiteral) _test).getValue();
+  }
+
   @Override
-  public IRTerminalStatement getLeastSignificantTerminalStatement() {
+  public IRTerminalStatement getLeastSignificantTerminalStatement()
+  {
     // Unless _test is the literal value "true" there's a chance the loop won't
     // execute even once
-    if( !(_test instanceof IRBooleanLiteral && ((IRBooleanLiteral) _test).getValue())) {
+    if( !isLoopCondLiteralTrue() )
+    {
       return null;
     }
 
-    if (_body != null) {
+    if( _body != null )
+    {
       IRTerminalStatement terminalStmt = _body.getLeastSignificantTerminalStatement();
       if( terminalStmt instanceof IRReturnStatement ||
           terminalStmt instanceof IRThrowStatement )

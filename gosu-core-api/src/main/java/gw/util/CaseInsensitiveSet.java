@@ -17,7 +17,7 @@ public class CaseInsensitiveSet<T extends CharSequence> extends AbstractSet<T> i
   private static final Object MARKER = new Serializable() { };
 
   public CaseInsensitiveSet() {
-    _map = new CaseInsensitiveHashMap<T, Object>();
+    _map = new CiHashMap<T, Object>();
   }
 
   public CaseInsensitiveSet(Collection<? extends T> c) {
@@ -30,7 +30,7 @@ public class CaseInsensitiveSet<T extends CharSequence> extends AbstractSet<T> i
   }
 
   public CaseInsensitiveSet(int initialCapacity) {
-    _map = new CaseInsensitiveHashMap<T, Object>(initialCapacity);
+    _map = new CiHashMap<T, Object>(initialCapacity);
   }
 
   public int size() {

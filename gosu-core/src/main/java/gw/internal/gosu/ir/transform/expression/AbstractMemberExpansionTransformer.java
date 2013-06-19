@@ -69,7 +69,7 @@ public abstract class AbstractMemberExpansionTransformer<T extends IMemberAccess
         // This is like calling root.each(\r -> r.foo())
         return compileExpansionWithNoReturnValue( rootType, rootComponentType, arrayType, compType );
       }
-      else if(isArrayOrCollection( rootType ) && !isArrayOrCollection( rootComponentType ) && !isArrayOrCollection( propertyType ))
+      else if(isBytecodeType( propertyType ) && isArrayOrCollection( rootType ) && !isArrayOrCollection( rootComponentType ) && !isArrayOrCollection( propertyType ))
       {
         // This is like calling root.map(\r -> r.Bar)
         return compileExpansionDirectlyToArray( rootType, rootComponentType, arrayType, compType );
@@ -256,8 +256,8 @@ public abstract class AbstractMemberExpansionTransformer<T extends IMemberAccess
     else
     {
       IType arrayComponentType = getMoreSpecificType(resultCompType, resultType.getComponentType());
-      IRExpression listToArrayCall = callStaticMethod( AbstractMemberExpansionTransformer.class, "listToArray", new Class[]{List.class, Class.class},
-              exprList( identifier( resultArrayList ), pushConstant( getDescriptor( arrayComponentType ) ) ));
+      IRExpression listToArrayCall = callStaticMethod( AbstractMemberExpansionTransformer.class, "listToArray", new Class[]{List.class, IType.class},
+              exprList( identifier( resultArrayList ), pushType( arrayComponentType ) ));
       return checkCast( arrayComponentType.getArrayType(), listToArrayCall );
     }
   }
@@ -400,13 +400,13 @@ public abstract class AbstractMemberExpansionTransformer<T extends IMemberAccess
     return array;
   }
 
-  public static Object[] listToArray( List l, Class compType )
+  public static Object listToArray( List l, IType compType )
   {
     int iCount = l.size();
-    Object[] array = (Object[])Array.newInstance( compType, iCount );
+    Object array = compType.makeArrayInstance( iCount );
     for( int i = 0; i < iCount; i++ )
     {
-      array[i] = l.get( i );
+      compType.setArrayComponent( array, i, l.get( i ) );
     }
     return array;
   }

@@ -7,7 +7,6 @@ package gw.internal.gosu.parser;
 import gw.config.CommonServices;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IAttributeSource;
 import gw.lang.parser.ISymbol;
@@ -25,7 +24,7 @@ public class ScopedDynamicSymbol extends AbstractDynamicSymbol
   private String _strAttr;
   private String _typePrefixName;
 
-  public ScopedDynamicSymbol( ISymbolTable symTable, CaseInsensitiveCharSequence strName, String typePrefixName, IType type, GlobalScope scope )
+  public ScopedDynamicSymbol( ISymbolTable symTable, String strName, String typePrefixName, IType type, GlobalScope scope )
   {
     super( symTable, strName, type );
     _typePrefixName = typePrefixName;
@@ -71,9 +70,9 @@ public class ScopedDynamicSymbol extends AbstractDynamicSymbol
 
   public ISymbol getLightWeightReference()
   {
-    ScopedDynamicSymbol copy = new ScopedDynamicSymbol( _symTable, getCaseInsensitiveName(), _typePrefixName, getType(), _scope );
+    ScopedDynamicSymbol copy = new ScopedDynamicSymbol( _symTable, (String)getName(), _typePrefixName, getType(), _scope );
     copy.setScriptPart( getScriptPart() );
-    copy.setCaseInsensitiveName( getCaseInsensitiveName() );
+    copy.setName( (String)getName() );
     return copy;
   }
 
@@ -86,7 +85,7 @@ public class ScopedDynamicSymbol extends AbstractDynamicSymbol
 
     TypeVarToTypeMap actualParamByVarName = TypeLord.mapTypeByVarName( gsClass, gsClass, true );
     IType type = TypeLord.getActualType( getType(), actualParamByVarName, true );
-    return new ScopedDynamicSymbol( _symTable, getCaseInsensitiveName(), _typePrefixName, type, _scope );
+    return new ScopedDynamicSymbol( _symTable, (String)getName(), _typePrefixName, type, _scope );
   }
 
   private void resetAttributeSource()

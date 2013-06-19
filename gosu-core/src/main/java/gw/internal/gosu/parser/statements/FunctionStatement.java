@@ -9,7 +9,6 @@ import gw.internal.gosu.parser.Statement;
 
 
 import gw.internal.gosu.parser.expressions.BlockExpression;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.expressions.IParameterDeclaration;
@@ -54,8 +53,9 @@ public class FunctionStatement extends Statement implements IFunctionStatement
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 
@@ -79,37 +79,39 @@ public class FunctionStatement extends Statement implements IFunctionStatement
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return _iNameOffset;
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _iNameOffset = iOffset;
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
     if( _dfs == null )
     {
       return false;
     }
 
-    if ( GosuObjectUtil.equals(_dfs.getCaseInsensitiveName(), identifierName)) {
+    if ( GosuObjectUtil.equals( _dfs.getName(), identifierName)) {
       return true;
-    } else if (_dfs.getCaseInsensitiveName().charAt(0) == '@') {
-      assert _dfs.getCaseInsensitiveName().toString().contains("(");
-      int indexOfParen = _dfs.getCaseInsensitiveName().length() - 1;
-      while(indexOfParen > 0) {
-        if (_dfs.getCaseInsensitiveName().charAt(indexOfParen) == '(') {
-          break;
-        }
-        indexOfParen--;
-      }
-      return CaseInsensitiveCharSequence.get(_dfs.getCaseInsensitiveName().subSequence(1, indexOfParen)).equals(identifierName);
     } else {
-      return false;
+      if ( _dfs.getName().charAt( 0 ) == '@') {
+        assert _dfs.getName().toString().contains("(");
+        int indexOfParen = _dfs.getName().length() - 1;
+        while(indexOfParen > 0) {
+          if ( _dfs.getName().charAt( indexOfParen ) == '(') {
+            break;
+          }
+          indexOfParen--;
+        }
+        return _dfs.getName().subSequence( 1, indexOfParen ).equals( identifierName );
+      } else {
+        return false;
+      }
     }
   }
   
@@ -121,7 +123,7 @@ public class FunctionStatement extends Statement implements IFunctionStatement
     }
   }
 
-  public IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols( CaseInsensitiveCharSequence identifierName )
+  public IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols( String identifierName )
   {
     if( declares(identifierName) )
     {

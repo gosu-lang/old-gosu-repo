@@ -17,9 +17,9 @@ public interface IDynamicPropertySymbol extends IDynamicSymbol
 
   IDynamicPropertySymbol getParent();
 
-  IDynamicFunctionSymbol getFunction( CaseInsensitiveCharSequence strFunctionName );
+  IDynamicFunctionSymbol getFunction( String strFunctionName );
 
-  CaseInsensitiveCharSequence getVarIdentifier();
+  String getVarIdentifier();
 
   String getFullDescription();
 

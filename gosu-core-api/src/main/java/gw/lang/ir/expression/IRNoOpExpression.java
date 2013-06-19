@@ -13,6 +13,6 @@ import gw.lang.UnstableAPI;
 public class IRNoOpExpression extends IRExpression {
   @Override
   public IRType getType() {
-    return IRTypeConstants.pVOID;
+    return IRTypeConstants.pVOID();
   }
 }

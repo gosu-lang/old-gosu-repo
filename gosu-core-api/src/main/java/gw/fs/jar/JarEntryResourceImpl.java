@@ -132,4 +132,9 @@ public abstract class JarEntryResourceImpl implements IResource {
   public boolean create() {
     return false;
   }
+
+  @Override
+  public boolean isInJar() {
+    return true;
+  }
 }

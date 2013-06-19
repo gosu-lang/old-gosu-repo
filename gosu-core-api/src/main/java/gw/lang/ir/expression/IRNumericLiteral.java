@@ -24,17 +24,17 @@ public class IRNumericLiteral extends IRExpression {
   @Override
   public IRType getType() {
     if (_value instanceof Byte) {
-      return IRTypeConstants.pBYTE;
+      return IRTypeConstants.pBYTE();
     } else if (_value instanceof Short) {
-      return IRTypeConstants.pSHORT;
+      return IRTypeConstants.pSHORT();
     } else if (_value instanceof Integer) {
-      return IRTypeConstants.pINT;
+      return IRTypeConstants.pINT();
     } else if (_value instanceof Long) {
-      return IRTypeConstants.pLONG;
+      return IRTypeConstants.pLONG();
     } else if (_value instanceof Float) {
-      return IRTypeConstants.pFLOAT;
+      return IRTypeConstants.pFLOAT();
     } else if (_value instanceof Double) {
-      return IRTypeConstants.pDOUBLE;
+      return IRTypeConstants.pDOUBLE();
     } else {
       throw new IllegalStateException("Unexpected value " + _value.getClass());
     }

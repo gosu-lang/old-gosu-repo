@@ -235,7 +235,31 @@ public class JavaFieldPropertyInfo extends JavaBaseFeatureInfo implements IJavaF
   @Override
   public boolean isCompileTimeConstantValue() {
     return Modifier.isStatic( getField().getModifiers() ) &&
-           Modifier.isFinal( getField().getModifiers() );
+           Modifier.isFinal( getField().getModifiers() ) && isCompileTimeConstant();
+  }
+
+  private boolean isCompileTimeConstant() {
+    IJavaClassField field = getField();
+    if( field instanceof JavaSourceEnumConstant ) {
+      return true;
+    }
+    else if( field instanceof JavaSourceField ) {
+      String rhs = ((JavaSourceField)field).getRhs();
+      IType owner = getOwnersType();
+      if (!(owner instanceof IJavaType)) {
+        return false; // FIXME: PL-26382 could be IEntityTypeInternal, which does have getBackingClassInfo!
+      }
+      IExpression pr = CompileTimeExpressionParser.parse( rhs, ((IJavaType) owner).getBackingClassInfo(), getFeatureType() );
+      return pr.isCompileTimeConstant();
+    }
+    else if( field instanceof FieldJavaClassField ) {
+      //## todo: we need to use ASM or something to examine the bytecode to see if the rhs expr is really compile-time const
+      return field.isEnumConstant() ||
+             field.getType().isPrimitive() ||
+             field.getType().getName().equals( "java.lang.String" ) ||
+             field.getType().getName().equals( "java.lang.Class" );
+    }
+    return false;
   }
 
   @Override

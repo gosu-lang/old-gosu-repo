@@ -102,8 +102,8 @@ public interface IGosuShop extends IService
   IGosuEnhancement createEnhancement( String strNamespace, String strRelativeName, GosuClassTypeLoader loader, ISourceFileHandle sourceFile, ITypeUsesMap typeUsesMap );
   ITemplateType createTemplate( String strNamespace, String strRelativeName, GosuClassTypeLoader loader, ISourceFileHandle sourceFile, ITypeUsesMap typeUsesMap, ISymbolTable symTable );
 
-  IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, boolean includeCoreResources);
-  IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions, boolean includeCoreResources);
+  IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files);
+  IFileSystemGosuClassRepository createFileSystemGosuClassRepository(IModule module, IDirectory[] files, String[] extensions);
 
   ITypeUsesMap createTypeUsesMap( List<String> specialTypeUses );
 
@@ -118,7 +118,7 @@ public interface IGosuShop extends IService
 
   IPropertyInfo createPropertyDelegate(IFeatureInfo container, IPropertyInfo prop);
 
-  IModule createModule( IExecutionEnvironment execEnv, String strMemberName, boolean includesGosuCoreAPI );
+  IModule createModule( IExecutionEnvironment execEnv, String strMemberName );
 
   INullExpression getNullExpressionInstance();
 

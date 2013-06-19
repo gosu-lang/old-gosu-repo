@@ -51,6 +51,29 @@ public abstract class ParseIssue extends Exception implements IParseIssue
     debug();
   }
 
+  protected ParseIssue( Integer lineNumber, Integer lineOffset, Integer tokenColumn,
+                                Integer tokenStart, Integer tokenEnd,
+                                ISymbolTable symbolTable, ResourceKey key, Object... msgArgs )
+  {
+    super( "" );
+    _messageKey = key;
+    _messageArgs = normalizeMessageArgs(msgArgs);
+    _symbolTable = symbolTable;
+    _lineNumber = lineNumber;
+    _lineOffset = lineOffset == null ? 1 : Math.max( 1, lineOffset );
+    _tokenColumn = tokenColumn;
+    _tokenStart = tokenStart;
+    _tokenEnd = tokenEnd;
+    debug();
+  }
+
+  protected ParseIssue( IParserState state, Throwable t )
+  {
+    super( t );
+    initFieldsFromParserState( state );
+    debug();
+  }
+
   /**
    * Don't fill in stack trace since parse issues are not really "exceptional"
    * in terms of the parser's Java implementation; we don't care much about the
@@ -85,29 +108,6 @@ public abstract class ParseIssue extends Exception implements IParseIssue
       String parserSource = parserState.getSource();
       setStateSource( parserSource );
     }
-  }
-
-  protected ParseIssue( Integer lineNumber, Integer lineOffset, Integer tokenColumn,
-                                Integer tokenStart, Integer tokenEnd,
-                                ISymbolTable symbolTable, ResourceKey key, Object... msgArgs )
-  {
-    super( "" );
-    _messageKey = key;
-    _messageArgs = normalizeMessageArgs(msgArgs);
-    _symbolTable = symbolTable;
-    _lineNumber = lineNumber;
-    _lineOffset = lineOffset == null ? 1 : Math.max( 1, lineOffset );
-    _tokenColumn = tokenColumn;
-    _tokenStart = tokenStart;
-    _tokenEnd = tokenEnd;
-    debug();
-  }
-
-  protected ParseIssue( IParserState state, Throwable t )
-  {
-    super( t );
-    initFieldsFromParserState( state );
-    debug();
   }
 
   /**

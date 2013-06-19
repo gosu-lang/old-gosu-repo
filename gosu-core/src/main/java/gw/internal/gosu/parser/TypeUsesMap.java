@@ -106,11 +106,17 @@ public class TypeUsesMap implements ITypeUsesMap
     return false;
   }
 
-  public Set getTypeUses()
+  public Set<String> getTypeUses()
   {
-    Set<String> combined = new LinkedHashSet<String>();
+    Set<String> combined = getNamespaces();
     combined.addAll( _specialTypeUsesByRelativeName.values() );
     combined.addAll( _typeUsesByRelativeName.values() );
+    return combined;
+  }
+
+  @Override
+  public Set<String> getNamespaces() {
+    Set<String> combined = new LinkedHashSet<String>();
     combined.addAll( _namespaces );
     combined.addAll( _defaultNamespaces );
     combined.addAll( _specialNamespaces );

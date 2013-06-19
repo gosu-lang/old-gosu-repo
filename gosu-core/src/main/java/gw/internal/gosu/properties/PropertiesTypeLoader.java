@@ -7,12 +7,8 @@ package gw.internal.gosu.properties;
 import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.RefreshKind;
-import gw.lang.reflect.TypeLoaderBase;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.*;
 import gw.lang.reflect.module.IModule;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.util.ArrayList;
@@ -58,7 +54,7 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
   }
 
   @Override
-  public Set<? extends CharSequence> getAllTypeNames() {
+  public Set<String> computeTypeNames() {
     Set<String> result = new HashSet<String>();
     for (TypeNameSet names : _rootTypeNames.get().values()) {
       names.addTo(result);
@@ -98,17 +94,17 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
   }
 
   @Override
-  public void refresh(boolean clearCachedTypes) {
+  public void refreshedImpl() {
     _rootTypeNames.clear();
   }
 
   private Map<String,IType> createPropertyTypesForPropertySetWithName(PropertySetSource source, String name) {
-    CaseInsensitiveHashMap<String, IType> resultMap = new CaseInsensitiveHashMap<String, IType>();
+    HashMap<String, IType> resultMap = new HashMap<String, IType>();
     createPropertyTypesFromPropertyNodeTree(resultMap, PropertyNode.buildTree(source.getPropertySet(name)), source.getFile(name));
     return resultMap;
   }
 
-  private IType createPropertyTypesFromPropertyNodeTree(CaseInsensitiveHashMap<String, IType> resultMap, PropertyNode node, IFile file) {
+  private IType createPropertyTypesFromPropertyNodeTree( HashMap<String, IType> resultMap, PropertyNode node, IFile file) {
     IType result = TypeSystem.getOrCreateTypeReference(new PropertiesType(this, node, file));
     resultMap.put(result.getName(), result);
     for (PropertyNode child : node.getChildren()) {
@@ -127,7 +123,7 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
       PropertySet ps = source.getPropertySetForFile(file);
       if (ps != null) {
         foundSource = true;
-        CaseInsensitiveHashMap<String, IType> resultMap = new CaseInsensitiveHashMap<String, IType>();
+        HashMap<String, IType> resultMap = new HashMap<String, IType>();
         createPropertyTypesFromPropertyNodeTree(resultMap, PropertyNode.buildTree(ps), file);
         for (IType type : resultMap.values()) {
           types.add(type.getName());
@@ -142,8 +138,9 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
   }
 
   @Override
-  public void refreshedFile(IFile file, String[] types, RefreshKind kind) {
+  public RefreshKind refreshedFile(IFile file, String[] types, RefreshKind kind) {
     _rootTypeNames.clear();
+    return kind;
   }
 
   /**

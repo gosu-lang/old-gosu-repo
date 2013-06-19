@@ -32,10 +32,6 @@ public class ITypeLoaderTypeInfo extends BaseJavaTypeInfo
     return null;
   }
 
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return null;
-  }
-
   public MethodList/*<IMethodInfo>*/ getMethods()
   {
     return MethodList.EMPTY;

@@ -16,7 +16,7 @@ public class ReducedDynamicPropertySymbol extends ReducedSymbol implements IRedu
   private ReducedDynamicPropertySymbol _dpsParent;
   ReducedDynamicFunctionSymbol _dfsGetter;
   ReducedDynamicFunctionSymbol _dfsSetter;
-  private CaseInsensitiveCharSequence _varIdentifier;
+  private String _varIdentifier;
 
   protected ReducedDynamicPropertySymbol(DynamicPropertySymbol dps)
   {
@@ -120,7 +120,7 @@ public class ReducedDynamicPropertySymbol extends ReducedSymbol implements IRedu
     return _dpsParent;
   }
 
-  public ReducedDynamicFunctionSymbol getFunction( CaseInsensitiveCharSequence strFunctionName )
+  public ReducedDynamicFunctionSymbol getFunction( String strFunctionName )
   {
     if( functionNamesEqual( _dfsGetter, strFunctionName ) )
     {
@@ -133,12 +133,12 @@ public class ReducedDynamicPropertySymbol extends ReducedSymbol implements IRedu
     return null;
   }
 
-  private boolean functionNamesEqual( ReducedDynamicFunctionSymbol dfs, CaseInsensitiveCharSequence strFunctionName )
+  private boolean functionNamesEqual( ReducedDynamicFunctionSymbol dfs, String strFunctionName )
   {
-    return dfs != null && dfs.getCaseInsensitiveName().equals(strFunctionName);
+    return dfs != null && dfs.getName().equals( strFunctionName );
   }
 
-  public CaseInsensitiveCharSequence getVarIdentifier()
+  public String getVarIdentifier()
   {
     return _varIdentifier;
   }

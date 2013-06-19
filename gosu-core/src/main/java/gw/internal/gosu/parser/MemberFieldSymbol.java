@@ -14,9 +14,9 @@ import gw.lang.reflect.gs.IGosuClass;
 public class MemberFieldSymbol implements ISymbol
 {
   private int _index;
-  private CaseInsensitiveCharSequence _name;
+  private String _name;
 
-  public MemberFieldSymbol( int index, CaseInsensitiveCharSequence name )
+  public MemberFieldSymbol( int index, String name )
   {
     _index = index;
     _name = name;
@@ -35,7 +35,7 @@ public class MemberFieldSymbol implements ISymbol
     return false;
   }
 
-  public ICapturedSymbol makeCapturedSymbol(CaseInsensitiveCharSequence strInsensitiveName, String strName, ISymbolTable symbolTable, IScope scope) {
+  public ICapturedSymbol makeCapturedSymbol( String strName, ISymbolTable symbolTable, IScope scope) {
     throw new UnsupportedOperationException();
   }
 
@@ -51,7 +51,7 @@ public class MemberFieldSymbol implements ISymbol
 
   public String getName()
   {
-    return _name.toString();
+    return _name;
   }
 
   public String getDisplayName()
@@ -92,11 +92,6 @@ public class MemberFieldSymbol implements ISymbol
   @Override
   public boolean isFinal() {
     return false;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  public CaseInsensitiveCharSequence getCaseInsensitiveName()
-  {
-    return _name;
   }
 
   @Override

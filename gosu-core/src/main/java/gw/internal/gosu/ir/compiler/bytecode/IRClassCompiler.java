@@ -28,7 +28,9 @@ import java.io.StringWriter;
 import java.io.PrintWriter;
 import java.util.List;
 
-public class IRClassCompiler extends AbstractBytecodeCompiler {
+public class IRClassCompiler extends AbstractBytecodeCompiler
+{
+  private static boolean COMPILE_WITH_DEBUG_INFO = true;
 
   //## todo: this s/b configurable
   public static final int JAVA_VER = Opcodes.V1_6;
@@ -63,7 +65,7 @@ public class IRClassCompiler extends AbstractBytecodeCompiler {
 
   private byte[] compile( )
   {
-    ClassWriter writer = new ClassWriter( ClassWriter.COMPUTE_MAXS );
+    ClassWriter writer = new GosuClassWriter();
     StringWriter trace = configClassVisitor( writer );
 
     try
@@ -225,19 +227,34 @@ public class IRClassCompiler extends AbstractBytecodeCompiler {
   {
     MethodVisitor mv = _cv.visitMethod( method.getModifiers(),
                                          method.getName(),
-                                         getMethodDescriptor(method),
+                                         getMethodDescriptor( method ),
                                          null, null );
-
-    for (IRAnnotation annotation : method.getAnnotations() ) {
-      AnnotationVisitor annotationVisitor = mv.visitAnnotation(annotation.getDescriptor().getDescriptor(), annotation.isInclude());
+    for( IRAnnotation annotation : method.getAnnotations() )
+    {
+      AnnotationVisitor annotationVisitor = mv.visitAnnotation( annotation.getDescriptor().getDescriptor(), annotation.isInclude() );
       new IRAnnotationCompiler( annotationVisitor, annotation ).compile();
     }
+    for( IRSymbol param: method.getParameters() )
+    {
+      List<IRAnnotation> paramAnnotations = param.getAnnotations();
+      if( paramAnnotations != null )
+      {
+        int i = 0;
+        for( IRAnnotation annotation: paramAnnotations )
+        {
+          AnnotationVisitor annotationVisitor = mv.visitParameterAnnotation( i++, annotation.getDescriptor().getDescriptor(), annotation.isInclude() );
+          new IRAnnotationCompiler( annotationVisitor, annotation ).compile();
+        }
+      }
+    }
 
-    if (method.getMethodBody() != null) {
+    if( method.getMethodBody() != null )
+    {
       mv.visitCode();
 
       IRBytecodeContext context = new IRBytecodeContext( mv );
-      if (!Modifier.isStatic( method.getModifiers() ) ) {
+      if( !Modifier.isStatic( method.getModifiers() ) )
+      {
         context.indexThis( _irClass.getThisType() );
       }
       context.indexSymbols( method.getParameters() );
@@ -247,8 +264,6 @@ public class IRClassCompiler extends AbstractBytecodeCompiler {
     }
     mv.visitEnd();
   }
-
-  private static boolean COMPILE_WITH_DEBUG_INFO = true;
 
   private void terminateFunction( IRBytecodeContext context )
   {
@@ -260,6 +275,7 @@ public class IRClassCompiler extends AbstractBytecodeCompiler {
     {
       context.visitLocalVars();
     }
+    //mv.visitMaxs( context.getMaxScopeSize(), context.getLocalCount() );
     mv.visitMaxs( 0, 0 );
   }
 

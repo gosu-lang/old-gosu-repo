@@ -4,11 +4,9 @@
 
 package gw.lang.reflect;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
-
 public interface IBlockType extends IFunctionType, IGenericMethodInfo
 {
   String getRelativeNameSansBlock();
 
-  CaseInsensitiveCharSequence getRelativeParamSignature( boolean bSansBlock );
+  String getRelativeParamSignature( boolean bSansBlock );
 }

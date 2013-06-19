@@ -18,6 +18,6 @@ public class IRNullLiteral extends IRExpression {
   public IRType getType() {
     // This is Object instead of void because we need to be clear that A) this isn't primitive and B) it implies a value on
     // the stack, as opposed to void, which is primitive and implies the absence of anything on the stack
-    return IRTypeConstants.OBJECT;
+    return IRTypeConstants.OBJECT();
   }
 }

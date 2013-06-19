@@ -8,13 +8,13 @@ import gw.config.CommonServices;
 import gw.fs.IFile;
 import gw.internal.gosu.util.StringUtil;
 import gw.lang.reflect.module.IModule;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.Pair;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -40,7 +40,8 @@ public class PropertiesPropertySet implements PropertySet {
       @Override
       protected Map<String, IFile> init() {
         List<Pair<String, IFile>> propertiesFiles = _module.getFileRepository().findAllFilesByExtension(EXTENSION);
-        Map<String,IFile> result = new CaseInsensitiveHashMap<String,IFile>(propertiesFiles.size());
+        final int initialCapacity = propertiesFiles.size();
+        Map<String,IFile> result = new HashMap<String, IFile>( initialCapacity );
         for (Pair<String,IFile> pair : propertiesFiles) {
           String fileName = pair.getFirst();
           String typeName = fileName.substring(0, fileName.length() - EXTENSION.length()).replace('/', '.');

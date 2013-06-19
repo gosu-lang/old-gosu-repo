@@ -22,7 +22,6 @@ import gw.lang.reflect.java.IJavaMethodInfo;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.IJavaClassMethod;
-import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -58,6 +57,7 @@ public class FunctionToInterfaceClassGenerator {
     addConstructor( classBuilder );
 
     addInterfaceMethod( classBuilder, typeToCoerceTo );
+    addToStringMethod( classBuilder, typeToCoerceTo );
 
     IRClass irClass = classBuilder.build();
 
@@ -110,13 +110,28 @@ public class FunctionToInterfaceClassGenerator {
       );
     } else {
       method.body(
-        assign("value", IRTypeConstants.OBJECT, field("_block").call("invokeWithArgs", newArray(Object.class, arrayContents))),
+        assign("value", IRTypeConstants.OBJECT(), field("_block").call("invokeWithArgs", newArray(Object.class, arrayContents))),
         _if(field("_coercer").isNotNull()).then(
           assign("value", field("_coercer").call("coerceValue", field("_returnType"), var("value")))
         ),
         _return(var("value"))
       );
     }
+  }
+
+  private static void addToStringMethod( IRClassBuilder classBuilder, IJavaType typeToCoerceTo ) {
+
+    final IJavaClassMethod proxiedMethod = ((IJavaMethodInfo)typeToCoerceTo.getTypeInfo().getMethod( "toString" )).getMethod();
+
+    IRMethodBuilder method = classBuilder.createMethod();
+    method.name( "toString" )
+      ._public()
+      .returns( proxiedMethod.getReturnClassInfo() );
+
+    method.body(
+      assign( "value", IRTypeConstants.OBJECT(), field( "_block" ).call( "toString" ) ),
+      _return( var( "value" ) )
+    );
   }
 
   private static IJavaMethodInfo getSingleMethod( IType interfaceType )

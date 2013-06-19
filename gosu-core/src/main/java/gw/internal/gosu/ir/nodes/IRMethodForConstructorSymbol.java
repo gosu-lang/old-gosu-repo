@@ -11,7 +11,6 @@ import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuEnhancement;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IExternalSymbolMap;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
@@ -39,7 +38,7 @@ public class IRMethodForConstructorSymbol implements IRMethod {
 
   @Override
   public IRType getReturnType() {
-    return IRTypeConstants.pVOID;
+    return IRTypeConstants.pVOID();
   }
 
   @Override
@@ -125,7 +124,7 @@ public class IRMethodForConstructorSymbol implements IRMethod {
     // Don't attempt to get captured symbols if the type isn't valid; it'll just throw and result in a cascading break
     if( type instanceof IGosuClassInternal && type.isValid() ) //&& ((IGosuClassInternal)type).isAnonymous() )
     {
-      Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
+      Map<String, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
       if( capturedSymbols != null )
       {
         for( ICapturedSymbol sym : capturedSymbols.values() )
@@ -145,14 +144,14 @@ public class IRMethodForConstructorSymbol implements IRMethod {
     {
       for( int i = 0; i < iTypeParams; i++ )
       {
-        params.add( IRTypeConstants.ITYPE);
+        params.add(IRTypeConstants.ITYPE());
       }
     }
 
     // Enums have name and ordinal arguments implicitly added to their constructors
     if (type.isEnum()) {
-      params.add( IRTypeConstants.STRING);
-      params.add( IRTypeConstants.pINT);
+      params.add(IRTypeConstants.STRING());
+      params.add(IRTypeConstants.pINT());
     }
 
     // Add declared parameters

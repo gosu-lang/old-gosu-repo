@@ -8,6 +8,25 @@ import gw.config.CommonServices;
 
 public interface ILanguageLevel
 {
+  boolean isStandard();
+
+  static class Util {
+    private static Boolean g_standardGosu = null;
+    public static void reset() {
+      g_standardGosu = null;
+    }
+
+    public static boolean STANDARD_GOSU()
+    {
+      return g_standardGosu == null
+             ? g_standardGosu = CommonServices.getEntityAccess().getLanguageLevel().isStandard()
+             : g_standardGosu;
+    }
+  }
+
+
+  //## todo: These all should be implied by the answer to isStandard() above... better, just stop supporting this crap
+
   boolean allowNonLiteralArgsForJavaAnnotations();
 
   boolean allowNumericIteration();
@@ -18,41 +37,15 @@ public interface ILanguageLevel
 
   boolean allowImplicitBigNumbersWithinExpressions();
 
-  boolean isStandard();
-
   boolean errorOnStringCoercionInAdditiveRhs();
 
   boolean richNPEsInMathematicalExpressions();
 
   boolean supportsNakedCatchStatements();
 
-  boolean allowsFeatureLiterals();
-
   boolean shouldVerifyPackageRelativeImport( String parsedNameSpace, String actualNameSpace );
 
   boolean allowPackageRelativeImports();
 
   boolean supportHistoricalJavaAnnotationConstructors();
-
-  static class Util {
-    private static Boolean g_standardGosu = null;
-    public static void reset() {
-      g_standardGosu = null;
-    }
-    public static boolean SUPPORT_NAMED_ARGS()
-    {
-      return STANDARD_GOSU() || true;
-    }
-    public static boolean STANDARD_GOSU()
-    {
-      return g_standardGosu == null
-             ? g_standardGosu = CommonServices.getEntityAccess().getLanguageLevel().isStandard()
-             : g_standardGosu;
-    }
-    public static boolean equalsIgnoreCase( String s1, String s2 ) {
-      return STANDARD_GOSU()
-             ? s1.equals( s2 )
-             : s1.equalsIgnoreCase( s2 );
-    }
-  }
 }

@@ -85,7 +85,7 @@ public abstract class GosuBaseAttributedFeatureInfo extends BaseFeatureInfo impl
 
   public boolean isVisible( IScriptabilityModifier constraint )
   {
-    return isScriptableTagPresent() ? super.isVisible( constraint ) : getOwnersType().getTypeInfo().isVisible( constraint );
+    return super.isVisible(constraint) && getOwnersType().getTypeInfo().isVisible( constraint );
   }
 
   public IGosuClassInternal getOwnersType()

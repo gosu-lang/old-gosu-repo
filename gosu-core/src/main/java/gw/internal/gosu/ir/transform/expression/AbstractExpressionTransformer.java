@@ -4,15 +4,14 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
+import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.transform.AbstractElementTransformer;
+import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
-import gw.internal.gosu.parser.ParameterizedDynamicFunctionSymbol;
 import gw.internal.gosu.parser.ParameterizedGosuConstructorInfo;
 import gw.internal.gosu.parser.TypeLord;
-import gw.internal.gosu.parser.expressions.IHasOperatorLineNumber;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRType;
-import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IExpression;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IType;
@@ -109,4 +108,39 @@ public abstract class AbstractExpressionTransformer<T extends IExpression> exten
     }
   }
 
+  protected void pushArgumentsNoCasting( IRMethod irMethod, IExpression[] args, List<IRExpression> irArgs )
+  {
+    _pushArguments( irMethod, args, irArgs, false );
+  }
+  protected void pushArgumentsWithCasting( IRMethod irMethod, IExpression[] args, List<IRExpression> irArgs )
+  {
+    _pushArguments( irMethod, args, irArgs, true );
+  }
+  private void _pushArguments( IRMethod irMethod, IExpression[] args, List<IRExpression> irArgs, boolean bCast )
+  {
+    if( args != null )
+    {
+      List<IRType> paramClasses = irMethod.getExplicitParameterTypes();
+      for( int i = 0; i < args.length; i++ )
+      {
+        IExpression arg = args[i];
+        IRExpression irArg = ExpressionTransformer.compile( arg, _cc() );
+        if( bCast )
+        {
+          irArg = maybeCast( paramClasses, i, irArg );
+        }
+        irArgs.add( irArg );
+      }
+    }
+  }
+
+  private IRExpression maybeCast( List<IRType> paramClasses, int i, IRExpression irArg ) {
+    // Maybe cast if not directly assignable (e.g., cross cast)
+    IRType paramClass = paramClasses.get( i );
+    if( !paramClass.isAssignableFrom( irArg.getType() ) )
+    {
+      irArg = buildCast( paramClass, irArg );
+    }
+    return irArg;
+  }
 }

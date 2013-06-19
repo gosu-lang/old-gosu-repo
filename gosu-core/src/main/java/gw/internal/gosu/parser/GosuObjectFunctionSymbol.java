@@ -25,7 +25,7 @@ public class GosuObjectFunctionSymbol extends DynamicFunctionSymbol
     SyntheticFunctionStatement stmt = (SyntheticFunctionStatement)getValueDirectly();
     stmt.setDfsOwner( this );
     setClassMember( true );
-    setCaseInsensitiveName( dfs.getCaseInsensitiveName() );
+    setName( (String)dfs.getName() );
     _scriptPartId = new ScriptPartId( gsClass, null );
     _mi = JavaTypes.IGOSU_OBJECT().getTypeInfo().getMethod( dfs.getDisplayName(), ((IFunctionType)dfs.getType()).getParameterTypes() );
   }

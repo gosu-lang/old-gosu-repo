@@ -20,7 +20,6 @@ public interface IReducedSymbol {
   boolean isAbstract();
   boolean isFinal();
   IType getType();
-  CaseInsensitiveCharSequence getCaseInsensitiveName();
   IScriptPartId getScriptPart();
   IGosuClass getGosuClass();
   boolean hasTypeVariables();

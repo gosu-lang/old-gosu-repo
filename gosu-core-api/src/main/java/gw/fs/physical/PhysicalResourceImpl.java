@@ -78,6 +78,11 @@ public class PhysicalResourceImpl implements IResource {
   }
 
   @Override
+  public boolean isInJar() {
+    return false;
+  }
+
+  @Override
   public boolean create() {
     return false;
   }

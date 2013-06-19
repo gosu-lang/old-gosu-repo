@@ -70,29 +70,13 @@ public class SingleServingGosuClassLoader extends ClassLoader implements IGosuCl
   }
 
   @Override
-  public byte[] getBytes( ICompilableType gsClass, boolean compiledToUberModule )
+  public byte[] getBytes(ICompilableType gsClass)
   {
-    boolean bPrevValue = ((IGosuClassInternal)gsClass).isCompiledToUberModule();
-    ((IGosuClassInternal)gsClass).setCompiledToUberModule( compiledToUberModule );
-    try
-    {
-      return compileClass( gsClass, false );
-    }
-    finally
-    {
-      ((IGosuClassInternal)gsClass).setCompiledToUberModule( bPrevValue );
-    }
+    return compileClass( gsClass, false );
   }
 
   @Override
   public String getInterfaceMethodsClassName( ICompilableType gsClass ) {
-    return null;
-  }
-
-  @Override
-  public byte[] maybeDefineInterfaceMethodsClass( ICompilableType gosuClass )
-  {
-    // nothing to do
     return null;
   }
 

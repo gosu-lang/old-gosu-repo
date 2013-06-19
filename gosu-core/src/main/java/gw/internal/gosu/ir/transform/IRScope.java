@@ -6,13 +6,13 @@ package gw.internal.gosu.ir.transform;
 
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
-import gw.util.CaseInsensitiveHashMap;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Collection;
 
 public class IRScope {
-  private Map<String, IRSymbol> _symbols = new CaseInsensitiveHashMap<String, IRSymbol>();
+  private Map<String, IRSymbol> _symbols = new HashMap<String, IRSymbol>();
   private IRScope _parent;
 
   public IRScope(IRScope parent) {

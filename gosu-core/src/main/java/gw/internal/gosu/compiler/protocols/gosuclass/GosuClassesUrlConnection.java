@@ -11,6 +11,7 @@ import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ICompilableType;
+import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.TypeSystemLockHelper;
 import gw.util.GosuExceptionUtil;
 
@@ -20,6 +21,9 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  */
@@ -31,6 +35,14 @@ public class GosuClassesUrlConnection extends URLConnection {
   private boolean _bInterfaceAnnotationMethods;
   private boolean _bDirectory;
   private boolean _bInvalid;
+
+  //public static final ConcurrentHashMap<URL, URL> _visited = new ConcurrentHashMap<URL, URL>();
+  private static ThreadLocal<Set<String>> INITIATED_BY_HANDLER = new ThreadLocal<Set<String>>() {
+    @Override
+    protected Set<String> initialValue() {
+      return new HashSet<String>();
+    }
+  };
 
   public GosuClassesUrlConnection( URL url ) {
     super( url );
@@ -78,7 +90,15 @@ public class GosuClassesUrlConnection extends URLConnection {
     ClassLoader loader = TypeSystem.getGosuClassLoader().getActualLoader();
     TypeSystemLockHelper.getTypeSystemLockWithMonitor( loader );
     try {
-      IType type = TypeSystem.getByFullNameIfValid( strType, TypeSystem.getGlobalModule() );
+
+      IModule global = TypeSystem.getGlobalModule();
+      IType type;
+      TypeSystem.pushModule(global);
+      try {
+        type = TypeSystem.getByFullNameIfValidNoJava( strType );
+      } finally {
+        TypeSystem.popModule(global);
+      }
       if( type instanceof ICompilableType ) {
         _type = (ICompilableType)type;
       }
@@ -86,6 +106,10 @@ public class GosuClassesUrlConnection extends URLConnection {
     finally {
       TypeSystem.unlock();
     }
+  }
+
+  public static boolean isInitiatedByHandler(String strName) {
+    return INITIATED_BY_HANDLER.get().contains(strName);
   }
 
   private boolean ignoreJavaClass( String strClass ) {
@@ -131,7 +155,7 @@ public class GosuClassesUrlConnection extends URLConnection {
           }
           else {
             //System.out.println( "Compiling: " + _type.getName() );
-            _buf = GosuClassLoader.instance().getBytes( _type, true );
+            _buf = GosuClassLoader.instance().getBytes( _type);
           }
           _pos = 0;
           _count = _buf.length;

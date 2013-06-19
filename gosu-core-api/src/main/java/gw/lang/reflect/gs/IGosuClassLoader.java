@@ -23,9 +23,7 @@ public interface IGosuClassLoader
 
   String getInterfaceMethodsClassName( ICompilableType gsClass );
 
-  byte[] getBytes( ICompilableType gsClass, boolean compiledToUberModule );
-
-  byte[] maybeDefineInterfaceMethodsClass( ICompilableType gosuClass );
+  byte[] getBytes( ICompilableType gsClass );
 
   void assignParent( ClassLoader classLoader );
 }

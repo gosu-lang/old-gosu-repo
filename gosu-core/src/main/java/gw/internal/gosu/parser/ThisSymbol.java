@@ -12,7 +12,7 @@ public class ThisSymbol extends Symbol
 {
   public ThisSymbol( IType thisType, ISymbolTable symTable )
   {
-    super( Keyword.KW_this, thisType, symTable, null );
+    super( Keyword.KW_this.getName(), thisType, symTable, null );
     setModifiers( Modifier.FINAL );
   }
 }

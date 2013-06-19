@@ -19,7 +19,9 @@ import gw.lang.reflect.gs.ICompilableType;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuProgram;
+import gw.lang.reflect.java.JavaTypes;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -90,9 +92,9 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
     {
       // unbox( symbols.getValue( name ) )
       return unboxValueToType(reducedSym.getType(),
-          callMethod(IExternalSymbolMap.class, "getValue", new Class[]{String.class},
+          callMethod( IExternalSymbolMap.class, "getValue", new Class[]{String.class, int.class},
               pushExternalSymbolsMap(),
-              Collections.singletonList(pushConstant(reducedSym.getName()))));
+              Arrays.asList( pushConstant( reducedSym.getName() ), pushConstant( getArrayDims( reducedSym ) ))));
     }
     else if( ScopedDynamicSymbol.class.isAssignableFrom( symClass ) )
     {
@@ -105,7 +107,7 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
       IRProperty irProp = IRPropertyFactory.createIRProperty( reducedSym );
       if( !irProp.isStatic() )
       {
-        if( isMemberOnEnclosingType( reducedSym ) )
+        if( isMemberOnEnclosingType( reducedSym ) != null )
         {
           // Instance field from 'outer'
           return getField_new( irProp, pushOuter( reducedSym.getGosuClass() ), getDescriptor( reducedSym.getType() ) );
@@ -162,15 +164,18 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
       {
         root = null;
       }
-      else if( isMemberOnEnclosingType( reducedSym ) )
-      {
-        root = pushOuter( reducedSym.getGosuClass() );
-      }
       else
       {
-        root = pushThis();
+        ICompilableType targetType = isMemberOnEnclosingType( reducedSym );
+        if( targetType != null )
+        {
+          root = pushOuter( targetType );
+        }
+        else
+        {
+          root = pushThis();
+        }
       }
-
       IRExpression getterCall = callMethod( irProp.getGetterMethod(), root, Collections.<IRExpression>emptyList() );
       return castResultingTypeIfNecessary(getDescriptor(reducedSym.getType()), irProp.getType(), getterCall);
     }
@@ -183,6 +188,19 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
     {
       throw new UnsupportedOperationException( "Don't know how to compile symbol: " + reducedSym.getClass().getSimpleName() + ": " + reducedSym.getName() + ": " + reducedSym.getType() );
     }
+  }
+
+  private int getArrayDims( IReducedSymbol reducedSym ) {
+    IType type = reducedSym.getType();
+    if( type == JavaTypes.OBJECT() ) {
+      // Special case for handling Object -- pcf does strange shit where it says a var is Object but expects a on dim array
+      return -1;
+    }
+    int iDims;
+    for( iDims = 0; type.isArray(); iDims++ ) {
+      type = type.getComponentType();
+    }
+    return iDims;
   }
 
   protected IRExpression pushOuterForOuterSymbol()

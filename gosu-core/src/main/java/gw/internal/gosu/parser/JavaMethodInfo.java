@@ -167,6 +167,9 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
     }
 
     IType retType = ClassInfoUtil.getActualReturnType(_md.getMethod().getGenericReturnType(), actualParamByVarName, bKeepTypeVars);
+    if (TypeSystem.isDeleted(retType)) {
+      return null;
+    }
     if( retType.isGenericType() && !retType.isParameterizedType() )
     {
       retType = TypeLord.getDefaultParameterizedType( retType );

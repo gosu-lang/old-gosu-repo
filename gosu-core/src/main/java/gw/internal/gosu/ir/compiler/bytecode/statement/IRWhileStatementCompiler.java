@@ -7,6 +7,7 @@ package gw.internal.gosu.ir.compiler.bytecode.statement;
 import gw.internal.gosu.ir.compiler.bytecode.AbstractBytecodeCompiler;
 import gw.internal.gosu.ir.compiler.bytecode.IRBytecodeContext;
 import gw.internal.gosu.ir.compiler.bytecode.IRBytecodeCompiler;
+import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRWhileStatement;
 import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.ext.org.objectweb.asm.Label;
@@ -52,6 +53,11 @@ public class IRWhileStatementCompiler extends AbstractBytecodeCompiler
         context.getMv().visitJumpInsn( Opcodes.IFNE, loopBodyStart );
 
         context.getMv().visitLabel( breakLabel );
+
+        IRReturnStatement implicitReturn = whileLoopStatement.getImplicitReturnStatement();
+        if( implicitReturn != null ) {
+          IRBytecodeCompiler.compileIRStatement( implicitReturn, context );
+        }
       }
     }
     finally

@@ -3,18 +3,14 @@
  */
 package gw.internal.gosu.parser.statements;
 
-import gw.internal.gosu.parser.Statement;
-import gw.internal.gosu.parser.FileSystemGosuClassRepository;
 import gw.internal.gosu.parser.IGosuClassInternal;
+import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.expressions.ClassDeclaration;
-import gw.lang.reflect.gs.GosuClassTypeLoader;
-import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.gs.ISourceFileHandle;
-import gw.lang.reflect.module.IModule;
 import gw.lang.parser.statements.IClassStatement;
 import gw.lang.parser.statements.ITerminalStatement;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.module.IModule;
 
 
 /**
@@ -47,8 +43,9 @@ public final class ClassStatement extends Statement implements IClassStatement
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = false;
     return null;
   }
 
@@ -90,24 +87,6 @@ public final class ClassStatement extends Statement implements IClassStatement
   public IModule getModule()
   {
     return _gsClass.getTypeLoader().getModule();
-  }
-
-  @Override
-  public String getFileName() {
-    IGosuClassInternal gosuClass = getEnclosingClass();
-    ISourceFileHandle sourceFileHandle = gosuClass.getSourceFileHandle();
-    if( sourceFileHandle instanceof FileSystemGosuClassRepository.FileSystemSourceFileHandle )
-    {
-      return ((FileSystemGosuClassRepository.FileSystemSourceFileHandle)sourceFileHandle).getFileInfo().getFileName();
-    }
-    else
-    {
-      if (gosuClass instanceof IGosuEnhancement) {
-        return gosuClass.getRelativeName() + GosuClassTypeLoader.GOSU_ENHANCEMENT_FILE_EXT;
-      } else {
-        return gosuClass.getRelativeName() + ".gs";
-      }
-    }
   }
 
   private IGosuClassInternal getEnclosingClass()

@@ -33,7 +33,6 @@ public class ReducedDynamicFunctionSymbol extends ReducedSymbol implements IRedu
     _returnType = dfs.getReturnType();
     _args = makeArgs(dfs);
     _fullDescription = dfs.getFullDescription();
-    _caseInsensitiveName = dfs.getCaseInsensitiveName();
     DynamicFunctionSymbol superDfs = dfs.getSuperDfs();
     if (superDfs != null) {
       _superDfs = superDfs.createReducedSymbol();

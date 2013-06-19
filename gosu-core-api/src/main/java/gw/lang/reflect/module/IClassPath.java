@@ -4,6 +4,7 @@
 
 package gw.lang.reflect.module;
 
+import gw.fs.IDirectory;
 import gw.lang.reflect.gs.TypeName;
 import gw.util.fingerprint.FP64;
 import gw.lang.UnstableAPI;
@@ -44,7 +45,14 @@ public interface IClassPath
       }
     };
 
-  ArrayList<String> getPaths();
+  ClassPathFilter ALLOW_ALL_WITH_SUN_FILTER =
+    new IClassPath.ClassPathFilter() {
+      public boolean acceptClass( String className ) {
+        return true;
+      }
+    };
+
+  ArrayList<IDirectory> getPaths();
 
   Set<String> getFilteredClassNames();
 

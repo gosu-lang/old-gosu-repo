@@ -5,7 +5,6 @@
 package gw.lang.parser;
 
 import gw.lang.PublishInGosu;
-import gw.lang.Scriptable;
 
 @PublishInGosu
 public interface IDeclarationSiteValidator
@@ -16,6 +15,5 @@ public interface IDeclarationSiteValidator
    *
    * @param feature the parsed element that this annotation lives on.
    */
-  @Scriptable
   public void validate( IParsedElement feature );
 }

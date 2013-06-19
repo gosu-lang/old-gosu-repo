@@ -38,7 +38,8 @@ public abstract class SimpleTypeLoader extends TypeLoaderBase {
   }
 
   @Override
-  public void refreshedFile(IFile file, String[] types, RefreshKind kind) {
+  public RefreshKind refreshedFile(IFile file, String[] types, RefreshKind kind) {
+    return kind;
   }
 
   @Override

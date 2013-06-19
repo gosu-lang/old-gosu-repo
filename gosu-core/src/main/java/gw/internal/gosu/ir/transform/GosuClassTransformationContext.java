@@ -63,6 +63,10 @@ public class GosuClassTransformationContext extends TransformationContextBase {
     _classTransformer.initializeInstanceFields( statements );
   }
 
+  public void addAssertionsStaticField() {
+    _classTransformer.setHasAsserts();
+  }
+
   // --------------- Methods implemented directly here
 
   @Override

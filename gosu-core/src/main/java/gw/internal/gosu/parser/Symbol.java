@@ -22,7 +22,7 @@ public class Symbol implements IFunctionSymbol
 {
   public static final IStackProvider MEMBER_STACK_PROVIDER = new MemberStackProvider();
 
-  private CaseInsensitiveCharSequence _caseInsensitiveName;
+  private String _name;
   private IType _type;
   protected Object _value;
   private IExpression _defaultValue;
@@ -33,33 +33,19 @@ public class Symbol implements IFunctionSymbol
   private MutableBoolean _valueIsBoxed;
   private ModifierInfo _modifiers;
 
-  public Symbol( CharSequence strName, IType type, IStackProvider stackProvider )
+  public Symbol( String strName, IType type, IStackProvider stackProvider )
   {
     this( strName, type, stackProvider, null, null );
   }
 
-  public Symbol( CharSequence strName, IType type, IStackProvider stackProvider, Object value )
+  public Symbol( String strName, IType type, IStackProvider stackProvider, Object value )
   {
     this( strName, type, stackProvider, value, null );
   }
 
-  public Symbol( CaseInsensitiveCharSequence strName, IType type, IStackProvider stackProvider, Object value )
+  public Symbol( String strName, IType type, IStackProvider stackProvider, Object value, IScope scope )
   {
-    this( strName, type, stackProvider, value, strName );
-  }
-
-  public Symbol( CharSequence strName, IType type, IStackProvider stackProvider, Object value,
-                 CaseInsensitiveCharSequence caseInsensitiveName )
-  {
-    this( strName, type, stackProvider, value, caseInsensitiveName, null );
-  }
-
-  public Symbol( CharSequence strName, IType type, IStackProvider stackProvider, Object value,
-                 CaseInsensitiveCharSequence caseInsensitiveName, IScope scope )
-  {
-    setCaseInsensitiveName( (caseInsensitiveName == null && strName != null)
-                            ? CaseInsensitiveCharSequence.get( strName )
-                            : caseInsensitiveName );
+    setName( strName );
     _modifiers = new ModifierInfo(0);
     _type = type;
     _stackProvider = stackProvider;
@@ -71,7 +57,7 @@ public class Symbol implements IFunctionSymbol
 
   public Symbol( Symbol copy )
   {
-    setCaseInsensitiveName( copy._caseInsensitiveName );
+    setName( copy._name );
     _type = copy._type;
     _iIndex = copy._iIndex;
     _bGlobal = copy._bGlobal;
@@ -85,14 +71,9 @@ public class Symbol implements IFunctionSymbol
   /*
    * Symbols created via these ctors go to the symbol table, they are not stack based.
    */
-  public Symbol( CharSequence strName, IType type, Object value )
+  public Symbol( String strName, IType type, Object value )
   {
     this( strName, type, null, value, null );
-  }
-
-  public Symbol( CaseInsensitiveCharSequence strName, IType type, Object value )
-  {
-    this( strName, type, null, value, strName );
   }
 
   public void setDynamicSymbolTable( ISymbolTable symTable )
@@ -120,11 +101,11 @@ public class Symbol implements IFunctionSymbol
 
   protected int assignIndexInStack( IScope scope )
   {
-    if( THIS.equals( _caseInsensitiveName ) )
+    if( THIS.equals( _name ) )
     {
       return IStackProvider.THIS_POS;
     }
-    if( SUPER.equals( _caseInsensitiveName ) )
+    if( SUPER.equals( _name ) )
     {
       return IStackProvider.SUPER_POS;
     }
@@ -151,12 +132,7 @@ public class Symbol implements IFunctionSymbol
    */
   public String getName()
   {
-    return _caseInsensitiveName == null ? null : _caseInsensitiveName.toString();
-  }
-
-  public CaseInsensitiveCharSequence getCaseInsensitiveName()
-  {
-    return _caseInsensitiveName;
+    return _name;
   }
 
   /**
@@ -176,7 +152,7 @@ public class Symbol implements IFunctionSymbol
 
   public void renameAsErrantDuplicate( int iIndex )
   {
-    setCaseInsensitiveName( CaseInsensitiveCharSequence.get( iIndex + "_duplicate_" + getName() ) );
+    setName( (String)(iIndex + "_duplicate_" + getName()) );
   }
 
   /**
@@ -210,7 +186,7 @@ public class Symbol implements IFunctionSymbol
 
   private Object getValueFromSymbolTable()
   {
-    ISymbol symbol = _symbolTable.getSymbol( _caseInsensitiveName );
+    ISymbol symbol = _symbolTable.getSymbol( _name );
     if( symbol instanceof Symbol )
     {
       return ((Symbol)symbol).getValueDirectly();
@@ -253,7 +229,7 @@ public class Symbol implements IFunctionSymbol
 
   private void setValueFromSymbolTable( Object value )
   {
-    ISymbol symbol = _symbolTable.getSymbol( _caseInsensitiveName );
+    ISymbol symbol = _symbolTable.getSymbol( _name );
     ((Symbol)symbol).setValueDirectly( value );
   }
 
@@ -306,6 +282,10 @@ public class Symbol implements IFunctionSymbol
     return new Symbol( this );
   }
 
+  public boolean isImplicitlyInitialized() {
+    return false;
+  }
+
   public boolean isWritable()
   {
     return !isFinal();
@@ -322,7 +302,7 @@ public class Symbol implements IFunctionSymbol
       return false;
     }
     final Symbol symbol = (Symbol)o;
-    if( _caseInsensitiveName != symbol._caseInsensitiveName )
+    if( !_name.equals( symbol._name ) )
     {
       return false;
     }
@@ -506,12 +486,13 @@ public class Symbol implements IFunctionSymbol
   public boolean canBeCaptured()
   {
     return isStackSymbol() &&
-           !getName().equalsIgnoreCase( Keyword.KW_this.toString() ) &&
-           !getName().equalsIgnoreCase( Keyword.KW_super.toString() );
+           !getName().equals( Keyword.KW_this.toString() ) &&
+           !getName().equals( Keyword.KW_super.toString() );
   }
 
-  public ICapturedSymbol makeCapturedSymbol(CaseInsensitiveCharSequence strInsensitiveName, String strName, ISymbolTable symbolTable, IScope scope) {
-    return new CapturedSymbol(strName, strInsensitiveName, this, symbolTable, scope);
+  public ICapturedSymbol makeCapturedSymbol( String strName, ISymbolTable symbolTable, IScope scope )
+  {
+    return new CapturedSymbol( strName, this, symbolTable, scope );
   }
 
   public void setIndex( int i )
@@ -547,9 +528,9 @@ public class Symbol implements IFunctionSymbol
     return _valueIsBoxed.isTrue();
   }
 
-  protected void setCaseInsensitiveName( CaseInsensitiveCharSequence caseInsensitiveName )
+  protected void setName( String name )
   {
-    _caseInsensitiveName = caseInsensitiveName;
+    _name = name;
   }
 
   @Override

@@ -125,17 +125,15 @@ public class GosucCompiler {
 
   private void maybeCopySourceFile( File parent, IGosuClass gsClass ) {
     ISourceFileHandle sfh = gsClass.getSourceFileHandle();
-    if( sfh instanceof IFileSystemGosuClassRepository.IFileSystemSourceFileHandle ) {
-      IFile srcFile = sfh.getFile();
-      if( srcFile != null ) {
-        File file = new File( srcFile.getPath().getFileSystemPathString() );
-        if( file.isFile() ) {
-          try {
-            copyFile( file, new File( parent, file.getName() ) );
-          }
-          catch( IOException e ) {
-            throw new RuntimeException( e );
-          }
+    IFile srcFile = sfh.getFile();
+    if( srcFile != null ) {
+      File file = new File( srcFile.getPath().getFileSystemPathString() );
+      if( file.isFile() ) {
+        try {
+          copyFile( file, new File( parent, file.getName() ) );
+        }
+        catch( IOException e ) {
+          throw new RuntimeException( e );
         }
       }
     }
@@ -146,7 +144,7 @@ public class GosucCompiler {
       return;
     }
 
-    final byte[] bytes = TypeSystem.getGosuClassLoader().getBytes(gosuClass, true);
+    final byte[] bytes = TypeSystem.getGosuClassLoader().getBytes(gosuClass);
     OutputStream out = new FileOutputStream( outputFile );
     try {
       out.write( bytes );

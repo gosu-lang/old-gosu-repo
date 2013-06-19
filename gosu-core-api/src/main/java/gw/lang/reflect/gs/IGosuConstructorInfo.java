@@ -10,12 +10,7 @@ import gw.lang.reflect.*;
 import java.util.List;
 
 public interface IGosuConstructorInfo extends IAttributedFeatureInfo, IGenericMethodInfo, IConstructorInfo, IOptionalParamCapable, IDFSBackedFeatureInfo
-{  
-
+{
   List<IReducedSymbol> getArgs();
-
   IGosuConstructorInfo getBackingConstructorInfo();
-
-  CaseInsensitiveCharSequence getCaseInsensitiveName();
-
 }

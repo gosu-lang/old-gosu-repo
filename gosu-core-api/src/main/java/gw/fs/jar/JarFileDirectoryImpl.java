@@ -224,6 +224,11 @@ public class JarFileDirectoryImpl implements IJarFileDirectory {
   }
 
   @Override
+  public boolean isInJar() {
+    return true;
+  }
+
+  @Override
   public boolean create() {
     return false;
   }

@@ -4,11 +4,9 @@
 
 package gw.lang.parser;
 
-import gw.util.CaseInsensitiveHashMap;
+import java.util.HashMap;
 
-public class StandardScope<K extends CharSequence, V extends ISymbol>
-  extends CaseInsensitiveHashMap<K, V>
-  implements IScope<K, V>
+public class StandardScope<K extends CharSequence, V extends ISymbol>  extends HashMap<K, V>  implements IScope<K, V>
 {
   private IActivationContext _activationContext;
   private int _csr;

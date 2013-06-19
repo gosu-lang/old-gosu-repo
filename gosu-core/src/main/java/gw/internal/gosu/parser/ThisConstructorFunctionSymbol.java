@@ -19,7 +19,7 @@ public class ThisConstructorFunctionSymbol extends DynamicFunctionSymbol impleme
   {
     super( dfsDelegate );
     _dfsDelegate = dfsDelegate;
-    setCaseInsensitiveName( getSignatureName( getDisplayName() ) );
+    setName( getSignatureName( getDisplayName() ) );
   }
 
   public ISymbol getLightWeightReference()
@@ -45,5 +45,8 @@ public class ThisConstructorFunctionSymbol extends DynamicFunctionSymbol impleme
   public IReducedDynamicFunctionSymbol createReducedSymbol() {
     return new ReducedThisConstructorFunctionSymbol(this);
   }
-  
+
+  public DynamicFunctionSymbol getDelegate() {
+    return _dfsDelegate;
+  }
 }

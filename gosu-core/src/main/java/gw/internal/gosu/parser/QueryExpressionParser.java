@@ -21,7 +21,6 @@ import gw.internal.gosu.parser.expressions.WhereClauseUnaryExpression;
 import gw.internal.gosu.parser.expressions.WhereClauseParenthesizedExpression;
 import gw.internal.gosu.parser.expressions.EvalExpression;
 import gw.internal.gosu.parser.expressions.StringLiteral;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.Keyword;
 import gw.lang.parser.ICapturedSymbol;
@@ -154,7 +153,7 @@ class QueryExpressionParser extends ParserBase
     int iNamedOffset = getTokenizer().getTokenStart();
     if( verify( qe, match( T, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FIND ) )
     {
-      qe.setNameOffset( iNamedOffset, CaseInsensitiveCharSequence.get( T._strValue ) );
+      qe.setNameOffset( iNamedOffset, (String)T._strValue );
     }
 
     String strIdentifier = T._strValue;
@@ -420,7 +419,7 @@ class QueryExpressionParser extends ParserBase
 
         Expression rhs = popExpression();
         verifyPropertyVisible( lhs );
-        if( T._strValue.equalsIgnoreCase( Keyword.KW_in.toString() ) )
+        if( T._strValue.equals( Keyword.KW_in.toString() ) )
         {
           limitInOperandToArrayOrQuery( lhs, rhs );
         }
@@ -600,7 +599,7 @@ class QueryExpressionParser extends ParserBase
       {
         getSymbolTable().putSymbol( _symbol );
 
-        root = resolveSymbol( e, strRoot, CaseInsensitiveCharSequence.get( strRoot ), true );
+        root = resolveSymbol( e, strRoot, true );
         verify( e, root == _symbol, Res.MSG_QUERYPATH_MUST_BEGIN_WITH, _symbol.getName() );
         type = root == null ? ErrorType.getInstance( strRoot ) : root.getType();
       }

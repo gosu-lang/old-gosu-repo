@@ -12,7 +12,6 @@ import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.parser.IScriptPartId;
 import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IBlockClass;
 import gw.lang.parser.ScriptPartId;
 import gw.lang.parser.TypeVarToTypeMap;
@@ -42,7 +41,7 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
   private int _iModifiers;
   transient private FunctionTypeInfo _typeInfo;
   transient protected Set<IType> _allTypesInHierarchy;
-  transient private CaseInsensitiveCharSequence _signature;
+  transient private String _signature;
   volatile transient private Map<String, ParameterizedFunctionType> _parameterizationByParamsName;
   private LockingLazyVar<FunctionArrayType> _arrType =
     new LockingLazyVar<FunctionArrayType>()
@@ -352,14 +351,14 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
     _signature = null;
   }
 
-  public CaseInsensitiveCharSequence getParamSignature()
+  public String getParamSignature()
   {
     if( _signature == null )
     {
       IType[] paramTypes = getParameterTypes();
       if( paramTypes.length == 0 )
       {
-        return _signature = CaseInsensitiveCharSequence.get( _strFunctionName + "()" );
+        return _signature = _strFunctionName + "()";
       }
 
       String strParams = _strFunctionName + "(";
@@ -369,18 +368,18 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
       }
       strParams += ")";
 
-      _signature = CaseInsensitiveCharSequence.get( strParams );
+      _signature = strParams;
     }
 
     return _signature;
   }
 
-  public CaseInsensitiveCharSequence getParamSignatureForCurrentModule() {
-    CaseInsensitiveCharSequence sig;
+  public String getParamSignatureForCurrentModule() {
+    String sig;
     IType[] paramTypes = getParameterTypes();
     if( paramTypes.length == 0 )
     {
-      sig = CaseInsensitiveCharSequence.get( _strFunctionName + "()" );
+      sig = (String)(_strFunctionName + "()");
     }
     else
     {
@@ -390,8 +389,8 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
         strParams += (i == 0 ? "" : ", " ) + (paramTypes[i] == null ? "" : getParamTypeNameFromJavaBackedType(paramTypes[i]));
       }
       strParams += ")";
-  
-      sig = CaseInsensitiveCharSequence.get( strParams );
+
+      sig = (String)strParams;
     }
     return sig;
   }

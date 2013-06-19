@@ -7,7 +7,9 @@ package gw.util.concurrent;
 /**
  * Implements the lazy initialization pattern.
  * No locking of any kind is used.
+ * @deprecated Of dubious value. Use your own null check. In some cases, this is used to pass a block and an interface would be better in those cases.
  */
+@Deprecated
 public abstract class LocklessLazyVar<T>
 {
   protected final static Object NULL = new Object();
@@ -67,7 +69,9 @@ public abstract class LocklessLazyVar<T>
   /**
    * Creates a new LockingLazyVar based on the type of the LazyVarInit passed in.
    * This method is intended to be called with blocks from Gosu.
+   * @deprecated Of dubious value. Use your own null check. In some cases in Gosu, this is used to pass a block and an interface would be better in those cases.
    */
+  @Deprecated
   public static <Q> LocklessLazyVar<Q> make( final LazyVarInit<Q> init ) {
     return new LocklessLazyVar<Q>(){
       protected Q init()

@@ -5,7 +5,6 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.fragments.GosuFragment;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IFileContext;
@@ -20,9 +19,9 @@ import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.reflect.FragmentCache;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuFragment;
-import gw.util.CaseInsensitiveHashMap;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +46,7 @@ public class GosuFragmentParser implements IGosuFragmentParser {
 
   public IGosuFragment parseExpressionOrProgram(String script, ISymbolTable table, ParserOptions options) throws ParseResultsException {
     String name = determineName(options.getFileContext());
-    CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbolNames = determineExternalSymbols(table, options);
+    HashMap<String, ISymbol> externalSymbolNames = determineExternalSymbols( table, options );
     try {
       return parseImpl( script, table, options, name, externalSymbolNames, true );
     } catch (ParseResultsException pe) {
@@ -59,7 +58,7 @@ public class GosuFragmentParser implements IGosuFragmentParser {
     }
   }
 
-  private IGosuFragment parseImpl( String script, ISymbolTable table, ParserOptions options, String name, CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> externalSymbols, boolean parseExpression ) throws ParseResultsException {
+  private IGosuFragment parseImpl( String script, ISymbolTable table, ParserOptions options, String name, HashMap<String, ISymbol> externalSymbols, boolean parseExpression ) throws ParseResultsException {
     IGosuParser parser = GosuParserFactory.createParser( script );
     options.setParserOptions( parser );
 
@@ -110,19 +109,19 @@ public class GosuFragmentParser implements IGosuFragmentParser {
     return name;
   }
 
-  private CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> determineExternalSymbols( ISymbolTable symbolTable, ParserOptions options ) {
+  private HashMap<String, ISymbol> determineExternalSymbols( ISymbolTable symbolTable, ParserOptions options ) {
     Map symbols = symbolTable.getSymbols();
     if( symbols == null && options.getAdditionalDFSDecls() == null && options.getDeclSymbols() == null)
     {
-      return new CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol>( 0 );
+      return new HashMap<String, ISymbol>( 0 );
     }
 
-    CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol> symbolNames = new CaseInsensitiveHashMap<CaseInsensitiveCharSequence, ISymbol>( 8 );
+    HashMap<String, ISymbol> symbolNames = new HashMap<String, ISymbol>( 8 );
     if (symbols != null) {
       //noinspection unchecked
       for (ISymbol sym : (Collection<ISymbol>) symbols.values()) {
         if (!(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null) {
-          symbolNames.put(sym.getCaseInsensitiveName(), sym);
+          symbolNames.put( (String)sym.getName(), sym);
         }
       }
     }
@@ -132,17 +131,17 @@ public class GosuFragmentParser implements IGosuFragmentParser {
       //noinspection unchecked
       for (ISymbol sym : (Collection<ISymbol>) decls.getSymbols().values()) {
         if (!(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null) {
-          symbolNames.put(sym.getCaseInsensitiveName(), sym);
+          symbolNames.put( (String)sym.getName(), sym);
         }
       }
     }
 
-    Map<CaseInsensitiveCharSequence, Set<IFunctionSymbol>> declSymbolMap = options.getDeclSymbols();
+    Map<String, Set<IFunctionSymbol>> declSymbolMap = options.getDeclSymbols();
     if (declSymbolMap != null) {
       for (Set<IFunctionSymbol> symbolSet : declSymbolMap.values()) {
         for (IFunctionSymbol sym : symbolSet) {
           if (!(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null) {
-            symbolNames.put(sym.getCaseInsensitiveName(), sym);
+            symbolNames.put( (String)sym.getName(), sym);
           }
         }
       }

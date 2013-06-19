@@ -30,7 +30,7 @@ public class IRInstanceOfExpression extends IRExpression {
   }
 
   public IRType getType() {
-    return IRTypeConstants.pBOOLEAN;
+    return IRTypeConstants.pBOOLEAN();
   }
 
 

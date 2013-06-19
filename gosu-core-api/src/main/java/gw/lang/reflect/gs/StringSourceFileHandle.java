@@ -191,24 +191,6 @@ public class StringSourceFileHandle implements ISourceFileHandle
     return _capturedTypeVars;
   }
 
-  public void assignEnclosingClass()
-  {
-    if( _fileRef != null )
-    {
-      int iLastDot = _fileRef.lastIndexOf( '.' );
-      if( iLastDot > 0 )
-      {
-        int iLastDotInType = _typeName.lastIndexOf( '.' );
-        String relativeTypeName = _typeName.substring( iLastDotInType+1 );
-        String fileNameNoExt = _fileRef.substring( 0, iLastDot );
-        if( !fileNameNoExt.equalsIgnoreCase( relativeTypeName ) ) {
-          String enclosingTypeName = _typeName.substring( 0, iLastDotInType );
-          setParentType( enclosingTypeName );
-        }
-      }
-    }
-  }
-
   @Override
   public String toString() {
     return _typeName;

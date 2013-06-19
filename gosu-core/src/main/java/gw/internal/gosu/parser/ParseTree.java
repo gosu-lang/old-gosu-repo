@@ -8,7 +8,6 @@ package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.expressions.NewExpression;
 import gw.internal.gosu.parser.statements.FunctionStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IParsedElementWithAtLeastOneDeclaration;
@@ -20,7 +19,6 @@ import gw.lang.parser.expressions.IMemberAccessExpression;
 import gw.lang.parser.IParseIssue;
 import gw.lang.parser.IStatement;
 import gw.lang.parser.statements.IFunctionStatement;
-import gw.lang.parser.statements.INoOpStatement;
 import gw.lang.reflect.IType;
 import gw.util.DynamicArray;
 import gw.util.GosuObjectUtil;
@@ -361,6 +359,11 @@ public final class ParseTree implements IParseTree
     return (List<IParseTree>) (_children == null ? Collections.<IParseTree>emptyList() : Collections.unmodifiableList( _children ));
   }
 
+  public int getChildCount()
+  {
+    return _children == null ? 0 : _children.size;
+  }
+
   /**
    * Sets the parent location. Note the parent location must cover a superset of the
    * specified location's area.
@@ -682,7 +685,7 @@ public final class ParseTree implements IParseTree
       IParsedElementWithAtLeastOneDeclaration peo = (IParsedElementWithAtLeastOneDeclaration) _pe;
       for( String name : peo.getDeclarations() )
       {
-        CaseInsensitiveCharSequence charSeq = CaseInsensitiveCharSequence.get(name);
+        String charSeq = (String)name;
         peo.setNameOffset( peo.getNameOffset( charSeq ) + offset, charSeq );
       }
     }

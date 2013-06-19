@@ -70,11 +70,11 @@ public class ConditionalTernaryExpression extends Expression implements IConditi
   }
 
   @Override
-  public boolean isCompileTimeConstant()
-  {
-    return getCondition().isCompileTimeConstant() &&
-           getFirst().isCompileTimeConstant() &&
-           getSecond().isCompileTimeConstant();
+  public boolean isCompileTimeConstant() {
+    return (getCondition() == null || getFirst() == null || getSecond() == null) ? false :
+            (getCondition().isCompileTimeConstant() &&
+                    getFirst().isCompileTimeConstant() &&
+                    getSecond().isCompileTimeConstant());
   }
 
   /**

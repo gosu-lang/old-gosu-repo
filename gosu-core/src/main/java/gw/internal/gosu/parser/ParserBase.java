@@ -11,6 +11,7 @@ import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.expressions.ImplicitTypeAsExpression;
 import gw.internal.gosu.parser.expressions.Literal;
+import gw.internal.gosu.parser.expressions.ModifierListClause;
 import gw.internal.gosu.parser.expressions.NotAWordExpression;
 import gw.internal.gosu.parser.expressions.NullExpression;
 import gw.internal.gosu.parser.expressions.StringLiteral;
@@ -22,7 +23,6 @@ import gw.internal.gosu.parser.statements.HideFieldNoOpStatement;
 import gw.internal.gosu.parser.statements.VarStatement;
 import gw.lang.annotation.UsageModifier;
 import gw.lang.annotation.UsageTarget;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.ICoercer;
@@ -37,11 +37,13 @@ import gw.lang.parser.IParserPart;
 import gw.lang.parser.IParserState;
 import gw.lang.parser.IResolvingCoercer;
 import gw.lang.parser.IScope;
+import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.IToken;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.Keyword;
+import gw.lang.parser.ScriptPartId;
 import gw.lang.parser.StandardCoercionManager;
 import gw.lang.parser.StandardScope;
 import gw.lang.parser.exceptions.ImplicitCoercionError;
@@ -368,13 +370,35 @@ public abstract class ParserBase implements IParserPart
     return eatBlock( cBegin, cEnd, bOperator, getTokenizer() );
   }
 
+  public Token eatBlock( char cBegin, char cEnd, boolean bOperator, boolean bStopAtDeclarationKeyword )
+  {
+    return eatBlock( cBegin, cEnd, bOperator, bStopAtDeclarationKeyword, getTokenizer() );
+  }
+
   public static Token eatBlock( char cBegin, char cEnd, boolean bOperator, SourceCodeTokenizer tokenizer )
+  {
+    return eatBlock( cBegin, cEnd, bOperator, false, tokenizer );
+  }
+  public static Token eatBlock( char cBegin, char cEnd, boolean bOperator, boolean bStopAtDeclarationKeyword, SourceCodeTokenizer tokenizer )
   {
     int iBraceDepth = 1;
     Token endToken = new Token();
+    boolean bNewMatched = false;
     do
     {
       if( match( null, null, SourceCodeTokenizer.TT_EOF, false, tokenizer ) )
+      {
+        return null;
+      }
+
+      // Total hack to handle an annotation with an anonymous new expression and blocks (they has declarations that need to be eaten)
+      // We're hacking this because soon, real soon now, we'll be dropkicking support for an anonymous new expression or block
+      // as an argument to a gosu annotation -- gosu annotations need to behave like java annotation, no more no less.
+      bNewMatched = bStopAtDeclarationKeyword && (bNewMatched ||
+                                                  match( null, Keyword.KW_new.toString(), SourceCodeTokenizer.TT_KEYWORD, true, tokenizer ) ||
+                                                  match( null, "->", SourceCodeTokenizer.TT_OPERATOR, true, tokenizer ) ||
+                                                  match( null, "#", SourceCodeTokenizer.TT_OPERATOR, true, tokenizer ));
+      if( bStopAtDeclarationKeyword && !bNewMatched && matchDeclarationKeyword( null, true, tokenizer ) )
       {
         return null;
       }
@@ -593,7 +617,7 @@ public abstract class ParserBase implements IParserPart
     {
       if( (iType == iCurrentType) || ((iType == 0) && (iCurrentType == SourceCodeTokenizer.TT_WORD)) )
       {
-        bMatch = token.equalsIgnoreCase( tokenizer.getStringValue() );
+        bMatch = token.equals( tokenizer.getStringValue() );
       }
     }
     else
@@ -633,7 +657,7 @@ public abstract class ParserBase implements IParserPart
     SourceCodeTokenizer tokenizer = getTokenizer();
     if( SourceCodeTokenizer.TT_KEYWORD == tokenizer.getType() )
     {
-      bMatch = token.toString().equalsIgnoreCase( tokenizer.getStringValue() );
+      bMatch = token.toString().equals( tokenizer.getStringValue() );
     }
 
     if( bMatch && !bPeek )
@@ -1122,7 +1146,7 @@ public abstract class ParserBase implements IParserPart
     return lhsType.getTypeInfo().getMethod( strMethod, rhsType );
   }
 
-  protected ISymbol resolveSymbol( ParsedElement e, String strName, CaseInsensitiveCharSequence strInsensitiveName, boolean ignoreFunctionSymbols )
+  protected ISymbol resolveSymbol( ParsedElement e, String strName, boolean ignoreFunctionSymbols )
   {
     assert getSymbolTable() != null : CommonServices.getGosuLocalizationService().localize( Res.MSG_NULL_SYMBOL_TABLE );
 
@@ -1130,7 +1154,7 @@ public abstract class ParserBase implements IParserPart
 
     // Uberhack alert: query path root symbols can mask existing symbols, so we need to see if one of these
     //                 is around prior to checking for captured symbol values
-    ISymbol symbol = findSymbol( strInsensitiveName, ignoreFunctionSymbols );
+    ISymbol symbol = findSymbol( strName, ignoreFunctionSymbols );
     if( symbol instanceof QueryPathRootSymbol )
     {
       return symbol;
@@ -1138,16 +1162,16 @@ public abstract class ParserBase implements IParserPart
 
     if( isParsingBlock() || isOrIsEnclosedByAnonymousClass( getGosuClass() ) && !getOwner().isParsingAnnotation() )
     {
-      sym = captureSymbol( getCurrentEnclosingGosuClass(), strName, strInsensitiveName, e );
+      sym = captureSymbol( getCurrentEnclosingGosuClass(), strName, e );
     }
     else
     {
-      sym = findSymbol( strInsensitiveName, ignoreFunctionSymbols );
+      sym = findSymbol( strName, ignoreFunctionSymbols );
     }
 
     if( sym == null && getGosuClass() != null )
     {
-      sym = getGosuClass().getExternalSymbol( strInsensitiveName.toString() );
+      sym = getGosuClass().getExternalSymbol( strName );
     }
 
     if( sym == null )
@@ -1189,9 +1213,9 @@ public abstract class ParserBase implements IParserPart
     }
 
 
-    CaseInsensitiveCharSequence varName = sym instanceof DynamicSymbol
-                                          ? sym.getCaseInsensitiveName()
-                                          : ((DynamicPropertySymbol)sym).getVarIdentifier();
+    String varName = sym instanceof DynamicSymbol
+                     ? sym.getName()
+                     : ((DynamicPropertySymbol)sym).getVarIdentifier();
 
     VarStatement varStmt = (VarStatement)getGosuClass().getMemberField( varName );
     if( varStmt == null )
@@ -1298,7 +1322,7 @@ public abstract class ParserBase implements IParserPart
       if( anonClass instanceof IGosuProgram )
       {
         // Presumably this is a recursive call where the caller is an eval program, so give it its enclosing class' captured symbols
-        Map<CaseInsensitiveCharSequence, ICapturedSymbol> enclCaptured = anonClass.getCapturedSymbols();
+        Map<String, ICapturedSymbol> enclCaptured = anonClass.getCapturedSymbols();
         capturedSymbols.addAll( enclCaptured.values() );
       }
       return;
@@ -1310,7 +1334,7 @@ public abstract class ParserBase implements IParserPart
     {
       if( sym != null && sym.canBeCaptured() && (enclosingClass == null || enclosingClass.getExternalSymbol( sym.getName() ) == null) )
       {
-        ICapturedSymbol capturedSymbol = sym.makeCapturedSymbol( sym.getCaseInsensitiveName(), sym.getName(),
+        ICapturedSymbol capturedSymbol = sym.makeCapturedSymbol( sym.getName(),
                                                                  getSymbolTable(),
                                                                  anonClass == null ? new StandardScope() : getScope( anonClass ) );
         if( anonClass != null )
@@ -1340,20 +1364,20 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
-  protected ISymbol captureSymbol( ICompilableTypeInternal anonClass, String strName, CaseInsensitiveCharSequence strInsensitiveName, ParsedElement e )
+  protected ISymbol captureSymbol( ICompilableTypeInternal anonClass, String strName,ParsedElement e )
   {
     //never capture this, outer or super
-    if( Keyword.KW_this.equalsIgnoreCase( strName ) ||
+    if( Keyword.KW_this.equals( strName ) ||
         Keyword.KW_super.equals( strName ) ||
         Keyword.KW_outer.equals( strName ) )
     {
-      return findSymbol( strInsensitiveName, true );
+      return findSymbol( strName, true );
     }
 
     try
     {
       // check if we've already captured this symbol
-      ISymbol sym = anonClass.getCapturedSymbol( strInsensitiveName );
+      ISymbol sym = anonClass.getCapturedSymbol( strName );
       if( sym == null )
       {
         // see if we have access to the uncaptured version of this symbol
@@ -1370,7 +1394,7 @@ public abstract class ParserBase implements IParserPart
           }
           else
           {
-            sym = captureSymbol( enclosingType, strName, strInsensitiveName, e );
+            sym = captureSymbol( enclosingType, strName, e );
           }
 
           warnOnPcfVariablesHack( e, sym );
@@ -1378,7 +1402,7 @@ public abstract class ParserBase implements IParserPart
           if( sym != null && sym.canBeCaptured() && (enclosingType == null || enclosingType.getExternalSymbol( strName ) == null) )
           {
             // and wrap it up as a captured symbol
-            ICapturedSymbol capturedSymbol = sym.makeCapturedSymbol( strInsensitiveName, strName,
+            ICapturedSymbol capturedSymbol = sym.makeCapturedSymbol( strName,
                                                                      getSymbolTable(),
                                                                      getScope( anonClass ) );
             anonClass.addCapturedSymbol( capturedSymbol );
@@ -1472,31 +1496,28 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
-  private ISymbol findSymbol( CaseInsensitiveCharSequence strInsensitiveName, boolean ignoreFunctionSymbols )
+  private ISymbol findSymbol( String strName, boolean ignoreFunctionSymbols )
   {
-    return findSymbol( strInsensitiveName, getSymbolTable(), ignoreFunctionSymbols );
+    return findSymbol( strName, getSymbolTable(), ignoreFunctionSymbols );
   }
 
-  private ISymbol findSymbol( CaseInsensitiveCharSequence strInsensitiveName, ISymbolTable symTable, boolean ignoreFunctionSymbols )
+  private ISymbol findSymbol( String strName, ISymbolTable symTable, boolean ignoreFunctionSymbols )
   {
-    if( Keyword.KW_this.getCICS() == strInsensitiveName )
-    {
-      if( isEvalClass() )
-      {
+    if( Keyword.KW_this.getName().equals( strName ) ) {
+      if( isEvalClass() ) {
         // In eval expressions 'this' = 'outer' since the eval expression is wrapped in an anonymous inner class
-        strInsensitiveName = Keyword.KW_outer.getCICS();
+        strName = Keyword.KW_outer.getName();
       }
-      else if( getGosuClass() instanceof IGosuProgram )
-      {
+      else if( getGosuClass() instanceof IGosuProgram ) {
         // 'this' must be an external symbol for non-eval programs e.g., debugger expressions
         return null;
       }
     }
 
-    ISymbol sym = symTable.getSymbol( strInsensitiveName );
+    ISymbol sym = symTable.getSymbol( strName );
     if( sym == null && !ignoreFunctionSymbols )
     {
-      List dfsDecls = getOwner().getDfsDeclsForFunction( strInsensitiveName );
+      List dfsDecls = getOwner().getDfsDeclsForFunction( strName );
       sym = dfsDecls.isEmpty() ? null : (ISymbol)dfsDecls.get( dfsDecls.size() - 1 );
     }
     return sym;
@@ -1671,6 +1692,10 @@ public abstract class ParserBase implements IParserPart
 
   ModifierInfo parseModifiers( boolean bIgnoreErrors )
   {
+    int iOffsetList = getTokenizer().getTokenStart();
+    int iLineNumList = getTokenizer().getLineNumber();
+    int iColumnList = getTokenizer().getTokenColumn();
+
     ICompilableType gsClass = getGosuClass();
     boolean bNotInterface = gsClass == null || (gsClass instanceof IGosuEnhancementInternal) || !gsClass.isInterface();
 
@@ -1682,6 +1707,8 @@ public abstract class ParserBase implements IParserPart
 
     int iModifiers = 0;
     DocCommentBlock block = null;
+    boolean matchedStatic = false;
+    boolean matchedAbstract = false;
     while( true )
     {
       if( match( null, SourceCodeTokenizer.TT_EOF ) )
@@ -1719,20 +1746,20 @@ public abstract class ParserBase implements IParserPart
       }
       else if( match( null, Keyword.KW_private ) )
       {
-        verify( elem, bIgnoreErrors || bNotInterface, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
+        verify( elem, bIgnoreErrors || bNotInterface || gsClass.getEnclosingType() != null, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
         verifyNoAccessibilityModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_private );
         verifyNoHideOverrideModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_private );
         iModifiers = Modifier.setPrivate( iModifiers, true );
       }
       else if( match( null, Keyword.KW_internal ) )
       {
-        verify( elem, bIgnoreErrors || bNotInterface, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
+        verify( elem, bIgnoreErrors || bNotInterface || gsClass.getEnclosingType() != null, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
         verifyNoAccessibilityModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_internal );
         iModifiers = Modifier.setInternal( iModifiers, true );
       }
       else if( match( null, Keyword.KW_protected ) )
       {
-        verify( elem, bIgnoreErrors || bNotInterface, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
+        verify( elem, bIgnoreErrors || bNotInterface || gsClass.getEnclosingType() != null, Res.MSG_NOT_ALLOWED_IN_INTERFACE );
         verifyNoAccessibilityModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_protected );
         iModifiers = Modifier.setProtected( iModifiers, true );
       }
@@ -1743,13 +1770,15 @@ public abstract class ParserBase implements IParserPart
       }
       else if( match( null, Keyword.KW_static ) )
       {
-        verifyNoAbstractHideOverrideStaticModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_static );
+        verifyNoAbstractHideOverrideStaticModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_static, matchedStatic );
         iModifiers = Modifier.setStatic( iModifiers, true );
+        matchedStatic = true;
       }
       else if( match( null, Keyword.KW_abstract ) )
       {
-        verifyNoAbstractHideOverrideStaticModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_abstract );
+        verifyNoAbstractHideOverrideStaticModifierDefined( elem, bIgnoreErrors, iModifiers, Keyword.KW_abstract, matchedAbstract );
         iModifiers = Modifier.setAbstract( iModifiers, true );
+        matchedAbstract = true;
       }
       else if( match( null, Keyword.KW_override ) )
       {
@@ -1790,7 +1819,22 @@ public abstract class ParserBase implements IParserPart
 
     modifiers.setModifiers( iModifiers );
     modifiers.setAnnotations( annotations );
+
+    if( !bIgnoreErrors )
+    {
+      pushModifierList( iOffsetList, iLineNumList, iColumnList );
+    }
+
     return modifiers;
+  }
+
+  private void pushModifierList( int iOffsetList, int iLineNumList, int iColumnList )
+  {
+    ModifierListClause e = new ModifierListClause();
+    pushExpression( e );
+    boolean bZeroLength = getTokenizer().getTokenStart() <= iOffsetList;
+    setLocation( iOffsetList, iLineNumList, iColumnList, bZeroLength, true );
+    popExpression();
   }
 
   protected void eatOptionalSemiColon( boolean bEat )
@@ -1801,7 +1845,7 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
-  private void parseAnnotation( List<IGosuAnnotation> annotations )
+  protected void parseAnnotation( List<IGosuAnnotation> annotations )
   {
     int iOffset = getTokenizer().getTokenStart();
     int iLineNum = getTokenizer().getLineNumber();
@@ -1829,7 +1873,7 @@ public abstract class ParserBase implements IParserPart
         if( match( null, '(' ) )
         {
           end = getTokenizer().getTokenStart();
-          Token token = getOwner().eatBlock( '(', ')', false );
+          Token token = getOwner().eatBlock( '(', ')', false, true );
           if( token != null )
           {
             end = token.getTokenEnd();
@@ -1858,7 +1902,7 @@ public abstract class ParserBase implements IParserPart
     if( !ErrorType.getInstance().equals( type ) && type.getTypeLoader() != null )
     {
       IModule module = type.getTypeLoader().getModule();
-      module.getExecutionEnvironment().pushModule( module );
+      TypeSystem.pushModule( module );
       try
       {
         boolean bAnnotation = JavaTypes.IANNOTATION().isAssignableFrom( type ) ||
@@ -1867,7 +1911,7 @@ public abstract class ParserBase implements IParserPart
       }
       finally
       {
-        module.getExecutionEnvironment().popModule( module );
+        TypeSystem.popModule( module );
       }
     }
     GosuAnnotation annotationInfo = new GosuAnnotation( getGosuClass(), type, e, iOffset, end );
@@ -1887,12 +1931,9 @@ public abstract class ParserBase implements IParserPart
       {
         for( Expression arg : ae.getArgs() )
         {
-          if( !arg.isCompileTimeConstant() )
-          {
-            verifyOrWarn( arg, false,
-                          CommonServices.getEntityAccess().getLanguageLevel().allowNonLiteralArgsForJavaAnnotations(), 
-                          Res.MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION );
-          }
+          verifyOrWarn( arg, arg.isCompileTimeConstant(),
+                        CommonServices.getEntityAccess().getLanguageLevel().allowNonLiteralArgsForJavaAnnotations(),
+                        Res.MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION );
         }
       }
     }
@@ -1913,7 +1954,7 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
-  private void verifyAnnotations( ModifierInfo modInfo, UsageTarget targetType )
+  void verifyAnnotations( ModifierInfo modInfo, UsageTarget targetType )
   {
     List<IType> annotationTypes = new ArrayList<IType>();
     for( IGosuAnnotation annotation : modInfo.getAnnotations() )
@@ -1939,7 +1980,11 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
-  void verifyNoAbstractHideOverrideStaticModifierDefined( ParsedElement elem, boolean bIgnoreErrors, int modifier, Keyword kw )
+  void verifyNoAbstractHideOverrideStaticModifierDefined( ParsedElement elem, boolean bIgnoreErrors, int modifier, Keyword kw ) {
+    verifyNoAbstractHideOverrideStaticModifierDefined( elem, bIgnoreErrors, modifier, kw, false );
+  }
+
+  void verifyNoAbstractHideOverrideStaticModifierDefined( ParsedElement elem, boolean bIgnoreErrors, int modifier, Keyword kw, boolean alreadyMatched )
   {
     if( bIgnoreErrors )
     {
@@ -1947,7 +1992,7 @@ public abstract class ParserBase implements IParserPart
     }
     verify( elem, !Modifier.isOverride( modifier ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, kw );
     verify( elem, !Modifier.isHide( modifier ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, kw );
-    if( !(elem instanceof ClassStatement) )
+    if( !(elem instanceof ClassStatement) || alreadyMatched )
     {
       verify( elem, !Modifier.isAbstract( modifier ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_abstract, kw );
       verify( elem, !Modifier.isStatic( modifier ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_static, kw );
@@ -2085,7 +2130,29 @@ public abstract class ParserBase implements IParserPart
     {
       enclosingClass = (ICompilableTypeInternal)_blocks.peek().getBlockGosuClass();
     }
+    if( enclosingClass == null )
+    {
+      // enclosingClass can be null, for example, if the block is inside a fucking string template
+      enclosingClass = getOuterFromScriptPartStack();
+    }
     return enclosingClass;
+  }
+
+  private ICompilableTypeInternal getOuterFromScriptPartStack() {
+    java.util.Stack<IScriptPartId> scriptPartIdStack = getOwner().getScriptPartIdStack();
+    for( int i = scriptPartIdStack.size() - 1; i >= 0; i-- )
+    {
+      IScriptPartId id = scriptPartIdStack.get( i );
+      if( id instanceof ScriptPartId )
+      {
+        IType type = id.getContainingType();
+        if( type instanceof ICompilableTypeInternal )
+        {
+          return (ICompilableTypeInternal)type;
+        }
+      }
+    }
+    return null;
   }
 
   void popCurrentBlock()
@@ -2283,6 +2350,19 @@ public abstract class ParserBase implements IParserPart
       }
     }
     return types;
+  }
+
+  public static boolean matchDeclarationKeyword( Token T, boolean bPeek, SourceCodeTokenizer tokenizer )
+  {
+    return
+      match( T, Keyword.KW_construct.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_function.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_property.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_var.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_delegate.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_class.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_interface.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_enum.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer );
   }
 
   private static final class PlaceholderParserState implements IParserState

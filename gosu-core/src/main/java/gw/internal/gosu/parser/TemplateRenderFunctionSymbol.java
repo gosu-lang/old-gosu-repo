@@ -34,7 +34,7 @@ public class TemplateRenderFunctionSymbol extends DynamicFunctionSymbol implemen
     SyntheticFunctionStatement stmt = (SyntheticFunctionStatement)getValueDirectly();
     stmt.setDfsOwner( this );
     setClassMember( true );
-    setCaseInsensitiveName( dfs.getCaseInsensitiveName() );
+    setName( (String)dfs.getName() );
     _scriptPartId = new ScriptPartId( gsClass, null );
     _mi = mi;
     _type = type;

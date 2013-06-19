@@ -345,7 +345,6 @@ public class GosuObjectUtil {
    *
    * @param array the array to compute the hash code.
    */
-  @gw.lang.Scriptable(gw.lang.annotation.ScriptabilityModifier.ALL)
   public static int arrayHashCode(Object array) {
     if (array == null) {
       return 0;

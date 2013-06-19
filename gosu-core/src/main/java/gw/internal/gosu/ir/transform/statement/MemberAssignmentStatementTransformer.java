@@ -80,8 +80,8 @@ public class MemberAssignmentStatementTransformer extends AbstractStatementTrans
 
   private IRStatement assignInstanceMember( IPropertyInfo pi, IRProperty irProperty, IRType propertyType )
   {
-    IRExpression root = ExpressionTransformer.compile( _stmt().getRootExpression(), _cc() );
-
+    IExpression rootExpr = _stmt().getRootExpression();
+    IRExpression root = pushRootExpression(getConcreteType(rootExpr.getType()), rootExpr, irProperty);
 
     if( isScopedField( pi ) )
     {
@@ -118,6 +118,27 @@ public class MemberAssignmentStatementTransformer extends AbstractStatementTrans
     {
       return reflectivelySetProperty( pi.getOwnersType(), pushConstant( pi.getDisplayName() ), root, false  );
     }
+  }
+
+  // NOTE pdalbora 18-Oct-2012 -- Copied from MemberAccessTransformer in order to work around PL-23101. Perhaps this
+  // is the right fix, but the Gosu team should confirm, and perhaps fix this code duplication.
+  private IRExpression pushRootExpression( IType rootType, IExpression rootExpr, IRProperty pi )
+  {
+    // Push the root expression value
+    IRExpression root = ExpressionTransformer.compile( rootExpr, _cc() );
+    //... and make sure it's boxed for the method call
+    root = boxValue( rootType, root );
+
+    if( pi != null && !pi.isStatic() )
+    {
+      IRType type = pi.getTargetRootIRType( );
+      if( !type.isAssignableFrom( root.getType() ) )
+      {
+        root = buildCast( type, root );
+      }
+    }
+
+    return root;
   }
 
   private boolean isWriteMethodMissingAndUsingLikeNamedField( IRProperty irPi )

@@ -49,7 +49,7 @@ public abstract class EvalBasedTransformer<T extends IExpression> extends Abstra
     {
       for( ICapturedSymbol sym : capturedSymbols )
       {
-        if( enclosingClass.isAnonymous() && enclosingClass.getCapturedSymbols().containsKey( sym.getCaseInsensitiveName() ) )
+        if( enclosingClass.isAnonymous() && enclosingClass.getCapturedSymbols().containsKey( sym.getName() ) )
         {
           values.add( getInstanceField( getGosuClass(), CAPTURED_VAR_PREFIX + sym.getName(), getDescriptor( sym.getType().getArrayType() ), AccessibilityUtil.forCapturedVar(), pushThis() ) );
         }
@@ -67,7 +67,7 @@ public abstract class EvalBasedTransformer<T extends IExpression> extends Abstra
 
     if (!values.isEmpty())
     {
-      return buildInitializedArray( IRTypeConstants.OBJECT, values );
+      return buildInitializedArray(IRTypeConstants.OBJECT(), values );
     }
     else
     {
@@ -115,12 +115,12 @@ public abstract class EvalBasedTransformer<T extends IExpression> extends Abstra
             else
             {
               pushThisOrOuter( gsClass );
-              values.add( getInstanceField( gsClass, TYPE_PARAM_PREFIX + genTypeVars[i].getName(), IRTypeConstants.ITYPE,
+              values.add( getInstanceField( gsClass, TYPE_PARAM_PREFIX + genTypeVars[i].getName(), IRTypeConstants.ITYPE(),
                       AccessibilityUtil.forTypeParameter(),
                       pushThisOrOuter( gsClass ) ) );
             }
           }
-          return buildInitializedArray( IRTypeConstants.ITYPE, values );
+          return buildInitializedArray(IRTypeConstants.ITYPE(), values );
         }
       }
       IType type = funcStmt.getDynamicFunctionSymbol().getScriptPart().getContainingType();

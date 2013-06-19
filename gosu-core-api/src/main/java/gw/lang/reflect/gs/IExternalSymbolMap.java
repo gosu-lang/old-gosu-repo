@@ -5,6 +5,8 @@
 package gw.lang.reflect.gs;
 
 
+import gw.lang.reflect.IType;
+
 public interface IExternalSymbolMap {
 
   /**
@@ -15,6 +17,15 @@ public interface IExternalSymbolMap {
    * @return the current value of the symbol
    */
   Object getValue(String name);
+
+  /**
+   * Called via bytecode.
+   * @param name
+   * @param iArrayDims  the expected number of array dimensions of the the symbol's type, useful for
+   *                    debugger expr evaluation for dynamically unwrapping type a single elem array (a captured var)
+   * @return
+   */
+  Object getValue(String name, int iArrayDims);
 
   /**
    * Sets the value of the symbol with the given name.  Throws a runtime exception if the name does not

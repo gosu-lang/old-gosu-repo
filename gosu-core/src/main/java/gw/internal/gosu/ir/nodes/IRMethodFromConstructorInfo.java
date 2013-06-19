@@ -17,7 +17,6 @@ import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.IJavaConstructorInfo;
 import gw.lang.reflect.java.IJavaClassConstructor;
 import gw.lang.parser.IDynamicFunctionSymbol;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
@@ -43,7 +42,7 @@ public class IRMethodFromConstructorInfo extends IRFeatureBase implements IRMeth
 
   @Override
   public IRType getReturnType() {
-    return IRTypeConstants.pVOID;
+    return IRTypeConstants.pVOID();
   }
 
   @Override
@@ -184,7 +183,7 @@ public class IRMethodFromConstructorInfo extends IRFeatureBase implements IRMeth
     // Don't attempt to get captured symbols if the type isn't valid; it'll just throw and result in a cascading break
     if( owningType instanceof IGosuClassInternal && owningType.isValid() ) //&& ((IGosuClassInternal)type).isAnonymous() )
     {
-      Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)owningType).getCapturedSymbols();
+      Map<String, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)owningType).getCapturedSymbols();
       if( capturedSymbols != null )
       {
         for( ICapturedSymbol sym : capturedSymbols.values() )
@@ -227,8 +226,8 @@ public class IRMethodFromConstructorInfo extends IRFeatureBase implements IRMeth
   private void addImplicitEnumParamTypes( IType owningType, List<IRType> paramTypes ) {
     // Enums have name and ordinal arguments implicitly added to their constructors
     if (owningType.isEnum()) {
-      paramTypes.add( IRTypeConstants.STRING);
-      paramTypes.add( IRTypeConstants.pINT);
+      paramTypes.add(IRTypeConstants.STRING());
+      paramTypes.add(IRTypeConstants.pINT());
     }
   }
 

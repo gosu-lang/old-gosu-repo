@@ -9,7 +9,6 @@ import gw.internal.gosu.parser.statements.TryCatchFinallyStatement;
 import gw.internal.gosu.parser.statements.CatchClause;
 
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
@@ -44,18 +43,18 @@ public class LocalVarDeclaration extends Expression implements ILocalVarDeclarat
     return getLocalVarName().toString();
   }
 
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return getLocation().getOffset();
   }
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     // Can't set the name offset w/o also setting the location, so this is a no-op 
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
-    return identifierName != null && identifierName.equalsIgnoreCase( _strLocalVarName );
+    return identifierName != null && identifierName.equals( _strLocalVarName );
   }
 
   public TypeLiteral getTypeLiteral()
@@ -82,32 +81,32 @@ public class LocalVarDeclaration extends Expression implements ILocalVarDeclarat
 
     if( elem instanceof IFunctionStatement ) {
       IDynamicFunctionSymbol dfs = ((IFunctionStatement)elem).getDynamicFunctionSymbol();
-      for(ISymbol symbol: dfs.getArgs()) {
-        if( _strLocalVarName.equalsIgnoreCase(symbol.getName())) {
+      for( ISymbol symbol: dfs.getArgs() ) {
+        if( _strLocalVarName.equals( symbol.getName() ) ) {
           return symbol;
         }
       }
     }
     else if( elem instanceof IBlockExpression ) {
       for(ISymbol symbol : ((IBlockExpression)elem).getArgs()) {
-        if( _strLocalVarName.equalsIgnoreCase(symbol.getName())) {
+        if( _strLocalVarName.equals(symbol.getName())) {
           return symbol;
         }
       }
     }
     else if( elem instanceof IForEachStatement ) {
       ISymbol symbol = ((IForEachStatement)elem).getIdentifier();
-      if( _strLocalVarName.equalsIgnoreCase(symbol.getName())) {
+      if( _strLocalVarName.equals(symbol.getName())) {
         return symbol;
       }
       symbol = ((IForEachStatement)elem).getIndexIdentifier();
-      if( _strLocalVarName.equalsIgnoreCase(symbol.getName())) {
+      if( _strLocalVarName.equals(symbol.getName())) {
         return symbol;
       }
     }
     else if( elem instanceof TryCatchFinallyStatement ) {
       for(CatchClause catchClause : ((TryCatchFinallyStatement)elem).getCatchStatements() ) {
-        if( _strLocalVarName.equalsIgnoreCase(catchClause.getSymbol().getName())) {
+        if( _strLocalVarName.equals(catchClause.getSymbol().getName())) {
           return catchClause.getSymbol();
         }
       }

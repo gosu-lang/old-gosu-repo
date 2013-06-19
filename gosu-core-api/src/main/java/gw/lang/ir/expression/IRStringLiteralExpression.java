@@ -23,6 +23,6 @@ public class IRStringLiteralExpression extends IRExpression {
 
   @Override
   public IRType getType() {
-    return IRTypeConstants.STRING;
+    return IRTypeConstants.STRING();
   }
 }

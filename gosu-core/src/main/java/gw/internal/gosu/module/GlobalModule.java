@@ -30,7 +30,7 @@ public class GlobalModule extends Module implements IGlobalModule
 {
   public GlobalModule(IExecutionEnvironment execEnv, String moduleName)
   {
-    super( execEnv, moduleName, false );
+    super( execEnv, moduleName);
   }
 
   @Override
@@ -40,8 +40,8 @@ public class GlobalModule extends Module implements IGlobalModule
 
   @Override
   protected void createStandardTypeLoaders() {
-    FileSystemGosuClassRepository repository = new FileSystemGosuClassRepository(this, new IDirectory[0], GosuClassTypeLoader.ALL_EXTS, false);
-    TypeSystem.pushTypeLoader(this, new GosuClassTypeLoader(this, repository));
+    FileSystemGosuClassRepository repository = new FileSystemGosuClassRepository(this);
+    CommonServices.getTypeSystem().pushTypeLoader(this, new GosuClassTypeLoader(this, repository));
     createGlobalTypeloaders();
   }
 
@@ -52,10 +52,10 @@ public class GlobalModule extends Module implements IGlobalModule
     if( globalLoaderTypes != null ) {
       Collections.reverse(globalLoaderTypes);
     }
-    IFileSystemGosuClassRepository classRepository =
-        new FileSystemGosuClassRepository(this, getAllSourcePaths(), GosuClassTypeLoader.ALL_EXTS, false);
+    IFileSystemGosuClassRepository classRepository = new FileSystemGosuClassRepository(this);
+    classRepository.setSourcePath(getAllSourcePaths());
 
-    _moduleTypeLoader.getModule().getExecutionEnvironment().pushModule(this);
+    TypeSystem.pushModule(this);
     try {
       if( globalLoaderTypes != null ) {
         for (Class<? extends ITypeLoader> globalLoader : globalLoaderTypes) {
@@ -89,7 +89,7 @@ public class GlobalModule extends Module implements IGlobalModule
 
       CommonServices.getGosuInitializationHooks().afterTypeLoaderCreation();
     } finally {
-      _moduleTypeLoader.getModule().getExecutionEnvironment().popModule(this);
+      TypeSystem.popModule(this);
     }
   }
 
@@ -105,12 +105,12 @@ public class GlobalModule extends Module implements IGlobalModule
    * In global module, all dependencies should be traversed, even non-exported.
    */
   @Override
-  protected void buildTraversalList(final IModule theModule, List<IModule> traversalList) {
+  protected void traverse(final IModule theModule, List<IModule> traversalList) {
     traversalList.add(theModule);
     for (Dependency dependency : theModule.getDependencies()) {
       IModule dependencyModule = dependency.getModule();
       if (!traversalList.contains(dependencyModule)) {
-        buildTraversalList(dependencyModule, traversalList);
+        traverse(dependencyModule, traversalList);
       }
     }
   }
@@ -122,6 +122,7 @@ public class GlobalModule extends Module implements IGlobalModule
       throws ClassNotFoundException, InstantiationException,
       IllegalAccessException, InvocationTargetException {
 
+    try {
     ITypeLoader typeLoader;
     CommonServices.getGosuInitializationHooks().beforeTypeLoaderCreation(loaderClass);
     Constructor[] constructors = loaderClass.getConstructors();
@@ -140,6 +141,9 @@ public class GlobalModule extends Module implements IGlobalModule
       }
     }
     return typeLoader;
+    } catch (LinkageError le) {
+      throw le;
+    }
   }
 
 }

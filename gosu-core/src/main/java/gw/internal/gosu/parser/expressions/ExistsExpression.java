@@ -9,8 +9,6 @@ import gw.internal.gosu.parser.Symbol;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
 
 
-
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.expressions.IExistsExpression;
 import gw.lang.reflect.java.JavaTypes;
 
@@ -121,23 +119,23 @@ public final class ExistsExpression extends Expression implements IExistsExpress
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return _iNameOffset;
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _iNameOffset = iOffset;
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
-    return identifierName.equals( getIdentifier().getCaseInsensitiveName() );
+    return identifierName.equals( getIdentifier().getName() );
   }
 
   public String[] getDeclarations() {
-    return new String[] {getIdentifier().getCaseInsensitiveName().toString()};
+    return new String[] {getIdentifier().getName().toString()};
   }
 
 }

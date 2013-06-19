@@ -28,7 +28,7 @@ public abstract class AbstractDynamicSymbol extends Symbol implements IDynamicSy
 
   public AbstractDynamicSymbol( ISymbolTable symTable, CharSequence strName, IType type, Object value )
   {
-    super( strName, type, null, value );
+    super( strName.toString(), type, null, value );
     _symTable = symTable;
   }
 

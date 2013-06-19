@@ -2,7 +2,11 @@
   <parent>
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
+<<<<<<< HEAD
     <version>0.10.2-SNAPSHOT</version>
+=======
+    <version>0.11-SNAPSHOT</version>
+>>>>>>> origin/fromP4
     <relativePath>../gosu-parent/pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -18,6 +22,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>gw.managed.osgi</groupId>
+      <artifactId>gosu-shades</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-launcher-api</artifactId>
     </dependency>
@@ -27,11 +35,14 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
+<<<<<<< HEAD
       <groupId>org.gosu-lang.gosu.managed</groupId>
       <artifactId>gw-commons-cli</artifactId>
       <version>1.0-2</version>
     </dependency>
     <dependency>
+=======
+>>>>>>> origin/fromP4
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -116,4 +127,24 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>internal.tools-jar</id>
+      <activation>
+        <file>
+          <exists>${java.home}/../lib/tools.jar</exists>
+        </file>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.sun</groupId>
+          <artifactId>tools</artifactId>
+          <version>1.6.0</version>
+          <scope>system</scope>
+          <systemPath>${java.home}/../lib/tools.jar</systemPath>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

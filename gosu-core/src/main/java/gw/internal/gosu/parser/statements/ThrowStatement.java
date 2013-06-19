@@ -10,6 +10,7 @@ import gw.internal.gosu.parser.CannotExecuteGosuException;
 
 import gw.lang.parser.statements.IThrowStatement;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.TerminalType;
 
 
 /**
@@ -48,8 +49,14 @@ public final class ThrowStatement extends TerminalStatement implements IThrowSta
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  public TerminalType getTerminalType() {
+    return TerminalType.ReturnOrThrow;
+  }
+
+  @Override
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    bAbsolute[0] = true;
     return this;
   }
 

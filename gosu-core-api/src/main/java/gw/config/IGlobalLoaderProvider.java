@@ -12,7 +12,4 @@ import gw.lang.reflect.ITypeLoader;
 public interface IGlobalLoaderProvider extends IService {
 
   List<Class<? extends ITypeLoader>> getGlobalLoaderTypes();
-
-  List<GosuPathEntry> getGlobalPathEntries();
-
 }

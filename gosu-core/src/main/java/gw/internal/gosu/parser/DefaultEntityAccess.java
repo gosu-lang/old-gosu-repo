@@ -6,6 +6,7 @@ package gw.internal.gosu.parser;
 
 import gw.config.BaseService;
 import gw.config.CommonServices;
+import gw.fs.IDirectory;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IAttributeSource;
 import gw.lang.parser.IParseIssue;
@@ -25,15 +26,13 @@ import gw.lang.reflect.AbstractTypeSystemListener;
 import gw.lang.reflect.RefreshRequest;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
-import gw.lang.reflect.module.IClasspathOverrideConfig;
+import gw.lang.reflect.gs.ICompilableType;
 import gw.lang.reflect.module.IModule;
 import gw.util.GosuExceptionUtil;
 import gw.util.IFeatureFilter;
 import gw.util.ILogger;
 import gw.util.SystemOutLogger;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,8 +60,6 @@ public class DefaultEntityAccess extends BaseService implements IEntityAccess
   }
 
   private Map _scopes = new HashMap();
-
-  private File _rootDir;
 
   /**
    */
@@ -434,52 +431,7 @@ public class DefaultEntityAccess extends BaseService implements IEntityAccess
   @Override
   public String getWebServerPaths()
   {
-    if( _rootDir == null )
-    {
-      return "";
-    }
-    return getWebServerPaths(_rootDir);
-  }
-
-  public static String getWebServerPaths(File rootDir)
-  {
-    File webInf = new File( rootDir, "WEB-INF" );
-    if( !webInf.isDirectory() )
-    {
-      return "";
-    }
-    final StringBuilder sb = new StringBuilder();
-    File classes = new File( webInf, "classes" );
-    if( classes.isDirectory() )
-    {
-      sb.append( classes.getAbsolutePath() ).append( File.pathSeparator );
-    }
-    File platform = new File( webInf, "platform" );
-    if( platform.isDirectory() )
-    {
-      sb.append( platform.getAbsolutePath() ).append( File.pathSeparator );
-    }
-    File lib = new File( webInf, "lib" );
-    if( lib.isDirectory() )
-    {
-      addJarsToClassPath( sb, lib );
-    }
-    return sb.toString();
-  }
-
-  private static void addJarsToClassPath( final StringBuilder sb, File lib )
-  {
-    lib.listFiles(new FilenameFilter() {
-        public boolean accept( File dir, String name )
-        {
-          String lname = name.toLowerCase();
-          if( lname.endsWith( ".jar" ) || lname.endsWith( ".zip" ) )
-          {
-            sb.append( dir.getAbsolutePath() ).append( File.separator ).append( name ).append( File.pathSeparator );
-          }
-          return false;
-        }
-      } );
+    return "";
   }
 
   @Override
@@ -492,12 +444,6 @@ public class DefaultEntityAccess extends BaseService implements IEntityAccess
   public boolean isWarnOnImplicitCoercionsOn()
   {
     return true;
-  }
-
-  @Override
-  public void setRootDir( File dir )
-  {
-    _rootDir = dir;
   }
 
   @Override
@@ -516,18 +462,6 @@ public class DefaultEntityAccess extends BaseService implements IEntityAccess
   public boolean shouldAddWarning( IType type, IParseIssue warning )
   {
     return true;
-  }
-
-  @Override
-  public boolean isVisibleType( File sourceFile )
-  {
-    return true;
-  }
-
-  @Override
-  public IClasspathOverrideConfig getClasspathOverrideConfig()
-  {
-    return null;
   }
 
   @Override
@@ -556,5 +490,20 @@ public class DefaultEntityAccess extends BaseService implements IEntityAccess
   @Override
   public List<IGosuClassLoadingObserver> getGosuClassLoadingObservers() {
     return _classLoadingObservers;
+  }
+
+  @Override
+  public boolean areUsesStatementsAllowedInStatementLists(ICompilableType gosuClass) {
+    return false;
+  }
+
+  @Override
+  public List<IDirectory> getAdditionalSourceRoots() {
+    return Collections.EMPTY_LIST;
+  }
+
+  @Override
+  public void reloadedTypes(String[] types) {
+    //nothing to do
   }
 }

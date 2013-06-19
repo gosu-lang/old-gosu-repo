@@ -7,7 +7,6 @@ package gw.internal.gosu.parser;
 import gw.config.CommonServices;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.reflect.*;
 import gw.lang.reflect.gs.IGosuClassTypeInfo;
@@ -168,10 +167,6 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
   public IPropertyInfo getProperty( CharSequence propName )
   {
     return getProperty( null, propName );
-  }
-
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return FIND.findCorrectString(propName, _fm.getPropertyNames(Accessibility.PRIVATE));
   }
 
   public IPropertyInfo getProperty( IType whosAskin, CharSequence propName )
@@ -538,10 +533,10 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
     _modifierInfoByFeature.put(featureInfo, modifierInfo);
   }
 
-  private class MyFeatureManager extends FeatureManager<CaseInsensitiveCharSequence>
+  private class MyFeatureManager extends FeatureManager<String>
   {
     public MyFeatureManager() {
-      super(GosuClassTypeInfo.this, false);
+      super(GosuClassTypeInfo.this, true);
     }
 
     public void forceInit() {
@@ -580,7 +575,9 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
         IType[] list = parentType.getInterfaces();
         for( IType ifaceType : list )
         {
-          CommonServices.getEntityAccess().addEnhancementMethods(ifaceType, privateMethods );
+          if (!TypeSystem.isDeleted(ifaceType)) {
+            CommonServices.getEntityAccess().addEnhancementMethods(ifaceType, privateMethods );
+          }
         }
       }
 
@@ -589,9 +586,11 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
       }
     }
 
-    protected void addEnhancementProperties(PropertyNameMap<CaseInsensitiveCharSequence> privateProps, boolean caseSensitive) {
+    protected void addEnhancementProperties( PropertyNameMap<String> privateProps, boolean caseSensitive )
+    {
       IType type = _gsClass;
-      if (_gsClass.isProxy()) {
+      if( _gsClass.isProxy() )
+      {
         type = _gsClass.getJavaType();
       }
 
@@ -605,16 +604,17 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
 
       for( IType parentType : parentTypes )
       {
-        CommonServices.getEntityAccess().addEnhancementProperties(parentType, privateProps, false);
+        CommonServices.getEntityAccess().addEnhancementProperties( parentType, privateProps, true );
         IType[] list = parentType.getInterfaces();
         for( IType ifaceType : list )
         {
-          CommonServices.getEntityAccess().addEnhancementProperties(ifaceType, privateProps, false);
+          CommonServices.getEntityAccess().addEnhancementProperties( ifaceType, privateProps, true );
         }
       }
 
-      if (!(_gsClass instanceof IGosuEnhancement)) {
-        CommonServices.getEntityAccess().addEnhancementProperties(JavaTypes.OBJECT(), privateProps, false);
+      if( !(_gsClass instanceof IGosuEnhancement) )
+      {
+        CommonServices.getEntityAccess().addEnhancementProperties( JavaTypes.OBJECT(), privateProps, true );
       }
     }
   }

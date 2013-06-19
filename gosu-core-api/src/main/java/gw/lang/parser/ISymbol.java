@@ -9,8 +9,8 @@ import gw.lang.reflect.IModifierInfo;
 
 public interface ISymbol extends IHasType, IReducedSymbol
 {
-  CaseInsensitiveCharSequence THIS = CaseInsensitiveCharSequence.get( Keyword.KW_this );
-  CaseInsensitiveCharSequence SUPER = CaseInsensitiveCharSequence.get( Keyword.KW_super );
+  String THIS = Keyword.KW_this.getName();
+  String SUPER = Keyword.KW_super.getName();
 
   /**
    * Returns the Symbol's name.
@@ -22,12 +22,6 @@ public interface ISymbol extends IHasType, IReducedSymbol
    * returns the symbol's name.
    */
   public String getDisplayName();
-
-  /**
-   * Returns a case-insensitive char sequence. This is primarily for faster
-   * lookups in IScope.
-   */
-  public CaseInsensitiveCharSequence getCaseInsensitiveName();
 
   /**
    * Returns the Symbol's type.
@@ -89,7 +83,7 @@ public interface ISymbol extends IHasType, IReducedSymbol
 
   boolean canBeCaptured();
 
-  ICapturedSymbol makeCapturedSymbol( CaseInsensitiveCharSequence strInsensitiveName, String strName, ISymbolTable symbolTable, IScope scope );
+  ICapturedSymbol makeCapturedSymbol( String strName, ISymbolTable symbolTable, IScope scope );
 
   boolean isLocal();
 

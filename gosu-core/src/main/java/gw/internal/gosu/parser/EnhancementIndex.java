@@ -4,34 +4,34 @@
 
 package gw.internal.gosu.parser;
 
-import gw.fs.IFile;
-import gw.internal.ext.org.antlr.runtime.*;
+import gw.internal.ext.org.antlr.runtime.ANTLRInputStream;
+import gw.internal.ext.org.antlr.runtime.CharStream;
 import gw.internal.ext.org.antlr.runtime.Token;
 import gw.internal.gosu.parser.java.JavaLexer;
+import gw.lang.parser.CICS;
 import gw.lang.parser.Keyword;
-import gw.lang.reflect.RefreshRequest;
-import gw.lang.reflect.RefreshKind;
-import gw.lang.reflect.gs.ClassType;
-import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.gs.GosuClassTypeLoader;
-import gw.lang.reflect.gs.IEnhancementIndex;
+import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.IErrorType;
-import gw.lang.reflect.gs.IGosuClassRepository;
-import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.reflect.gs.ISourceFileHandle;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeRef;
+import gw.lang.reflect.RefreshKind;
+import gw.lang.reflect.RefreshRequest;
 import gw.lang.reflect.TypeSystem;
-import gw.util.CaseInsensitiveHashMap;
+import gw.lang.reflect.gs.ClassType;
+import gw.lang.reflect.gs.GosuClassTypeLoader;
+import gw.lang.reflect.gs.IEnhancementIndex;
+import gw.lang.reflect.gs.IGenericTypeVariable;
+import gw.lang.reflect.gs.IGosuClassRepository;
+import gw.lang.reflect.gs.IGosuEnhancement;
+import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.util.GosuObjectUtil;
-import gw.config.CommonServices;
-import gw.lang.parser.TypeVarToTypeMap;
+import gw.util.StreamUtil;
 
 import java.io.BufferedInputStream;
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -169,7 +169,7 @@ public class EnhancementIndex implements IEnhancementIndex
     try
     {
       _loadingIndex = true;
-      _typeToEnhancementsMap = new CaseInsensitiveHashMap<String, ArrayList<String>>();
+      _typeToEnhancementsMap = new HashMap<String, ArrayList<String>>();
       _arrayEnhancements = new ArrayList<String>();
 
       Set<String> allEnhancements = _loader.getRepository().getAllTypeNames(new String[]{GosuClassTypeLoader.GOSU_ENHANCEMENT_FILE_EXT});
@@ -183,8 +183,9 @@ public class EnhancementIndex implements IEnhancementIndex
     }
   }
 
-  private void indexEnhancements(String[] enhancementNames) {
+  private Set<String> indexEnhancements(String[] enhancementNames) {
     IGosuClassRepository repository = _loader.getRepository();
+    Set<String> enhancedTypes = new HashSet<String>();
     for( String enhancementName : enhancementNames )
     {
       _currentEnhName = enhancementName;
@@ -196,33 +197,70 @@ public class EnhancementIndex implements IEnhancementIndex
           ArrayList<String> enhancements = getEnhancementIndexForType( enhancedTypeName );
           if (!enhancements.contains(enhancementName)) {
             enhancements.add(enhancementName);
+            enhancedTypes.add(enhancedTypeName);
           }
         }
       } else {
         // remove the enhancement
       }
     }
+    return enhancedTypes;
   }
 
-  public static String parseEnhancedTypeName(ISourceFileHandle src) {
-//    long t1 = System.nanoTime();
-    try {
-      CharStream cs;
-      if (src.getFilePath() != null && new File(src.getFilePath()).exists()) {
-        File file = new File(src.getFilePath());
-        IFile iFile = CommonServices.getFileSystem().getIFile(file);
-        InputStream inputStream = iFile.openInputStream();
-        cs = new ANTLRInputStream(new BufferedInputStream(inputStream, 1024));
-      } else {
-        cs = new ANTLRStringStream(src.getSource().getSource());
+  private Set<String> indexEnhancements(RefreshRequest request) {
+    Set<String> enhancedTypes = new HashSet<String>();
+    if (request.file != null &&
+        request.file.getExtension().equals("gsx") &&
+        // request type can be an inner class or block, avoid processing those as enhancements
+        request.file.getBaseName().equals( getSimpleName( request.types[0] ) ) )
+    {
+      String enhancementName = request.types[0];
+      _currentEnhName = enhancementName;
+      String enhancedTypeName = parseEnhancedTypeName(request);
+      if (enhancedTypeName != null && !IErrorType.NAME.equals(enhancedTypeName)) {
+        ArrayList<String> enhancements = getEnhancementIndexForType(enhancedTypeName);
+        if (!enhancements.contains(enhancementName)) {
+          enhancements.add(enhancementName);
+          enhancedTypes.add(enhancedTypeName);
+        }
       }
+    }
+    return enhancedTypes;
+  }
+
+  private String getSimpleName(String type) {
+    int iDot = type.lastIndexOf( '.' );
+    if( iDot >= 0 ) {
+      return type.substring( iDot + 1 );
+    }
+    return type;
+  }
+
+  private String parseEnhancedTypeName(RefreshRequest request) {
+    try {
+      return parseEnhancedTypeName(request.file.openInputStream(), request.file.getBaseName());
+    } catch (IOException e) {
+      return IErrorType.NAME;
+    }
+  }
+
+  public static String parseEnhancedTypeName(ISourceFileHandle sfh) {
+    return parseEnhancedTypeName(new ByteArrayInputStream(StreamUtil.toBytes(sfh.getSource().getSource())), sfh.getRelativeName());
+  }
+
+  public static String parseEnhancedTypeName(InputStream stream, String baseFileName) {
+    BufferedInputStream input = null;
+    try {
+      input = new BufferedInputStream(stream, 1024);
+      CharStream cs = new ANTLRInputStream(input);
       JavaLexer lexer = new JavaLexer(cs);
 
       Token token = lexer.nextToken();
       while (not(token, Keyword.KW_enhancement.getName())) {
         token = lexer.nextToken();
       }
-      while (not(token, src.getRelativeName())) {
+
+      while (not(token, baseFileName)) {
         token = lexer.nextToken();
       }
       while (not(token, ":")) {
@@ -240,7 +278,11 @@ public class EnhancementIndex implements IEnhancementIndex
     } catch (IOException e) {
       return IErrorType.NAME;
     } finally {
-//      System.out.println("  parseEnhancedTypeName " + src + " - " + (System.nanoTime() - t1)*1e-6);
+      if (input != null)
+        try {
+          input.close();
+        } catch (IOException e) {
+        }
     }
   }
 
@@ -285,9 +327,12 @@ public class EnhancementIndex implements IEnhancementIndex
   public List<IGosuEnhancementInternal> getEnhancementsForType( IType typeToEnhance ) {
     maybeLoadEnhancementIndex();
 
-    IType genericEnhancedType = TypeLord.getPureGenericType(typeToEnhance);
-    Set<String> possibleEnhancementNames = getPossibleEnhancementsForTypeFromIndex( genericEnhancedType );
     ArrayList<IGosuEnhancementInternal> enhancements = new ArrayList<IGosuEnhancementInternal>();
+    IType genericEnhancedType = TypeLord.getPureGenericType(typeToEnhance);
+    if (genericEnhancedType == null) {
+      return enhancements;
+    }
+    Set<String> possibleEnhancementNames = getPossibleEnhancementsForTypeFromIndex( genericEnhancedType );
     for( String possibleEnhancementTypeName : possibleEnhancementNames )
     {
       try
@@ -321,13 +366,19 @@ public class EnhancementIndex implements IEnhancementIndex
   @Override
   public void refreshedTypes(RefreshRequest request) {
     if (request.kind == RefreshKind.CREATION) {
-      indexEnhancements(request.types);
+      Set<String> enhancedTypes = indexEnhancements(request.types);
+      for (String enhancedType : enhancedTypes) {
+        IType type = TypeSystem.getByFullNameIfValid(enhancedType, _loader.getModule());
+        if (type != null) {
+          TypeSystem.refresh((ITypeRef)type);
+        }
+      }
     } else if (request.kind == RefreshKind.DELETION) {
       for (String enhancementName : request.types) {
         removeEnhancement(enhancementName);
       }
     } else if (request.kind == RefreshKind.MODIFICATION) {
-      indexEnhancements(request.types);
+      indexEnhancements(request);
     }
   }
 
@@ -686,7 +737,7 @@ public class EnhancementIndex implements IEnhancementIndex
   }
 
   private static CharSequence convertCharSequenceToCorrectSensitivity(CharSequence cs, boolean caseSensitive) {
-    return caseSensitive ? cs.toString() : CaseInsensitiveCharSequence.get(cs);
+    return caseSensitive ? cs.toString() : CICS.get( cs );
   }
 
   @Override

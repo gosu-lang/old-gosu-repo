@@ -8,7 +8,15 @@ import gw.lang.parser.statements.IHideFieldNoOpStatement;
 
 public class HideFieldNoOpStatement extends NoOpStatement implements IHideFieldNoOpStatement
 {
-  public HideFieldNoOpStatement()
+  private VarStatement _varStmt;
+
+  public HideFieldNoOpStatement( VarStatement varStmt )
   {
+    _varStmt = varStmt;
+  }
+
+  public VarStatement getVarStmt()
+  {
+    return _varStmt;
   }
 }

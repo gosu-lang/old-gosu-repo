@@ -20,6 +20,9 @@ import java.util.List;
 /**
  */
 public class GosuClassPathThing {
+
+  private static final String PROTOCOL_PACKAGE = "gw.internal.gosu.compiler.protocols";
+
   private static void addGosuClassProtocolToClasspath() {
     try {
       URLClassLoaderWrapper urlLoader = findUrlLoader();
@@ -33,7 +36,7 @@ public class GosuClassPathThing {
     }
   }
 
-  private static URL makeURL(URLClassLoaderWrapper urlLoader) throws NoSuchFieldException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException, MalformedURLException {
+  private static URL makeURL(URLClassLoaderWrapper urlLoader) throws MalformedURLException {
     String protocol =  isOSGi(urlLoader.getWrappedClassLoader()) ? "gosuclassosgi" : "gosuclass";
     URL url;
     try {
@@ -44,7 +47,7 @@ public class GosuClassPathThing {
       // classloader from the URL constructor (3 activation records deep), then our Handler class
       // is not loadable by the URL class, but the honey badget really doesn't give a shit; it gets
       // what it wants.
-      eatTheCobraUpInATree();
+      addOurProtocolHandler();
       url = new URL( null, protocol + "://honeybadger/" );
     }
     return url;
@@ -62,29 +65,55 @@ public class GosuClassPathThing {
     return false;
   }
 
-  private static void eatTheCobraUpInATree() throws NoSuchFieldException, NoSuchMethodException, ClassNotFoundException, IllegalAccessException, InvocationTargetException {
-    Field field = URL.class.getDeclaredField( "handlers" );
-    field.setAccessible( true );
-    Method put = Hashtable.class.getMethod( "put", Object.class, Object.class );
-    Field instanceField = Class.forName( "gw.internal.gosu.compiler.protocols.gosuclass.Handler" ).getField( "INSTANCE" );
-    Object handler = instanceField.get( null );
-    put.invoke( field.get( null ), "gosuclass", handler );
+  private static void addOurProtocolHandler() {
+    try {
+      Field field = URL.class.getDeclaredField( "handlers" );
+      field.setAccessible( true );
+      Method put = Hashtable.class.getMethod( "put", Object.class, Object.class );
+      Field instanceField = Class.forName( "gw.internal.gosu.compiler.protocols.gosuclass.Handler" ).getField( "INSTANCE" );
+      Object handler = instanceField.get( null );
+      put.invoke( field.get( null ), "gosuclass", handler );
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to configure gosu protocol handler", e);
+    }
+  }
+
+  private static void removeOurProtocolHandler() {
+    try {
+      Field field = URL.class.getDeclaredField( "handlers" );
+      field.setAccessible( true );
+      Method remove = Hashtable.class.getMethod( "remove", Object.class );
+      remove.invoke( field.get( null ), "gosuclass" );
+    } catch (Exception e) {
+      throw new IllegalStateException("Failed to cleanup gosu protocol handler", e);
+    }
   }
 
   private static boolean addOurProtocolPackage() {
     // XXX: Do not add protocol package since OSGi implementation of URLStreamFactory
     // first delegates to those and only then calls service from Service Registry
     String strProtocolProp = "java.protocol.handler.pkgs";
-    String ours = "gw.internal.gosu.compiler.protocols";
-    if( System.getProperty( strProtocolProp ) != null ) {
-      String oldProp = System.getProperty( strProtocolProp );
-      if( oldProp.contains( ours ) ) {
+    String protocols = PROTOCOL_PACKAGE;
+    String oldProp = System.getProperty( strProtocolProp );
+    if( oldProp != null ) {
+      if( oldProp.contains( PROTOCOL_PACKAGE ) ) {
         return false;
       }
-      ours += "|" + oldProp;
+      protocols += '|' + oldProp;
     }
-    System.setProperty( strProtocolProp, ours );
+    System.setProperty( strProtocolProp, protocols );
     return true;
+  }
+
+  private static void removeOurProtocolPackage() {
+    String strProtocolProp = "java.protocol.handler.pkgs";
+    String ours = "gw.internal.gosu.compiler.protocols";
+    String protocols = System.getProperty( strProtocolProp );
+    if( protocols != null ) {
+      // Remove our protocol from the list
+      protocols = protocols.replace( PROTOCOL_PACKAGE + '|' , "" );
+      System.setProperty( strProtocolProp, protocols );
+    }
   }
 
   private static URLClassLoaderWrapper findUrlLoader() {
@@ -122,6 +151,13 @@ public class GosuClassPathThing {
     }
     addGosuClassProtocolToClasspath();
     return true;
+  }
+
+  public synchronized static void cleanup() {
+    removeOurProtocolPackage();
+    // XXX: We can't remove URL from classloader easily.
+    //removeGosuClassProtocolToClasspath();
+    removeOurProtocolHandler();
   }
 
   private static abstract class URLClassLoaderWrapper {

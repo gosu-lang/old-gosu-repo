@@ -6,7 +6,6 @@ package gw.lang.reflect;
 
 import gw.lang.parser.IExpression;
 import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IScriptPartId;
 import gw.util.Pair;
 import gw.util.perf.objectsize.UnmodifiableSizeTwoSet;
@@ -23,7 +22,7 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
   transient private IType _retType;
   transient private Set<IType> _allTypesInHierarchy;
   transient private IType[] _paramTypes;
-  transient private CaseInsensitiveCharSequence _signature;
+  transient private String _signature;
 
 
   public ParameterizedFunctionType( FunctionType genericType, IType... typeParams )
@@ -66,7 +65,7 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
     return _genericFuncType.getMethodOrConstructorInfo();
   }
 
-  public CaseInsensitiveCharSequence getParamSignature()
+  public String getParamSignature()
   {
     if( _signature == null )
     {
@@ -77,14 +76,14 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
       }
       strParams += ")";
 
-      _signature = CaseInsensitiveCharSequence.get( strParams );
+      _signature = strParams;
     }
 
     return _signature;
   }
 
   @Override
-  public CaseInsensitiveCharSequence getParamSignatureForCurrentModule() {
+  public String getParamSignatureForCurrentModule() {
     if( _signature == null )
     {
       String strParams = _genericFuncType.getName() + "(";
@@ -94,7 +93,7 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
       }
       strParams += ")";
 
-      _signature = CaseInsensitiveCharSequence.get( strParams );
+      _signature = strParams;
     }
 
     return _signature;

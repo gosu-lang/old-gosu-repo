@@ -90,11 +90,6 @@ public class GosuFragmentTypeInfo implements IRelativeTypeInfo {
   }
 
   @Override
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return null;
-  }
-
-  @Override
   public MethodList getMethods() {
     return MethodList.EMPTY;
   }

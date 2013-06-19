@@ -5989,7 +5989,7 @@ public class GosuStringUtil
     } catch (NoSuchAlgorithmException e) {
       throw GosuExceptionUtil.forceThrow(e);
     }
-    byte[] bytes = md.digest(s.getBytes());
+    byte[] bytes = md.digest(StreamUtil.toBytes(s));
     StringBuilder result = new StringBuilder();
     Formatter fm = new Formatter(result);
     for (int i = 0; i < bytes.length; i++) {

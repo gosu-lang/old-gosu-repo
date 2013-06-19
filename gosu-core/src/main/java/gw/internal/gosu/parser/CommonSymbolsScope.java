@@ -4,19 +4,14 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.parser.GosuParserTypes;
-import gw.lang.reflect.FunctionType;
-import gw.lang.parser.CaseInsensitiveCharSequence;
-
-import gw.lang.reflect.IType;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.parser.ISymbolTable;
-import gw.lang.parser.ISymbol;
-import gw.lang.parser.IGosuParser;
-import gw.lang.parser.StandardSymbolTable;
-import gw.lang.parser.StandardScope;
 import gw.config.CommonServices;
+import gw.lang.parser.GosuParserTypes;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.StandardScope;
+import gw.lang.parser.StandardSymbolTable;
+import gw.lang.reflect.FunctionType;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.util.GosuExceptionUtil;
 
@@ -26,8 +21,8 @@ import java.util.Map;
  */
 public class CommonSymbolsScope<K extends CharSequence, V extends ISymbol> extends StandardScope<K, V>
 {
-  private static final CaseInsensitiveCharSequence NOW = CaseInsensitiveCharSequence.get( "now" );
-  private static final CaseInsensitiveCharSequence PRINT = CaseInsensitiveCharSequence.get( "print" );
+  private static final String NOW = "now" ;
+  private static final String PRINT = "print";
 
   public static CommonSymbolsScope make()
   {
@@ -74,7 +69,7 @@ public class CommonSymbolsScope<K extends CharSequence, V extends ISymbol> exten
   {
     public LockedDownSymbol( CharSequence strName, IType type, Object value )
     {
-      super( strName, type, value );
+      super( strName.toString(), type, value );
     }
 
     @Override

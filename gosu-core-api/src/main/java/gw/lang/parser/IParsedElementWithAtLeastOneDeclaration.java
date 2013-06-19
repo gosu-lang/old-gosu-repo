@@ -4,26 +4,20 @@
 
 package gw.lang.parser;
 
-import gw.lang.reflect.IFeatureInfo;
-
-
-import java.util.Stack;
-import java.util.List;
-
 public interface IParsedElementWithAtLeastOneDeclaration extends IParsedElement
 {
   /**
    * The offset of the token representing the name for the declaration
    * @param identifierName
    */
-  int getNameOffset( CaseInsensitiveCharSequence identifierName );
-  void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName );
+  int getNameOffset( String identifierName );
+  void setNameOffset( int iOffset, String identifierName );
 
   /**
    * @param identifierName
    * @return True if this statement declares the given identifier; false otherwise
    */
-  boolean declares(CaseInsensitiveCharSequence identifierName);
+  boolean declares( String identifierName);
   
   /**
    * @return all names declared by this element

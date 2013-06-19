@@ -92,9 +92,10 @@ public final class UsingStatement extends Statement implements IUsingStatement
     throw new IllegalStateException( "Can't execute this parsed element directly" );
   }
 
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    return getStatement() == null ? null : getStatement().getLeastSignificantTerminalStatement();
+    bAbsolute[0] = false;
+    return getStatement() == null ? null : getStatement().getLeastSignificantTerminalStatement( bAbsolute );
   }
 
   public String toString()

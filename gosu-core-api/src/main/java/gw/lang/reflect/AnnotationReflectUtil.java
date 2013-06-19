@@ -9,10 +9,6 @@ import gw.lang.reflect.gs.IGosuPropertyInfo;
 import gw.lang.reflect.gs.IGosuConstructorInfo;
 import gw.lang.reflect.gs.IGosuClassTypeInfo;
 import gw.lang.reflect.gs.IGosuMethodParamInfo;
-import gw.lang.Throws;
-import gw.lang.Scriptable;
-import gw.lang.parser.ScriptabilityModifiers;
-import gw.lang.annotation.ScriptabilityModifier;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.util.List;
@@ -97,48 +93,13 @@ public class AnnotationReflectUtil
   public static boolean evalVisibleForWebservice( IMethodInfo method )
   {
     // equivelent to method.isVisible( ScriptabilityModifiers.SCRIPTABLE_WEBSERVICE)
-    List<IAnnotationInfo> annotation = method.getAnnotationsOfType( JavaTypes.SCRIPTABLE() );
-    if( annotation == null || annotation.size() == 0 )
-    {
-      return !evalIsHidden( method.getOwnersType().getTypeInfo() );
-    }
-    for( IAnnotationInfo o : annotation )
-    {
-      for( Object scriptabilityModifier : getScriptableValues(o) )
-      {
-        if( scriptabilityModifier.toString().equalsIgnoreCase( ScriptabilityModifier.WEBSERVICE.getName() ) ||
-            scriptabilityModifier.toString().equalsIgnoreCase( ScriptabilityModifier.ALL.getName() ) )
-        {
-          return true;
-        }
-      }
-    }
-    return false;
+    return !evalIsHidden(method);
   }
 
   public static boolean evalIsHidden( IAnnotatedFeatureInfo featureInfo )
   {
     // equivelent to method.isVisible( ScriptabilityModifiers.SCRIPTABLE_WEBSERVICE)
-    for( IAnnotationInfo annotationInfo : featureInfo.getAnnotationsOfType( JavaTypes.SCRIPTABLE() ) )
-    {
-      for( Object scriptabilityModifier : getScriptableValues(annotationInfo))
-      {
-        if( scriptabilityModifier.toString().equalsIgnoreCase( ScriptabilityModifier.HIDDEN.getName() ) )
-        {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  private static Object[] getScriptableValues(IAnnotationInfo annotationInfo) {
-    Object value = annotationInfo.getFieldValue("value");
-    if (value.getClass().isArray()) {
-      return (Object[]) value;
-    } else {
-      return new Object[] {value};
-    }
+    return !featureInfo.getAnnotationsOfType( JavaTypes.INTERNAL_API() ).isEmpty();
   }
 
   public static String evalParameterDecription( IParameterInfo parameterData )

@@ -41,10 +41,6 @@ public abstract class FeatureManagerTypeInfoBase<T extends CharSequence> extends
     return getProperty( null, propName );
   }
 
-  public final CharSequence getRealPropertyName(CharSequence propName) {
-    return FIND.findCorrectString( propName, _fm.getPropertyNames( Accessibility.PRIVATE ) );
-  }
-
   public final IPropertyInfo getProperty( IType whosAskin, CharSequence propName )
   {
     return _fm.getProperty( getAccessibilityForType( whosAskin ), propName );

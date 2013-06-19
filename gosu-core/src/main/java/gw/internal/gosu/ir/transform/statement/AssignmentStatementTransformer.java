@@ -114,7 +114,7 @@ public class AssignmentStatementTransformer extends AbstractStatementTransformer
     IRExpression root;
     if ( irProperty.isStatic() ) {
       root = null;
-    } else if ( isMemberOnEnclosingType( dps ) ) {
+    } else if ( isMemberOnEnclosingType( dps ) != null ) {
       root = pushOuter( dps.getGosuClass() );
     } else {
       root = pushThis();

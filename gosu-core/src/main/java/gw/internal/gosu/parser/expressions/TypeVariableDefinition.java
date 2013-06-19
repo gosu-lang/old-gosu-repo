@@ -7,16 +7,11 @@ package gw.internal.gosu.parser.expressions;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.GenericTypeVariable;
 import gw.internal.gosu.parser.TypeVariableType;
-import gw.internal.gosu.parser.statements.ClassStatement;
-import gw.internal.gosu.parser.statements.FunctionStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
-import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.parser.IParsedElement;
 import gw.lang.parser.expressions.ITypeVariableDefinition;
 import gw.lang.parser.expressions.ITypeVariableDefinitionExpression;
-import gw.lang.reflect.IFeatureInfo;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.gs.IGenericTypeVariable;
+import gw.lang.reflect.java.JavaTypes;
 
 import java.util.List;
 
@@ -150,47 +145,27 @@ public class TypeVariableDefinition extends Expression implements ITypeVariableD
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return getLocation().getOffset();
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     throw new UnsupportedOperationException();
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
-    return getType().getName().equalsIgnoreCase( identifierName.toString() );
+    return getType().getName().equals( identifierName );
   }
 
   public String[] getDeclarations() {
     return new String[] {getType().getName()};
   }
 
-  private IFeatureInfo findOwningFeatureInfoOfDeclaredSymbols(CaseInsensitiveCharSequence identifierName)
-  {
-    IParsedElement parent = getParent();
-    if( parent instanceof FunctionStatement )
-    {
-      return ((FunctionStatement)parent).getDynamicFunctionSymbol().getMethodOrConstructorInfo();
-    }
-    else if( parent instanceof ClassStatement )
-    {
-      return ((ClassStatement)parent).getGosuClass().getTypeInfo();
-    }
-    else
-    {
-      return null;
-    }
-  }
-
   @Override
   public ITypeVariableDefinition clone() {
-    if (_typeVarDef == null) {
-      System.out.println("here");
-    }
     return new TypeVariableDefinition(_typeVarDef.clone(), ((TypeVariableType) _type).isFunctionStatement());
   }
 

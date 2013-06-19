@@ -8,7 +8,6 @@ import gw.config.CommonServices;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.internal.gosu.ir.transform.expression.EvalExpressionTransformer;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.expressions.IQueryExpression;
@@ -169,20 +168,20 @@ public class QueryExpression extends Expression implements IQueryExpression
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     return _iNameOffset;
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _iNameOffset = iOffset;
   }
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
-    return identifierName.toString().equalsIgnoreCase( getIdentifier() ) ||
-           identifierName.toString().equals( getInExpression().getRootName() );
+    return identifierName.equals( getIdentifier() ) ||
+           identifierName.equals( getInExpression().getRootName() );
   }
 
   public String[] getDeclarations() {

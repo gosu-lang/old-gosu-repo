@@ -61,32 +61,56 @@ enhancement CoreMapEnhancement<K, V> : java.util.Map<K, V>
 
   /**
    * Removes all entries whose keys do not satisfy the keyFilter expression
-   * and returns this map
+   * Return true if this map changed as a result of the call
    */
-  function filterKeys( keyFilter(k : K):boolean ) : Map<K, V> {
+  function retainWhereKeys( keyFilter(k : K) : boolean ) : boolean {
+    var modified = false
     var iterator = this.entrySet().iterator()
     while( iterator.hasNext() ) {
       var entry = iterator.next()
       if(not keyFilter( entry.Key ) ) {
         iterator.remove()
+        modified = true
       }
     }
-    return this
+    return modified
   }
 
   /**
-   * Removes all entries whose values do not satisfy the keyFilter expression
-   * and returns this map
+   * Removes all entries whose values do not satisfy the valueFilter expression
+   * Return true if this map changed as a result of the call
    */
-  function filterValues( valueFilter(v : V):boolean ) : Map<K, V>{
+  function retainWhereValues( valueFilter(v : V) : boolean ) : boolean {
+    var modified = false
     var iterator = this.entrySet().iterator()
     while( iterator.hasNext() ) {
       var entry = iterator.next()
       if(not valueFilter( entry.Value ) ) {
         iterator.remove()
+        modified = true
       }
     }
-    return this
+    return modified
+  }
+
+  /**
+   * Removes all entries whose keys do not satisfy the keyFilter expression
+   * and returns the new resulting map
+   */
+  function filterByKeys( keyFilter(k : K):boolean ) : Map<K, V> {
+    var returnMap = new HashMap<K, V>()
+    eachKeyAndValue( \ k, v ->{ if( keyFilter( k ) ) { returnMap[k] = v } } )
+    return returnMap
+  }
+
+  /**
+   * Removes all entries whose values do not satisfy the valueFilter expression
+   * and returns the new resulting map
+   */
+  function filterByValues( valueFilter(v : V):boolean ) : Map<K, V> {
+    var returnMap = new HashMap<K, V>()
+    eachKeyAndValue( \ k, v ->{ if( valueFilter( v ) ) { returnMap[k] = v } } )
+    return returnMap
   }
 
   /**

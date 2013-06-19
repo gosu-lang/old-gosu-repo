@@ -18,4 +18,6 @@ public interface ITypeRef extends IType
   boolean isReloadable();
 
   boolean isTypeRefreshedOutsideOfLock(IType type);
+
+  ITypeLoader getTypeLoaderDirectly();
 }

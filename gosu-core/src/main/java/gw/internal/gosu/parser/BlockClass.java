@@ -13,7 +13,6 @@ import gw.internal.gosu.parser.statements.ReturnStatement;
 import gw.lang.reflect.java.JavaTypes;
 import gw.internal.gosu.parser.statements.VarStatement;
 import gw.lang.function.IBlock;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IParsedElement;
@@ -56,7 +55,7 @@ public class BlockClass extends SyntheticClass implements IBlockClassInternal
   }
 
   @Override
-  public Map<CaseInsensitiveCharSequence, ICapturedSymbol> getCapturedSymbols()
+  public Map<String, ICapturedSymbol> getCapturedSymbols()
   {
     return getParseInfo().getBlock().getCapturedSymbols();
   }
@@ -122,17 +121,12 @@ public class BlockClass extends SyntheticClass implements IBlockClassInternal
   private void implementToString()
   {
     Identifier thisId = new Identifier();
-    thisId.setSymbol( new Symbol( Keyword.KW_this, this, null ), new StandardSymbolTable() );
+    thisId.setSymbol( new Symbol( Keyword.KW_this.getName(), this, null ), new StandardSymbolTable() );
     thisId.setType( this );
 
-    BeanMethodCallExpression getParsedElementCall = new BeanMethodCallExpression();
-    getParsedElementCall.setMethodDescriptor( JavaTypes.IBLOCK().getTypeInfo().getMethod( "getParsedElement" ) );
-    getParsedElementCall.setRootExpression( thisId );
-    getParsedElementCall.setType( JavaTypes.IBLOCK_EXPRESSION() );
-
     BeanMethodCallExpression toStrCall = new BeanMethodCallExpression();
-    toStrCall.setMethodDescriptor( JavaTypes.OBJECT().getTypeInfo().getMethod( "toString" ) );
-    toStrCall.setRootExpression( getParsedElementCall );
+    toStrCall.setMethodDescriptor( JavaTypes.IBLOCK().getTypeInfo().getMethod( "toString" ) );
+    toStrCall.setRootExpression( thisId );
     toStrCall.setType( JavaTypes.STRING() );
 
     ReturnStatement returnStmt = new ReturnStatement();

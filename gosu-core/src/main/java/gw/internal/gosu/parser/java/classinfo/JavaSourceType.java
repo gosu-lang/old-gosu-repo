@@ -881,6 +881,13 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
         return type = importedType;
       }
 
+      // type variable
+      for (IJavaClassTypeVariable typeParameter : getTypeParameters()) {
+        if (relativeName.equals(typeParameter.getName())) {
+          return type = typeParameter;
+        }
+      }
+
       // Enclosing Class
       IJavaClassInfo enclosingClass = getEnclosingClass();
       if (enclosingClass != null) {
@@ -888,6 +895,12 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
         if (outerClsCtx != null) {
           return type = outerClsCtx;
         }
+      }
+
+      // Class in Same Package
+      IJavaClassType neighborClass = resolveClassInSamePackage(relativeName);
+      if (neighborClass != null) {
+        return type = neighborClass;
       }
 
       // Super Ancestry
@@ -908,19 +921,6 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
           if (innerClassCtx != null) {
             return type = innerClassCtx;
           }
-        }
-      }
-
-      // Class in Same Package
-      IJavaClassType neighborClass = resolveClassInSamePackage(relativeName);
-      if (neighborClass != null) {
-        return type = neighborClass;
-      }
-
-      // type variable
-      for (IJavaClassTypeVariable typeParameter : getTypeParameters()) {
-        if (relativeName.equals(typeParameter.getName())) {
-          return type = typeParameter;
         }
       }
 

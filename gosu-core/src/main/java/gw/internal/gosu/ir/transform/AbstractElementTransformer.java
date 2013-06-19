@@ -72,9 +72,9 @@ import gw.lang.ir.statement.IRAssignmentStatement;
 import gw.lang.ir.statement.IRFieldSetStatement;
 import gw.lang.ir.statement.IRIfStatement;
 import gw.lang.ir.statement.IRMethodCallStatement;
+import gw.lang.ir.statement.IRNewStatement;
 import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRThrowStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IAttributeSource;
 import gw.lang.parser.IBlockClass;
@@ -413,7 +413,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       boxedArgs.add( boxValue( arg.getType(), arg ) );
     }
     argExprs.add( root == null ? pushNull() : root );
-    argExprs.add( buildInitializedArray( IRTypeConstants.OBJECT, boxedArgs ) );
+    argExprs.add( buildInitializedArray(IRTypeConstants.OBJECT(), boxedArgs ) );
 
     IRExpression invokeCall = buildMethodCall( GosuRuntimeMethods.class, "invokeMethod", Object.class, new Class[]{Class.class, String.class, Class[].class, Object.class, Object[].class},
                                                null, argExprs );
@@ -529,7 +529,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       //## todo: this won't work, IExpression is not a constant type
       args.add( pushArrayOfDefValueExpr( blockType.getDefaultValueExpressions() ) );
       return buildNewExpression( getDescriptor( BlockType.class ),
-                                 Arrays.asList( IRTypeConstants.ITYPE, getDescriptor( IType[].class ), getDescriptor( String[].class ), getDescriptor( IExpression[].class ) ),
+                                 Arrays.asList(IRTypeConstants.ITYPE(), getDescriptor( IType[].class ), getDescriptor( String[].class ), getDescriptor( IExpression[].class ) ),
                                  args );
     }
     else if( type instanceof FunctionLiteralType )
@@ -555,7 +555,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       args.add( pushType( funcType.getReturnType() ) );
       args.add( pushArrayOfTypes( funcType.getParameterTypes() ) );
       return buildNewExpression( getDescriptor( FunctionType.class ),
-                                 Arrays.asList( IRTypeConstants.STRING, IRTypeConstants.ITYPE, getDescriptor( IType[].class ) ),
+                                 Arrays.asList(IRTypeConstants.STRING(), IRTypeConstants.ITYPE(), getDescriptor( IType[].class ) ),
                                  args );
     }
     else if( type instanceof CompoundType )
@@ -649,7 +649,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     for (IType type : types) {
       values.add( pushType( type ) );
     }
-    return buildInitializedArray( IRTypeConstants.ITYPE, values );
+    return buildInitializedArray(IRTypeConstants.ITYPE(), values );
   }
 
   public static boolean requiresImplicitEnhancementArg( ReducedDynamicFunctionSymbol dfs )
@@ -688,16 +688,6 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
 
   private IModule getModule(IType type) {
     return TypeSystem.getGlobalModule();
-//    ICompilableTypeInternal gosuClass = _cc.getGosuClass();
-//    if( gosuClass instanceof IGosuClassInternal && ((IGosuClassInternal)gosuClass).isCompiledToUberModule() ) {
-//      return TypeSystem.getGlobalModule();
-//    }
-//
-//    while (type != null && type.getTypeLoader() == null) {
-//      type = type.getEnclosingType();
-//    }
-//    IModule mod = type != null ? type.getTypeLoader().getModule() : null;
-//    return mod == null ? TypeSystem.getCurrentModule() : mod;
   }
 
   public IType getConcreteType( IType type )
@@ -1491,31 +1481,40 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
 
   // The symbol is considered to be on an enclosing type if the symbol is defined on a class that encloses this
   // class OR is defined on a supertype or interface of an enclosing class
-  protected boolean isMemberOnEnclosingType( IReducedSymbol symbol )
+  protected ICompilableTypeInternal isMemberOnEnclosingType(IReducedSymbol symbol)
   {
-    if (!_cc().isNonStaticInnerClass()) {
-      return false;
+    if( !_cc().isNonStaticInnerClass() )
+    {
+      return null;
     }
 
     // If the symbol is on this class, or any ancestors, it's not enclosed
     //noinspection SuspiciousMethodCalls
     IType symbolClass = maybeUnwrapProxy( symbol.getGosuClass() );
-    if (getGosuClass().getAllTypesInHierarchy().contains( symbolClass )) {
-      return false;
+    if( getGosuClass().getAllTypesInHierarchy().contains( symbolClass ) )
+    {
+      return null;
     }
 
     ICompilableTypeInternal enclosingClass = _cc().getEnclosingType();
+
+    if( !(TypeLord.getOuterMostEnclosingClass( _cc().getEnclosingType() ) instanceof IGosuEnhancement) &&
+        symbolClass instanceof IGosuEnhancement )
+    {
+      symbolClass = ((IGosuEnhancement)symbolClass).getEnhancedType();
+    }
+
     while( enclosingClass != null )
     {
       //noinspection SuspiciousMethodCalls
       if( enclosingClass.getAllTypesInHierarchy().contains( symbolClass ) )
       {
-        return true;
+        return enclosingClass;
       }
       enclosingClass = enclosingClass.getEnclosingType();
     }
 
-    return false;
+    return null;
   }
 
   // The symbol is considered to be on an enclosing type if the symbol is defined on a class that encloses this
@@ -1922,7 +1921,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       } else {
         // If it needs to be initialized, we trap the creation in a temp variable, then assign to it,
         // then load it and cast it at the end
-        IRSymbol temp = _cc().makeAndIndexTempSymbol( IRTypeConstants.OBJECT );
+        IRSymbol temp = _cc().makeAndIndexTempSymbol(IRTypeConstants.OBJECT());
         List<IRElement> statements = new ArrayList<IRElement>();
         statements.add( buildAssignment( temp, arrayCreation ) );
 
@@ -1965,7 +1964,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       for (int i = 1; i < sizeExpressions.size(); i++) {
         sizes.add( ExpressionTransformer.compile( sizeExpressions.get(i), _cc() ) );
       }
-      IRExpression sizeArrays = buildInitializedArray(IRTypeConstants.pINT, sizes);
+      IRExpression sizeArrays = buildInitializedArray(IRTypeConstants.pINT(), sizes);
       IRExpression initCall = callStaticMethod( getClass(), "initMultiArray", new Class[]{IType.class, Object.class, int.class, int[].class},
               exprList( pushType( atomicType ),
                         arrayCreation,
@@ -2095,7 +2094,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     {
       if( gv.getName().equals( type.getName() ) )
       {
-        return getInstanceField( getGosuClass(), strTypeVarField, IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(), pushThis() );
+        return getInstanceField( getGosuClass(), strTypeVarField, IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(), pushThis() );
       }
     }
 
@@ -2122,7 +2121,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
       {
         if( gv.getName().equals( type.getName() ) )
         {
-          return getInstanceField( gsClass, strTypeVarField, IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(), pushOuter( gsClass ) );
+          return getInstanceField( gsClass, strTypeVarField, IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(), pushOuter( gsClass ) );
         }
       }
 
@@ -2158,7 +2157,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
         {
           if( gv.getName().equals( type.getName() ) )
           {
-            return getInstanceField( gsClass, strTypeVarField, IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(), pushThisOrOuter( gsClass ) );
+            return getInstanceField( gsClass, strTypeVarField, IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(), pushThisOrOuter( gsClass ) );
           }
         }
       }
@@ -2237,7 +2236,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     //
     if( type instanceof IGosuClassInternal && type.isValid() ) //&& ((IGosuClassInternal)type).isAnonymous() )
     {
-      Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
+      Map<String, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
       if( capturedSymbols != null )
       {
         for( ICapturedSymbol sym : capturedSymbols.values() )
@@ -2259,7 +2258,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     {
       for( int i = 0; i < iTypeParams; i++ )
       {
-        params.add( IRTypeConstants.ITYPE);
+        params.add(IRTypeConstants.ITYPE());
       }
     }
 
@@ -2267,8 +2266,8 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     // Enums have name and ordinal arguments implicitly added to their constructors
     //
     if (type.isEnum()) {
-      params.add( IRTypeConstants.STRING);
-      params.add( IRTypeConstants.pINT);
+      params.add(IRTypeConstants.STRING());
+      params.add(IRTypeConstants.pINT());
     }
 
     //
@@ -2351,7 +2350,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
             else
             {
               args.add( getInstanceField( gsClass, TYPE_PARAM_PREFIX + genTypeVars.get( i ).getName(),
-                      IRTypeConstants.ITYPE, AccessibilityUtil.forTypeParameter(),
+                      IRTypeConstants.ITYPE(), AccessibilityUtil.forTypeParameter(),
                       pushThisOrOuter( gsClass ) ) );
             }
             iCount++;
@@ -2410,7 +2409,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
   {
     if( type instanceof IGosuClassInternal && type.isValid() ) //&& ((IGosuClassInternal)type).isAnonymous() )
     {
-      Map<CaseInsensitiveCharSequence, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
+      Map<String, ICapturedSymbol> capturedSymbols = ((IGosuClassInternal)type).getCapturedSymbols();
       if( capturedSymbols != null )
       {
         for( ICapturedSymbol sym : capturedSymbols.values() )
@@ -2438,7 +2437,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     ICompilableTypeInternal enclosingType = gsClass.getEnclosingType();
     if( enclosingType.isAnonymous() )
     {
-      return enclosingType.getCapturedSymbols().containsKey( sym.getCaseInsensitiveName() );
+      return enclosingType.getCapturedSymbols().containsKey( sym.getName() );
     }
     return false;
   }
@@ -2458,7 +2457,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
         values.add( arg );
       }
     }
-    return buildInitializedArray( IRTypeConstants.OBJECT, values);
+    return buildInitializedArray(IRTypeConstants.OBJECT(), values);
   }
 
   protected IRExpression getScopedSymbolValue( IReducedSymbol symbol )
@@ -2804,6 +2803,10 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     return new IRMethodCallStatement( methodCall );
   }
 
+  protected IRNewStatement buildNewExpression( IRNewExpression newExpression ) {
+    return new IRNewStatement( newExpression );
+  }
+
   protected IRStatement buildReturn() {
     return new IRReturnStatement();
   }
@@ -2821,7 +2824,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
   }
 
   protected IRExpression buildTernary( IRExpression test, IRExpression trueValue, IRExpression falseValue, IRType resultType ) {
-    return new IRTernaryExpression( IRArgConverter.castOrConvertIfNecessary( IRTypeConstants.pBOOLEAN, test ), trueValue, falseValue, resultType );
+    return new IRTernaryExpression( IRArgConverter.castOrConvertIfNecessary(IRTypeConstants.pBOOLEAN(), test ), trueValue, falseValue, resultType );
   }
 
   protected IRExpression buildAddition( IRExpression lhs, IRExpression rhs) {

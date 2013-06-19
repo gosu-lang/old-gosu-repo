@@ -9,6 +9,7 @@ import gw.internal.gosu.parser.TypeLord;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ICoercer;
 import gw.lang.parser.Keyword;
+import gw.lang.parser.coercers.MetaTypeToClassCoercer;
 import gw.lang.parser.expressions.ITypeAsExpression;
 import gw.lang.reflect.IType;
 import gw.config.CommonServices;
@@ -57,7 +58,11 @@ public class TypeAsExpression extends Expression implements ITypeAsExpression
 
   public boolean isCompileTimeConstant()
   {
-    return getLHS().isCompileTimeConstant();
+    // Coercions tend not to be compile-time constants, only support them on primitive types, which involve only casting not object construction
+    return (_coercer == null || getLHS() != null &&
+                                ((getLHS().getType().isPrimitive() && getType().isPrimitive()) ||
+                                 _coercer instanceof MetaTypeToClassCoercer)) &&
+           getLHS().isCompileTimeConstant();
   }
 
   /**

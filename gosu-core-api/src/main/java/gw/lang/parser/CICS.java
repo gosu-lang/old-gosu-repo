@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.lang.parser;
@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class CaseInsensitiveCharSequence implements CharSequence, Serializable
+public class CICS implements CharSequence, Serializable
 {
-  private static final Map<CharSequence, WeakReference<CaseInsensitiveCharSequence>> CASE_SENSITIVE_CACHE =
-          new ConcurrentHashMap<CharSequence, WeakReference<CaseInsensitiveCharSequence>>(997);
+  private static final Map<CharSequence, WeakReference<CICS>> CASE_SENSITIVE_CACHE =
+          new ConcurrentHashMap<CharSequence, WeakReference<CICS>>(997);
 
   private static final ReentrantLock LOCK = new ReentrantLock();
 
@@ -24,16 +24,11 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
   int _hashCode;
   int _uniqueCode;
 
-  public static CaseInsensitiveCharSequence get( CharSequence rawCharSequence )
+  public static CICS get( CharSequence rawCharSequence )
   {
-    if( rawCharSequence instanceof CaseInsensitiveCharSequence )
+    if( rawCharSequence instanceof CICS )
     {
-      return (CaseInsensitiveCharSequence)rawCharSequence;
-    }
-
-    if( rawCharSequence instanceof Keyword )
-    {
-      return ((Keyword)rawCharSequence).getCICS();
+      return (CICS)rawCharSequence;
     }
 
     if( rawCharSequence == null )
@@ -41,8 +36,8 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
       return null;
     }
 
-    WeakReference<CaseInsensitiveCharSequence> cicsRef = CASE_SENSITIVE_CACHE.get(rawCharSequence);
-    CaseInsensitiveCharSequence cics = cicsRef == null ? null : cicsRef.get();
+    WeakReference<CICS> cicsRef = CASE_SENSITIVE_CACHE.get(rawCharSequence);
+    CICS cics = cicsRef == null ? null : cicsRef.get();
     if (cics == null)
     {
       LOCK.lock();
@@ -51,10 +46,8 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
         cicsRef = CASE_SENSITIVE_CACHE.get(rawCharSequence);
         cics = cicsRef == null ? null : cicsRef.get();
         if (cics == null) {
-          cics = ILanguageLevel.Util.STANDARD_GOSU()
-                 ? new NotCaseInsensitiveCharSequence(rawCharSequence)
-                 : new CaseInsensitiveCharSequence(rawCharSequence);
-          cicsRef = new WeakReference<CaseInsensitiveCharSequence>(cics);
+          cics = new CICS(rawCharSequence);
+          cicsRef = new WeakReference<CICS>(cics);
           CASE_SENSITIVE_CACHE.put(rawCharSequence, cicsRef);
         }
       }
@@ -70,9 +63,9 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
     LOCK.lock();
     try
     {
-      for( Iterator<Map.Entry<CharSequence, WeakReference<CaseInsensitiveCharSequence>>> it = CASE_SENSITIVE_CACHE.entrySet().iterator(); it.hasNext(); )
+      for( Iterator<Map.Entry<CharSequence, WeakReference<CICS>>> it = CASE_SENSITIVE_CACHE.entrySet().iterator(); it.hasNext(); )
       {
-        Map.Entry<CharSequence, WeakReference<CaseInsensitiveCharSequence>> charSequenceWeakReferenceEntry = it.next();
+        Map.Entry<CharSequence, WeakReference<CICS>> charSequenceWeakReferenceEntry = it.next();
         if( charSequenceWeakReferenceEntry.getValue().get() == null )
         {
           it.remove();
@@ -87,7 +80,7 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
 
   /**
    */
-  CaseInsensitiveCharSequence( CharSequence rawCharSequence )
+  CICS( CharSequence rawCharSequence )
   {
     _string = rawCharSequence.toString();
     _hashCode = getLowerCaseHashCode( rawCharSequence );
@@ -134,12 +127,12 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
       return true;
     }
 
-    if( !(o instanceof CaseInsensitiveCharSequence) )
+    if( !(o instanceof CICS) )
     {
       return false;
     }
 
-    CaseInsensitiveCharSequence cics = (CaseInsensitiveCharSequence)o;
+    CICS cics = (CICS)o;
     if( _uniqueCode == cics._uniqueCode )
     {
       return true;
@@ -156,17 +149,10 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
   public static int getLowerCaseHashCode( CharSequence charSeq )
   {
     int iHashCode = 0;
-    if( ILanguageLevel.Util.STANDARD_GOSU() )
+    int iLength = charSeq.length();
+    for( int i = 0; i < iLength; i++ )
     {
-      iHashCode = charSeq.toString().hashCode();
-    }
-    else
-    {
-      int iLength = charSeq.length();
-      for( int i = 0; i < iLength; i++ )
-      {
-        iHashCode = 31 * iHashCode + Character.toLowerCase( charSeq.charAt( i ) );
-      }
+      iHashCode = 31 * iHashCode + Character.toLowerCase( charSeq.charAt( i ) );
     }
     return iHashCode;
   }
@@ -178,18 +164,11 @@ public class CaseInsensitiveCharSequence implements CharSequence, Serializable
 
   public static boolean equalsIgnoreCase( CharSequence cs1, CharSequence cs2 )
   {
-    if( ILanguageLevel.Util.STANDARD_GOSU() )
+    if( cs1.equals( cs2 ) )
     {
-      return cs1.equals( cs2 ) || cs1.toString().equals( cs2.toString() );
+      return true;
     }
-    else
-    {
-      if( cs1.equals( cs2 ) )
-      {
-        return true;
-      }
-      return cs1.toString().equalsIgnoreCase( cs2.toString() );
-    }
+    return cs1.toString().equalsIgnoreCase( cs2.toString() );
   }
 
   private Object readResolve()

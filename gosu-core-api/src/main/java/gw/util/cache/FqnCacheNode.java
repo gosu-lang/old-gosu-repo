@@ -50,9 +50,15 @@ public class FqnCacheNode<K> {
   }
 
   public final void delete() {
-    parent.children.remove(this.name);
-    if (parent.children.isEmpty()) {
-      parent.children = null;
+    parent.deleteChild(this);
+  }
+
+  private void deleteChild(FqnCacheNode<K> child) {
+    if (children != null) {
+      children.remove(child.name);
+      if (children.isEmpty()) {
+        children = null;
+      }
     }
   }
 

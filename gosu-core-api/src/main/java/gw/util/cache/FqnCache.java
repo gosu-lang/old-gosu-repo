@@ -4,6 +4,8 @@
 
 package gw.util.cache;
 
+import gw.internal.gosu.parser.StringCache;
+import gw.util.DynamicArray;
 import gw.util.Predicate;
 
 import java.util.ArrayList;
@@ -115,57 +117,52 @@ public class FqnCache<T> implements IFqnCache<T> {
   }
 
   private static String[] split( String fqn ) {
-    final int len = fqn.length();
-    final List<String> segments = new ArrayList<String>(10);
-
-    int genericBeginIndex = -1;
-    int genericEndIndex = -1;
-    int genericBalance = 0;
-
-    int arrayCount = 0;
-
-    int beginIndex = 0;
-    for (int i = 0; i < len; ++i) {
-      final char ch = fqn.charAt(i);
-      switch (ch) {
-        case '.':
-          if (genericBeginIndex == -1) {
-            segments.add(fqn.substring(beginIndex, i));
-            beginIndex = i + 1;
+    String theRest = fqn;
+    DynamicArray<String> parts = new DynamicArray<String>();
+    while( theRest != null ) {
+      int iParam = theRest.indexOf( '<' );
+      int iDot = theRest.indexOf( '.' );
+      int iArray = theRest.indexOf( '[' );
+      String part;
+      if( iParam == 0 ) {
+        if( iArray > 0 ) {
+          part = theRest.substring( 0, iArray );
+          theRest = iArray < theRest.length() ? theRest.substring( iArray ) : null;
+        }
+        else {
+          if( theRest.charAt( theRest.length()-1 ) != '>' ) {
+            throw new RuntimeException( "\"" + theRest + "\" does not end with '>'" );
           }
-          break;
-        case '<':
-          if (genericBalance == 0) {
-            genericBeginIndex = i;
-          }
-          genericBalance++;
-          break;
-        case '>':
-          if (genericBalance == 1) {
-            genericEndIndex = i;
-          }
-          genericBalance--;
-          break;
-        case '[':
-          if (genericEndIndex > 0) {
-            arrayCount++;
-          }
-          break;
+          part = theRest;
+          theRest = null;
+        }
       }
+      else if( iArray == 0 ) {
+        part = theRest.substring( 0, 2 );
+        theRest = part.length() == theRest.length() ? null : theRest.substring( 2 );
+      }
+      else if( iParam > 0 ) {
+        if( iDot > 0 && iDot < iParam ) {
+          part = theRest.substring( 0, iDot );
+          theRest = iDot + 1 < theRest.length() ? theRest.substring( iDot + 1 ) : null;
+        }
+        else {
+          part = theRest.substring( 0, iParam );
+          theRest = iParam < theRest.length() ? theRest.substring( iParam ) : null;
+        }
+      }
+      else if( iDot > 0 ) {
+        part = theRest.substring( 0, iDot );
+        theRest = iDot + 1 < theRest.length() ? theRest.substring( iDot + 1 ) : null;
+      }
+      else {
+        part = theRest;
+        theRest = null;
+      }
+      parts.add( StringCache.get( part ) );
     }
 
-    if (genericBeginIndex > 0) {
-      segments.add(fqn.substring(beginIndex, genericBeginIndex));
-      segments.add(fqn.substring(genericBeginIndex, genericEndIndex + 1));
-    } else {
-      segments.add(fqn.substring(beginIndex, len - 2 * arrayCount));
-    }
-
-    for (int i = 0; i < arrayCount; ++i) {
-      segments.add("[]");
-    }
-
-    return segments.toArray( new String[segments.size()] );
+    return parts.toArray(new String[parts.size()]);
   }
 
   public static String[] getParts(String fqn) {

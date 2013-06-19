@@ -6,10 +6,10 @@ package gw.internal.gosu.parser.expressions;
 
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.GosuClassCompilingStack;
+import gw.internal.gosu.parser.GosuParser;
+import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.MetaType;
 import gw.internal.gosu.parser.TypeLord;
-
-
 import gw.lang.parser.exceptions.ParseWarningForDeprecatedMember;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.reflect.IType;
@@ -27,7 +27,6 @@ public class TypeLiteral extends Literal implements ITypeLiteralExpression
   private static final ThreadLocal<Boolean> _isComputingIsDeprecated  = new ThreadLocal<Boolean>();
   private Expression _packageExpr;
   private boolean _ignoreTypeDeprecation;
-  private int[] _relativeTypeLocation;
 
   public TypeLiteral( IType type, boolean ignoreTypeDeprecation )
   {
@@ -75,28 +74,43 @@ public class TypeLiteral extends Literal implements ITypeLiteralExpression
     
     IType gosuClass = GosuClassCompilingStack.getCurrentCompilingType();
 
-    if (!_ignoreTypeDeprecation &&
-            (gosuClass == null || !(gosuClass instanceof IGosuClass) || ((IGosuClass) gosuClass).isCompilingDefinitions())) {
+    if( !_ignoreTypeDeprecation && (!(gosuClass instanceof IGosuClass) || ((IGosuClass)gosuClass).isCompilingDefinitions()) )
+    {
       Boolean isComputing = _isComputingIsDeprecated.get();
-      if ((isComputing != Boolean.TRUE) &&
-          (getType() != null)) {
-        IType intrinsicType = getType().getType();
-        if (intrinsicType != null) {
-          try {
-            _isComputingIsDeprecated.set(Boolean.TRUE);
-            ITypeInfo typeInfo = intrinsicType.getTypeInfo();
-            if ((typeInfo != null) && (typeInfo.isDeprecated())) {
+      if( isComputing != Boolean.TRUE && getType() != null && !isEnclosureDeprecated( gosuClass ) )
+      {
+        IType thisType = getType().getType();
+        if( thisType != null )
+        {
+          _isComputingIsDeprecated.set( Boolean.TRUE );
+          try
+          {
+            ITypeInfo typeInfo = thisType.getTypeInfo();
+            if( typeInfo != null && typeInfo.isDeprecated() )
+            {
               //noinspection ThrowableInstanceNeverThrown
-              addParseWarning(new ParseWarningForDeprecatedMember(null,
-                                                                  intrinsicType.getDisplayName(),
-                                                                  intrinsicType.getDisplayName()));
+              addParseWarning( new ParseWarningForDeprecatedMember(null, thisType.getDisplayName(), thisType.getDisplayName() ) );
             }
-          } finally {
+          }
+          finally
+          {
             _isComputingIsDeprecated.set(Boolean.FALSE);
           }
         }
       }
     }
+  }
+
+  private boolean isEnclosureDeprecated( IType type )
+  {
+    if( !(type instanceof IGosuClass) )
+    {
+      return false;
+    }
+
+    IGosuClassInternal gsClass = (IGosuClassInternal)type;
+    GosuParser parser = (GosuParser)gsClass.getParser();
+    return parser != null && parser.isIgnoreTypeDeprecation();
   }
 
   /**
@@ -112,27 +126,6 @@ public class TypeLiteral extends Literal implements ITypeLiteralExpression
     IType parameterizedType = getType().getType().getParameterizedType( types );
     setType( MetaType.getLiteral( parameterizedType ) );
   }
-
-  @Override
-  public int getRelativeTypeStart()
-  {
-    return _relativeTypeLocation == null ? getLocation().getOffset() : _relativeTypeLocation[0];
-  }
-  @Override
-  public int getRelativeTypeEnd()
-  {
-    return _relativeTypeLocation == null ? getLocation().getExtent() : _relativeTypeLocation[1];
-  }
-  public void setRelativeTypeLocation( int iTokenStart, int iTokenEnd )
-  {
-    if( _relativeTypeLocation == null )
-    {
-      _relativeTypeLocation = new int[2];
-    }
-    _relativeTypeLocation[0] = iTokenStart;
-    _relativeTypeLocation[1] = iTokenEnd;
-  }
-
 
   @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})
   @Override

@@ -33,8 +33,6 @@ import gw.lang.reflect.IType;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.util.List;
@@ -100,7 +98,7 @@ public class MethodCallExpressionTransformer extends AbstractExpressionTransform
 
     IRExpression methodCall = callMethod( IExternalSymbolMap.class, "invoke", new Class[]{String.class, Object[].class},
             pushExternalSymbolsMap(),
-            exprList( pushConstant( symbol.getName() ), buildInitializedArray( IRTypeConstants.OBJECT, argValues ) ) );
+            exprList( pushConstant( symbol.getName() ), buildInitializedArray(IRTypeConstants.OBJECT(), argValues ) ) );
 
     IType returnType = ((IFunctionType)symbol.getType()).getReturnType();
     if( returnType != JavaTypes.pVOID() )
@@ -131,11 +129,14 @@ public class MethodCallExpressionTransformer extends AbstractExpressionTransform
       boolean isOnThis = false;
       if (dfs.isStatic()) {
         root = null;
-      } else if ( isMemberOnEnclosingType( dfs ) ) {
-        root = pushOuter( dfs.getGosuClass() );
-      } else if ( isMemberOnEnhancementOfEnclosingType( dfs ) ) {
+      }
+      else if( isMemberOnEnhancementOfEnclosingType( dfs ) ) {
         root = pushOuter( ((IGosuEnhancement) dfs.getGosuClass()).getEnhancedType() );
-      } else {
+      }
+      else if( isMemberOnEnclosingType( dfs ) != null ) {
+        root = pushOuter( dfs.getGosuClass() );
+      }
+      else {
         root = pushThis();
         isOnThis = true;
       }

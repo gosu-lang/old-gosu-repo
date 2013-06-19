@@ -4,13 +4,6 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.lang.ir.IRElement;
-import gw.lang.ir.expression.IRCompositeExpression;
-import gw.lang.parser.MemberAccessKind;
-import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRSymbol;
-import gw.lang.ir.IRType;
-import gw.lang.ir.IRTypeConstants;
 import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.internal.gosu.ir.nodes.IRMethodFromMethodInfo;
@@ -21,14 +14,19 @@ import gw.internal.gosu.parser.expressions.BeanMethodCallExpression;
 import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.statements.BeanMethodCallStatement;
 import gw.internal.gosu.runtime.GosuRuntimeMethods;
+import gw.lang.ir.IRElement;
+import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
+import gw.lang.ir.IRTypeConstants;
+import gw.lang.ir.expression.IRCompositeExpression;
+import gw.lang.parser.ICustomExpressionRuntime;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.Keyword;
-import gw.lang.parser.ICustomExpressionRuntime;
+import gw.lang.parser.MemberAccessKind;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfoMethodInfo;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
@@ -107,7 +105,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
       if( irMethod.isBytecodeMethod() )
       {
         List<IRExpression> irArgs = new ArrayList<IRExpression>();
-        pushArguments( irMethod, irArgs );
+        pushArgumentsWithCasting( irMethod, _expr().getArgs(), irArgs );
         if( isSuperCall( rootExpr ) )
         {
           irMethodCall = callSpecialMethod( getDescriptor( _cc().getSuperType() ), irMethod, irRoot, irArgs, namedArgOrder );
@@ -159,7 +157,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     if( irMethod.isBytecodeMethod() )
     {
       List<IRExpression> args = new ArrayList<IRExpression>();
-      pushArguments( irMethod, args );
+      pushArgumentsWithCasting( irMethod, _expr().getArgs(), args );
       return callMethod( irMethod, null, args, namedArgOrder );
     }
     else
@@ -218,7 +216,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     IMethodInfo mi = irMethod.getTerminalMethod();
 
     List<IRExpression> explicitArgs = new ArrayList<IRExpression>();
-    pushArguments( irMethod, explicitArgs );
+    pushArgumentsNoCasting( irMethod, _expr().getArgs(), explicitArgs );
     List<IRElement> callElements = handleNamedArgs( explicitArgs, namedArgOrder );
 
     IRExpression irRoot;
@@ -272,28 +270,6 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     return root;
   }
 
-  private void pushArguments( IRMethod irMethod, List<IRExpression> irArgs )
-  {
-    final IExpression[] args = _expr().getArgs();
-    if( args != null )
-    {
-      List<IRType> paramClasses = irMethod.getExplicitParameterTypes();
-      for( int i = 0; i < args.length; i++ )
-      {
-        IExpression arg = args[i];
-        IRExpression irArg = ExpressionTransformer.compile( arg, _cc() );
-
-        // Maybe cast if not directly assignable (e.g., cross cast)
-        IRType paramClass = paramClasses.get( i );
-        if( !paramClass.isAssignableFrom( irArg.getType() ) )
-        {
-          irArg = buildCast( paramClass, irArg );
-        }
-        irArgs.add( irArg );
-      }
-    }
-  }
-
   private IRExpression pushArgumentsAsArray( List<IRExpression> explicitArgs )
   {
     List<IRExpression> irArgs = new ArrayList<IRExpression>();
@@ -302,14 +278,14 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     {
       for( IRExpression arg : explicitArgs )
       {
-         if( arg.getType().isPrimitive() )
+        if( arg.getType().isPrimitive() )
         {
           arg = boxValue( arg.getType(), arg );
         }
         irArgs.add( arg );
       }
     }
-    return buildInitializedArray( IRTypeConstants.OBJECT, irArgs );
+    return buildInitializedArray(IRTypeConstants.OBJECT(), irArgs );
   }
 
 }

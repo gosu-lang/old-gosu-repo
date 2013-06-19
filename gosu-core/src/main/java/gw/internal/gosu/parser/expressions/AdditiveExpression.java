@@ -4,12 +4,13 @@
 
 package gw.internal.gosu.parser.expressions;
 
+import gw.config.CommonServices;
+import gw.internal.gosu.parser.ParseTree;
 import gw.lang.IDimension;
 import gw.lang.parser.expressions.IAdditiveExpression;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.JavaTypes;
-import gw.config.CommonServices;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -37,6 +38,13 @@ public final class AdditiveExpression extends ArithmeticExpression implements IA
   public boolean isAdditive()
   {
     return getOperator() != null && getOperator().endsWith( "+" );
+  }
+
+  // Tests if this expr is part of an assignment such as: size += 5, where this expr only contains the 5 as a child
+  public boolean isAssignment()
+  {
+    ParseTree loc = getLocation();
+    return loc != null && loc.getChildCount() < 2;
   }
 
   /**

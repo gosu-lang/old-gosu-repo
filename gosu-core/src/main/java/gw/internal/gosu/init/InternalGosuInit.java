@@ -31,7 +31,7 @@ public class InternalGosuInit {
   // multiple modules
 
   public static void initializeMultipleModules( IExecutionEnvironment execEnv, List<? extends IModule> modules ) {
-    execEnv.initializeMultipleModules( modules );
+    ((ExecutionEnvironment)execEnv).initializeMultipleModules( modules );
   }
 
   public static void uninitializeMultipleModules( IExecutionEnvironment execEnv ) {

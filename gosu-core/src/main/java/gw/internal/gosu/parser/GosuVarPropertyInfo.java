@@ -5,7 +5,6 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.statements.VarStatement;
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.parser.expressions.INewExpression;
@@ -23,8 +22,7 @@ import java.lang.reflect.Field;
  */
 public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implements IGosuVarPropertyInfo
 {
-  private CharSequence _strIdentifer;
-  private CaseInsensitiveCharSequence _caseInsensitiveName;
+  private String _strIdentifer;
   private IType _actualType;
   private boolean _bStatic;
   private boolean _bPublic;
@@ -47,7 +45,6 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
     super( container );
     _strIdentifer = varStmt.getIdentifierName();
     _actualType = assignActualType(varStmt.getType());
-    _caseInsensitiveName = CaseInsensitiveCharSequence.get(_strIdentifer);
     _bStatic = varStmt.isStatic();
     _bPublic = varStmt.isPublic();
     _bProtected = varStmt.isProtected();
@@ -73,7 +70,6 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
     super( container );
     _strIdentifer = pi._strIdentifer;
     _actualType = assignActualType( pi._actualType );
-    _caseInsensitiveName = pi._caseInsensitiveName;
     _bStatic = pi._bStatic;
     _bPublic = pi._bPublic;
     _bProtected = pi._bProtected;
@@ -183,6 +179,14 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
       _actualType = getActualTypeInContainer( this, type );
     }
     return _actualType;
+  }
+
+  public void assignSymbolType( IType type )
+  {
+    if( _symbolType == null || _symbolType == JavaTypes.pVOID() )
+    {
+      _symbolType = type;
+    }
   }
 
   public boolean hasDeclaredProperty()
@@ -305,7 +309,7 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
       IGosuClass gsClass = (IGosuClass)getContainer().getOwnersType();
       try
       {
-        Field field = gsClass.getBackingClass().getDeclaredField( _caseInsensitiveName.toString() );
+        Field field = gsClass.getBackingClass().getDeclaredField( _strIdentifer );
         field.setAccessible( true );
         return field.get( ctx );
       }
@@ -320,7 +324,7 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
       IGosuClass gsClass = _gosuClass;
       try
       {
-        Field field = gsClass.getBackingClass().getDeclaredField( _caseInsensitiveName.toString() );
+        Field field = gsClass.getBackingClass().getDeclaredField( _strIdentifer );
         field.setAccessible( true );
         field.set( ctx, value );
       }

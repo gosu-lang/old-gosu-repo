@@ -4,15 +4,14 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.Param;
 import gw.lang.parser.IReducedSymbol;
 import gw.lang.reflect.*;
 import gw.lang.reflect.gs.IGosuMethodParamInfo;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -26,7 +25,7 @@ public class GosuMethodParamInfo extends GosuBaseAttributedFeatureInfo implement
   {
     protected String init()
     {
-      CaseInsensitiveHashMap<String, String> nameToDescMap = new CaseInsensitiveHashMap<String, String>();
+      HashMap<String, String> nameToDescMap = new HashMap<String, String>();
       List<IAnnotationInfo> paramAnnotations = ((IAnnotatedFeatureInfo)getContainer()).getAnnotationsOfType(JavaTypes.PARAM());
       if( paramAnnotations != null )
       {

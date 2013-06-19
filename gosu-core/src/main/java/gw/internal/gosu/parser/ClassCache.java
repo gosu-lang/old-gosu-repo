@@ -12,6 +12,7 @@ import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IModule;
 import gw.util.concurrent.LockingLazyVar;
 
+import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +23,6 @@ public class ClassCache {
   @SuppressWarnings({"unchecked"})
   private final Map<String, Class> _classMap = new HashMap<String, Class>();
   private Set<CharSequence> _packages = new HashSet<CharSequence>();
-  private ModuleClassLoader _loader;
   private IModule _module;
   private LockingLazyVar<ClassPath> _classPathCache;
   private LockingLazyVar<Set<String>> _allTypeNamesCache = new LockingLazyVar<Set<String>>() {
@@ -41,17 +41,14 @@ public class ClassCache {
   public ClassCache(final IModule module) {
     _module = module;
     ignoreTheCache = module instanceof DefaultSingleModule;
-    _loader = ModuleClassLoader.create(module);
     _classPathCache =
       new LockingLazyVar<ClassPath>() {
         protected ClassPath init() {
           return
             new ClassPath( _module,
-                new IClassPath.ClassPathFilter() {
-                             public boolean acceptClass( String className ) {
-                               return true;
-                             }
-                            } );
+                _module instanceof DefaultSingleModule ?
+                        IClassPath.ONLY_API_CLASSES : // FIXME-isd: for performance reasons, only select API classes
+                        IClassPath.ALLOW_ALL_WITH_SUN_FILTER);
         }
       };
   }
@@ -65,7 +62,7 @@ public class ClassCache {
     try {
       Class<?> cls;
       try {
-        cls = _loader.loadClass(name.toString());
+        cls = _module.getModuleClassLoader().loadClass(name.toString());
       } catch (ClassNotFoundException cnfe) {
         return ClassNotFoundMarkerClass.class;
       }
@@ -139,7 +136,7 @@ public class ClassCache {
   private boolean isPackage( StringBuilder s, int i ) {
     try {
       String maybePackage = s.substring( 0, i );
-      if( getPackageMethod().invoke( _loader, maybePackage ) != null ) {
+      if( getPackageMethod().invoke( _module.getModuleClassLoader(), maybePackage ) != null ) {
         return true;
       }
     }
@@ -238,12 +235,8 @@ public class ClassCache {
     }
   }
 
-  public ClassLoader getLoader() {
-    return _loader;
-  }
-
   public void dispose() {
-    _loader.dispose();
+    _module.disposeLoader();
   }
 
   /**
@@ -252,13 +245,13 @@ public class ClassCache {
    * Note, this is a giant hack among many gianter hacks that keep the old test framework floating.
    */
   public void reassignClassLoader() {
-    if( _loader.getParent() instanceof IInjectableClassLoader ) {
+    ClassLoader loader = _module.getModuleClassLoader();
+    if( loader.getParent() instanceof IInjectableClassLoader ) {
       // Dispose the GosuPluginContainer "singleton" and create a new one
-      ((IInjectableClassLoader)_loader.getParent()).dispose();
+      ((IInjectableClassLoader)loader.getParent()).dispose();
       // Dispose the ModuleClassLoader and create new one, its parent will be the new GosuPluginContainer.
       // Note the ModuleClassLoader in the single module case does absolutely nothing as it has no classpath; it fully delegates to its parent.
-      _loader.dispose();
-      _loader = ModuleClassLoader.create( _module );
+      _module.disposeLoader();
     }
   }
 

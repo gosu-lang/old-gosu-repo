@@ -72,8 +72,7 @@ public abstract class ForwardingTestEnvironment extends TestEnvironment {
     long waitStarts = System.currentTimeMillis();
     while ((System.currentTimeMillis() - waitStarts) < timeoutMs) {
       try {
-        byte[] data = RemoteTestClass.makeRemoteRequest(getRemoteURL(), "isStarted");
-        String value = new String(data, "UTF-8");
+        String value = StreamUtil.toString(RemoteTestClass.makeRemoteRequest(getRemoteURL(), "isStarted"));
         if (Boolean.valueOf(value)) {
           return;
         }
@@ -84,10 +83,10 @@ public abstract class ForwardingTestEnvironment extends TestEnvironment {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
-        throw new RuntimeException("Wait was interrupted. Platfrom did not start.");
+        throw new RuntimeException("Wait was interrupted. Platform did not start.");
       }
     }
-    throw new RuntimeException("Platfrom did not start after " + timeoutMs + "ms.");
+    throw new RuntimeException("Platform did not start after " + timeoutMs + "ms.");
   }
 
   @Override

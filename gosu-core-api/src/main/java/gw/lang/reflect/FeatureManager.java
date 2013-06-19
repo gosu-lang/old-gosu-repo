@@ -4,11 +4,8 @@
 
 package gw.lang.reflect;
 
-import java.util.*;
-
 import gw.config.CommonServices;
-import gw.lang.parser.CaseInsensitiveCharSequence;
-import gw.lang.parser.ILanguageLevel;
+import gw.lang.parser.CICS;
 import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuEnhancement;
@@ -17,81 +14,35 @@ import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.IModule;
 import gw.util.GosuExceptionUtil;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @SuppressWarnings({"unchecked"})
 public class FeatureManager<T extends CharSequence> {
 
-  private enum InitState {
-    NotInitialized,
-    Initializing,
-    ERROR, Initialized
-  }
+  private final boolean _caseSensitive;
+  private final boolean _addObjectMethods;
   private IRelativeTypeInfo _typeInfo;
   private volatile Map<IModule, InitState> _methodsInitialized = new HashMap<IModule, InitState>();
   private volatile Map<IModule, InitState> _propertiesInitialized = new HashMap<IModule, InitState>();
   private volatile InitState _ctorsInitialized = InitState.NotInitialized;
-  private Map<IModule, PropertyNameMap<T>[]> _properties = new HashMap<IModule, PropertyNameMap<T>[]>(); 
+  private Map<IModule, PropertyNameMap<T>[]> _properties = new HashMap<IModule, PropertyNameMap<T>[]>();
   private Map<IModule, MethodList[]> _methods = new HashMap<IModule, MethodList[]>();
   private List<IConstructorInfo>[] _constructors = new List[IRelativeTypeInfo.Accessibility_Size];
-  private final boolean _caseSensitive;
-  private final boolean _addObjectMethods;
   private String _superPropertyPrefix;
   private IType _supertypeToCopyPropertiesFrom;
-
   public FeatureManager(IRelativeTypeInfo typeInfo, boolean caseSensitive) {
     this(typeInfo, caseSensitive, false);
   }
 
   public FeatureManager(IRelativeTypeInfo typeInfo, boolean caseSensitive, boolean addObjectMethods) {
     _typeInfo = typeInfo;
-    _caseSensitive = caseSensitive && !ILanguageLevel.Util.STANDARD_GOSU();
+    _caseSensitive = caseSensitive;// && !ILanguageLevel.Util.STANDARD_GOSU();
     _addObjectMethods = addObjectMethods;
-  }
-
-  public void clear() {
-    _methodsInitialized = new HashMap<IModule, InitState>();
-    _propertiesInitialized = new HashMap<IModule, InitState>();
-    _ctorsInitialized = InitState.NotInitialized;
-    clearMaps();
-  }
-
-  private void clearMaps() {
-    for(PropertyNameMap<T>[] properties : _properties.values()) {
-      for (int i = 0; i < properties.length; i++) {
-        properties[i] = null;
-      }
-    }
-    for (int i = 0; i < _constructors.length; i++) {
-      _constructors[i] = null;
-    }
-    for(MethodList[] methods : _methods.values()) {
-      for (int i = 0; i < methods.length; i++) {
-        methods[i] = null;
-      }
-    }
-  }
-  
-  private void clearProperties(IModule module) {
-    PropertyNameMap<T>[] properties = _properties.get(module);
-    if(properties != null) {
-      for (int i = 0; i < properties.length; i++) {
-        properties[i] = null;
-      }
-    }
-  }
-  
-  private void clearMethods(IModule module) {
-    MethodList[] methods = _methods.get(module);
-    if(methods != null) {
-      for (int i = 0; i < methods.length; i++) {
-        methods[i] = null;
-      }
-    }
-  }
-
-  private void clearCtors() {
-    for (int i = 0; i < _constructors.length; i++) {
-      _constructors[i] = null;
-    }
   }
 
   public static IRelativeTypeInfo.Accessibility getAccessibilityForClass( IType ownersClass, IType whosAskin )
@@ -134,7 +85,7 @@ public class FeatureManager<T extends CharSequence> {
   public static boolean isInSameNamespace(IType ownersClass, IType whosAskin) {
     String whosAskinNamespace = getTopLevelEnclosingClassNamespace(whosAskin);
     return whosAskinNamespace != null &&
-           ILanguageLevel.Util.equalsIgnoreCase( whosAskinNamespace, getTopLevelEnclosingClassNamespace( ownersClass ) );
+           whosAskinNamespace.equals( getTopLevelEnclosingClassNamespace( ownersClass ) );
   }
 
   private static String getTopLevelEnclosingClassNamespace(IType type) {
@@ -146,10 +97,11 @@ public class FeatureManager<T extends CharSequence> {
   }
 
   public static boolean isInEnclosingClassHierarchy(IType ownersClass, IType whosAskin) {
-    return whosAskin != null &&
+    return whosAskin != null && ownersClass != null &&
            (isInHierarchy(ownersClass, whosAskin) ||
             isInEnhancedTypesHierarchy(ownersClass, whosAskin) ||
-            isInEnclosingClassHierarchy(ownersClass, whosAskin.getEnclosingType()));  
+            isInEnclosingClassHierarchy(ownersClass.getEnclosingType(), whosAskin) ||
+            isInEnclosingClassHierarchy(ownersClass, whosAskin.getEnclosingType()));
   }
 
   protected static boolean isInEnhancedTypesHierarchy(IType ownersClass, IType whosAskin) {
@@ -170,6 +122,82 @@ public class FeatureManager<T extends CharSequence> {
       type = TypeSystem.getPureGenericType( type.getEnclosingType() );
     }
     return TypeSystem.getPureGenericType( type ).getName();
+  }
+
+  public static boolean isFeatureAccessible(IAttributedFeatureInfo property, IRelativeTypeInfo.Accessibility accessibility) {
+    boolean isAccessible = false;
+    switch (accessibility) {
+      case NONE:
+        break;
+      case PUBLIC:
+        if (property.isPublic()) {
+          isAccessible = true;
+        }
+        break;
+      case PROTECTED:
+        if (property.isPublic() || property.isProtected()) {
+          isAccessible = true;
+        }
+        break;
+      case INTERNAL:
+        if (property.isPublic() || property.isInternal() || property.isProtected()) {
+          isAccessible = true;
+        }
+        break;
+      case PRIVATE:
+        if (property.isPublic() || property.isInternal() || property.isProtected() || property.isPrivate()) {
+          isAccessible = true;
+        }
+        break;
+    }
+    return isAccessible;
+  }
+
+  public void clear() {
+    _methodsInitialized = new HashMap<IModule, InitState>();
+    _propertiesInitialized = new HashMap<IModule, InitState>();
+    _ctorsInitialized = InitState.NotInitialized;
+    clearMaps();
+  }
+
+  private void clearMaps() {
+    for(PropertyNameMap<T>[] properties : _properties.values()) {
+      for (int i = 0; i < properties.length; i++) {
+        properties[i] = null;
+      }
+    }
+    for (int i = 0; i < _constructors.length; i++) {
+      _constructors[i] = null;
+    }
+    for(MethodList[] methods : _methods.values()) {
+      for (int i = 0; i < methods.length; i++) {
+        methods[i] = null;
+      }
+    }
+  }
+
+  private void clearProperties(IModule module) {
+    PropertyNameMap<T>[] properties = _properties.get(module);
+    if(properties != null) {
+      for (int i = 0; i < properties.length; i++) {
+        properties[i] = null;
+      }
+    }
+  }
+
+  private void clearMethods(IModule module) {
+    MethodList[] methods = _methods.get(module);
+    if(methods != null) {
+      for (int i = 0; i < methods.length; i++) {
+        methods[i] = null;
+      }
+    }
+  }
+
+  private void clearCtors() {
+    for (int i = 0; i < _constructors.length; i++) {
+      _constructors[i] = null;
+    }
   }
 
   public List<IPropertyInfo> getProperties( IRelativeTypeInfo.Accessibility accessibility ) {
@@ -195,18 +223,7 @@ public class FeatureManager<T extends CharSequence> {
   }
 
   private T convertCharSequenceToCorrectSensitivity(CharSequence propName) {
-    return (T) (_caseSensitive ? propName.toString() : CaseInsensitiveCharSequence.get(propName));
-  }
-
-  @SuppressWarnings({"unchecked"})
-  public Collection<T> getPropertyNames(IRelativeTypeInfo.Accessibility accessibility) {
-    maybeInitProperties();
-    PropertyNameMap<T>[] lists = _properties.get( TypeSystem.getCurrentModule() );
-    if( lists == null )
-    {
-      return Collections.emptyList();
-    }
-    return lists[accessibility.ordinal()].keySet();
+    return (T) (_caseSensitive ? propName.toString() : CICS.get( propName ));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -243,7 +260,7 @@ public class FeatureManager<T extends CharSequence> {
     IModule module = TypeSystem.getCurrentModule();
     if (module == null) {
       throw new NullPointerException("Cannot init the FeatureManager with no current module.");
-    }    
+    }
     if (_methodsInitialized.get(module) != InitState.Initialized && _methodsInitialized.get(module) != InitState.ERROR) {
       TypeSystem.lock();
       try {
@@ -429,7 +446,7 @@ public class FeatureManager<T extends CharSequence> {
           }
         }
       } catch ( Exception ex ) {
-        ex.printStackTrace(); // exception is swallowed by source diff handler? print it again here
+//        ex.printStackTrace(); // exception is swallowed by source diff handler? print it again here
         throw GosuExceptionUtil.forceThrow( ex, _typeInfo.getOwnersType().getName() );
       } finally {
         TypeSystem.unlock();
@@ -478,35 +495,6 @@ public class FeatureManager<T extends CharSequence> {
     return ret;
   }
 
-  public static boolean isFeatureAccessible(IAttributedFeatureInfo property, IRelativeTypeInfo.Accessibility accessibility) {
-    boolean isAccessible = false;
-    switch (accessibility) {
-      case NONE:
-        break;
-      case PUBLIC:
-        if (property.isPublic()) {
-          isAccessible = true;
-        }
-        break;
-      case PROTECTED:
-        if (property.isPublic() || property.isProtected()) {
-          isAccessible = true;
-        }
-        break;
-      case INTERNAL:
-        if (property.isPublic() || property.isInternal() || property.isProtected()) {
-          isAccessible = true;
-        }
-        break;
-      case PRIVATE:
-        if (property.isPublic() || property.isInternal() || property.isProtected() || property.isPrivate()) {
-          isAccessible = true;
-        }
-        break;
-    }
-    return isAccessible;
-  }
-
   protected void mergeProperties(PropertyNameMap<T> props, IType type, boolean replace) {
     if( type != null )
     {
@@ -540,7 +528,7 @@ public class FeatureManager<T extends CharSequence> {
 
   protected void mergeMethods(List<IMethodInfo> methods, IType type, boolean replace) {
     List<? extends IMethodInfo> methodInfos;
-    if (type != null) {
+    if (type != null && !TypeSystem.isDeleted(type)) {
       if (type.getTypeInfo() instanceof IRelativeTypeInfo) {
         methodInfos = ((IRelativeTypeInfo) type.getTypeInfo()).getMethods( _typeInfo.getOwnersType());
       } else {
@@ -579,10 +567,10 @@ public class FeatureManager<T extends CharSequence> {
   }
 
   private boolean isOverride(IMethodInfo thisMethodInfo, IMethodInfo superMethodInfo) {
-    if( ILanguageLevel.Util.STANDARD_GOSU() ) {
+//    if( ILanguageLevel.Util.STANDARD_GOSU() ) {
       return superMethodInfo.getDisplayName().equals(thisMethodInfo.getDisplayName());
-    }
-    return superMethodInfo.getDisplayName().equalsIgnoreCase(thisMethodInfo.getDisplayName());
+//    }
+//    return superMethodInfo.getDisplayName().equalsIgnoreCase(thisMethodInfo.getDisplayName());
   }
 
   private IType[] removeGenericMethodParameters(IMethodInfo thisMethodInfo) {
@@ -639,4 +627,9 @@ public class FeatureManager<T extends CharSequence> {
     return _typeInfo.getOwnersType().getName();
   }
 
+  private enum InitState {
+    NotInitialized,
+    Initializing,
+    ERROR, Initialized
+  }
 }

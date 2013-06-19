@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IStackProvider;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.IScope;
@@ -17,9 +16,9 @@ public class CapturedSymbol extends Symbol implements ICapturedSymbol
 {
   private ISymbol _referredSymbol;
 
-  public CapturedSymbol( String strName, CaseInsensitiveCharSequence strInsensitiveName, ISymbol sym, IStackProvider stackProvider, IScope scope )
+  public CapturedSymbol( String strName, ISymbol sym, IStackProvider stackProvider, IScope scope )
   {
-    super( strName, sym.getType(), stackProvider, null, strInsensitiveName, scope );
+    super( strName, sym.getType(), stackProvider, null, scope );
     _referredSymbol = sym;
     sym.setValueIsBoxed( true ); //the parent symbol should now use a reference
     this.setValueIsBoxed( true ); //captured symbols always use references
@@ -39,4 +38,8 @@ public class CapturedSymbol extends Symbol implements ICapturedSymbol
     return _referredSymbol.isLocal();
   }
 
+  @Override
+  public boolean isWritable() {
+    return _referredSymbol.isWritable();
+  }
 }

@@ -4,7 +4,6 @@
 
 package gw.lang.parser;
 
-import gw.util.CaseInsensitiveHashMap;
 import gw.util.GosuObjectUtil;
 import gw.config.CommonServices;
 import gw.lang.reflect.TypeSystem;
@@ -15,6 +14,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -120,7 +120,7 @@ public class StandardSymbolTable implements ISymbolTable
 
   public void putSymbol( ISymbol symbol )
   {
-    CaseInsensitiveCharSequence name = symbol.getCaseInsensitiveName();
+    String name = (String)symbol.getName();
     //noinspection unchecked
     peekScope().put( name, symbol );
     symbol.setDynamicSymbolTable( this );
@@ -189,7 +189,7 @@ public class StandardSymbolTable implements ISymbolTable
 
   public Map getSymbols( int iStartIndex, int iPrivateGlobalIndex )
   {
-    Map symbols = new CaseInsensitiveHashMap();
+    Map symbols = new HashMap();
     getSymbols( symbols, iStartIndex, iPrivateGlobalIndex );
     return symbols;
   }

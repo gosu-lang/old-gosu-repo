@@ -11,8 +11,6 @@ import java.util.List;
 
 public interface IGosuMethodInfo extends IAttributedFeatureInfo, IGenericMethodInfo, IMethodInfo, IOptionalParamCapable, Comparable, IDFSBackedFeatureInfo
 {
-  CaseInsensitiveCharSequence getCaseInsensitiveName();
-
   boolean isMethodForProperty();
 
   List<IReducedSymbol> getArgs();

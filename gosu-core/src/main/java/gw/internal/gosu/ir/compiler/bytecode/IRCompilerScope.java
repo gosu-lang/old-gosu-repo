@@ -6,13 +6,13 @@ package gw.internal.gosu.ir.compiler.bytecode;
 
 import gw.lang.ir.IRSymbol;
 
-import java.util.Map;
+import java.util.Collection;
 import java.util.HashMap;
 
 public class IRCompilerScope {
 
   private IRCompilerScope _parent;
-  private Map<String, IRCompilerLocalVar> _localVars;
+  private HashMap<String, IRCompilerLocalVar> _localVars;
   private int _size;
   private boolean _active = true;
 
@@ -41,7 +41,7 @@ public class IRCompilerScope {
     return existingVar;
   }
 
-  public Iterable<IRCompilerLocalVar> getLocalVars() {
+  public Collection<IRCompilerLocalVar> getLocalVars() {
     return _localVars.values();
   }
 

@@ -6,15 +6,19 @@ package gw.internal.gosu.parser.statements;
 
 
 
+import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.Symbol;
-import gw.internal.gosu.parser.CannotExecuteGosuException;
-import gw.lang.parser.CaseInsensitiveCharSequence;
+import gw.lang.parser.IExpression;
 import gw.lang.parser.IStackProvider;
 import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.statements.IAssertStatement;
 import gw.lang.parser.statements.IForEachStatement;
+import gw.lang.parser.statements.ILoopStatement;
+import gw.lang.parser.statements.IReturnStatement;
 import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.IThrowStatement;
 import gw.util.GosuObjectUtil;
 
 /**
@@ -93,6 +97,12 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
     _iterIdentifier = iterIdentifier;
   }
 
+  @Override
+  public IExpression getExpression()
+  {
+    return getInExpression();
+  }
+
   /**
    * @return The In Expression.
    */
@@ -145,8 +155,20 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
+    if( _statement != null )
+    {
+      ITerminalStatement terminalStmt = _statement.getLeastSignificantTerminalStatement( bAbsolute );
+      if( terminalStmt instanceof IReturnStatement ||
+          terminalStmt instanceof IAssertStatement ||
+          terminalStmt instanceof IThrowStatement ||
+          terminalStmt instanceof ILoopStatement )
+      {
+        bAbsolute[0] = false;
+        return terminalStmt;
+      }
+    }
     return null;
   }
 
@@ -172,7 +194,7 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
   }
 
   @Override
-  public int getNameOffset( CaseInsensitiveCharSequence identifierName )
+  public int getNameOffset( String identifierName )
   {
     if (identifierName.toString().equals(_identifier.getName())) {
       return _iIdentifierOffset;
@@ -185,7 +207,7 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
     }
   }
   @Override
-  public void setNameOffset( int iOffset, CaseInsensitiveCharSequence identifierName )
+  public void setNameOffset( int iOffset, String identifierName )
   {
     _iIdentifierOffset = iOffset;
   }
@@ -199,11 +221,11 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
   }
 
 
-  public boolean declares( CaseInsensitiveCharSequence identifierName )
+  public boolean declares( String identifierName )
   {
-    return ((getIdentifier() != null) && GosuObjectUtil.equals( getIdentifier().getCaseInsensitiveName(), identifierName )) ||
-           ((getIndexIdentifier() != null) && GosuObjectUtil.equals( getIndexIdentifier().getCaseInsensitiveName(), identifierName )) ||
-           ((getIteratorIdentifier() != null) && GosuObjectUtil.equals( getIteratorIdentifier().getCaseInsensitiveName(), identifierName ));
+    return ((getIdentifier() != null) && GosuObjectUtil.equals( getIdentifier().getName(), identifierName )) ||
+           ((getIndexIdentifier() != null) && GosuObjectUtil.equals( getIndexIdentifier().getName(), identifierName )) ||
+           ((getIteratorIdentifier() != null) && GosuObjectUtil.equals( getIteratorIdentifier().getName(), identifierName ));
   }
 
   public String[] getDeclarations() {

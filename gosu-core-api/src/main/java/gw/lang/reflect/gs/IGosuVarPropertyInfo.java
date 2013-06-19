@@ -12,7 +12,9 @@ import gw.lang.reflect.java.ICompileTimeConstantValue;
 
 public interface IGosuVarPropertyInfo extends IAttributedFeatureInfo, IPropertyInfo, IGenericMethodInfo, ICompileTimeConstantValue
 {
-  IType assignActualType(IType type);
+  IType assignActualType( IType type );
+
+  void assignSymbolType( IType type );
 
   boolean hasDeclaredProperty();
 

@@ -39,7 +39,7 @@ public class Loader {
       if (bInterfaceAnnotationMethods) {
         return TransformingCompiler.compileInterfaceMethodsClass((IGosuClassInternal) type, false);
       } else {
-        return GosuClassLoader.instance().getBytes(type, true);
+        return GosuClassLoader.instance().getBytes(type);
       }
     }
 

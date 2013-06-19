@@ -145,27 +145,33 @@ public final class StatementList extends Statement implements IStatementList
   }
 
   @Override
-  public ITerminalStatement getLeastSignificantTerminalStatement()
+  protected ITerminalStatement getLeastSignificantTerminalStatement_internal( boolean[] bAbsolute )
   {
-    return getLeastSignificantTerminalStatementAfter( null );
+    bAbsolute[0] = false;
+    return getLeastSignificantTerminalStatementAfter( null, bAbsolute );
   }
 
-  public ITerminalStatement getLeastSignificantTerminalStatementAfter( Statement fromStmt )
+  public ITerminalStatement getLeastSignificantTerminalStatementAfter( Statement fromStmt, boolean[] bAbsolute )
   {
     if( _statements == null )
     {
       return null;
     }
 
+    ITerminalStatement ret = null;
     for( int i = fromStmt == null ? 0 : indexOf( fromStmt )+1; i < _statements.length; i++ )
     {
-      ITerminalStatement terminalStmt = _statements[i].getLeastSignificantTerminalStatement();
+      boolean[] bCsr = {false};
+      ITerminalStatement terminalStmt = _statements[i].getLeastSignificantTerminalStatement( bCsr );
       if( terminalStmt != null )
       {
-        return terminalStmt;
+        ret = getLeastSignificant( ret, terminalStmt );
+        if( ret == terminalStmt ) {
+          bAbsolute[0] = bCsr[0];
+        }
       }
     }
-    return null;
+    return ret;
   }
 
   @Override

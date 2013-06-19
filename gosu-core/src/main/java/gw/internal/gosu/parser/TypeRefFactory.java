@@ -35,7 +35,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +52,10 @@ public class TypeRefFactory implements ITypeRefFactory
     new HashMap<Class<? extends IType>, Class<? extends AbstractTypeRef>>();
   private final WeakFqnCache<AbstractTypeRef> _refByName;
   private boolean _bClearing;
-  final private TypeHunterKiller _typeHunterKiller;
 
   public TypeRefFactory()
   {
     _refByName = new WeakFqnCache<AbstractTypeRef>();
-    _typeHunterKiller = new TypeHunterKiller( _refByName, 20, 300 );
   }
 
   /**
@@ -91,14 +88,6 @@ public class TypeRefFactory implements ITypeRefFactory
       ref = getRefTheSafeWay(type, strTypeName);
     }
     return ref;
-  }
-
-  public List<ITypeRef> huntForTypesToKill( boolean bLimitlessHunt ) {
-    if( TypeSystem.isSingleModuleMode() ) {
-      // Don't bother in single module mode; only relevant in multi-module/IDE environments where types potentially refresh
-      return Collections.emptyList();
-    }
-    return _typeHunterKiller.hunt( bLimitlessHunt );
   }
 
   private ITypeRef getRefTheFastWay(IType type, String strTypeName) {

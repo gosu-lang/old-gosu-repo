@@ -506,7 +506,7 @@ public class IRTreeVerifier {
   }
 
   private void verifyIRTernaryExpression(IRTernaryExpression irTernaryExpression) {
-    if (!irTernaryExpression.getTest().getType().equals(IRTypeConstants.pBOOLEAN)) {
+    if (!irTernaryExpression.getTest().getType().equals(IRTypeConstants.pBOOLEAN())) {
       error("Type mismatch for ternary test.  Must be of type boolean, but was of type " + irTernaryExpression.getTest().getType().getName(), irTernaryExpression);
     }
     if (!verifyExpressionIsOfType(irTernaryExpression.getType(), irTernaryExpression.getTrueValue())) {

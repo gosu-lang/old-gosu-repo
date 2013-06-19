@@ -7,13 +7,19 @@ package gw.internal.gosu.ir.transform.expression;
 import gw.config.CommonServices;
 import gw.internal.gosu.parser.BeanAccess;
 import gw.internal.gosu.parser.expressions.AdditiveExpression;
+import gw.internal.gosu.parser.expressions.Identifier;
 import gw.lang.ir.IRExpression;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.lang.ir.expression.IRArithmeticExpression;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
+import gw.lang.ir.expression.IRStringLiteralExpression;
+import gw.lang.parser.IParseTree;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.StandardSymbolTable;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.java.JavaTypes;
 
 /**
  */
@@ -47,16 +53,26 @@ public class AdditiveExpressionTransformer extends AbstractExpressionTransformer
       {
         return simpleAddition( );
       }
-//## todo: handle concatenation more efficiently
-//      else if( isConcatenation() )
-//      {
-//
-//      }
       else
       {
+        if( isCompileTimeConstantConcatenation() )
+        {
+          return concatenate();
+        }
+//## todo: handle other cases efficiently
+//   (ex var a = "1" var b = "2" var c = a + b  -> we should generate code using a StringBuilder)
+//        else
+//        {
+//
+//        }
         return complexAddition( bNumeric );
       }
     }
+  }
+
+  private IRStringLiteralExpression concatenate() {
+    return (IRStringLiteralExpression) pushConstant( StandardSymbolTable.toString( _expr().getLHS().evaluate() ) +
+                                                     StandardSymbolTable.toString( _expr().getRHS().evaluate() ) );
   }
 
   private IRExpression simpleAddition( )
@@ -126,5 +142,34 @@ public class AdditiveExpressionTransformer extends AbstractExpressionTransformer
     return isPrimitiveNumberType( _expr().getType() ) &&
            isPrimitiveNumberType( _expr().getLHS().getType() ) &&
            isPrimitiveNumberType( _expr().getRHS().getType() );
+  }
+
+  private boolean isCompileTimeConstantConcatenation()
+  {
+    return  _expr().getType() == JavaTypes.STRING() &&
+            _expr().isCompileTimeConstant() &&
+            !containsIdentifier( _expr().isAssignment() ? _expr().getParent() : _expr() );
+  }
+
+  private boolean containsIdentifier( IParsedElement expr )
+  {
+    if ( expr instanceof Identifier &&
+         !((Identifier) expr).isStaticFinalInitializedCompileTimeConstant() )
+    {
+      return true;
+    }
+    IParseTree location = expr.getLocation();
+    if( location == null )
+    {
+      return true;
+    }
+    for( IParseTree child: location.getChildren() )
+    {
+      if( containsIdentifier( child.getParsedElement() ) )
+      {
+        return true;
+      }
+    }
+    return false;
   }
 }

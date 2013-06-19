@@ -146,7 +146,7 @@ public class IRMethodCallExpressionBuilder extends IRExpressionBuilder {
       IRType type = context.currentClassSuperType();
       if (type instanceof IJavaClassIRType) {
         IJavaClassConstructor cons = findConstructor(((IJavaClassIRType)type).getJavaClassInfo(), _args.size());
-        MethodInfo methodInfo = new MethodInfo(type, getIRTypes(cons.getParameterTypes()), IRTypeConstants.pVOID, true);
+        MethodInfo methodInfo = new MethodInfo(type, getIRTypes(cons.getParameterTypes()), IRTypeConstants.pVOID(), true);
         return buildCall(context, "<init>", new IRIdentifier(new IRSymbol("this", context.owningType(), false)), _args, methodInfo);
       } else {
         throw new IllegalArgumentException();

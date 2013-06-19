@@ -25,7 +25,6 @@ public class BlockLiteral extends TypeLiteral implements IBlockLiteralExpression
   private ArrayList<String> _argNames;
   private ArrayList<IExpression> _defValues;
   private IType _returnType;
-  private int _dimensions;
   private final LockingLazyVar<MetaType> _blockType =
     new LockingLazyVar<MetaType>()
     {
@@ -33,10 +32,6 @@ public class BlockLiteral extends TypeLiteral implements IBlockLiteralExpression
       protected MetaType init()
       {
         IType type = new BlockType( _returnType, _argTypes.toArray( new IType[_argTypes.size()] ), _argNames, _defValues );
-        for( int i = 0; i < _dimensions; i++ )
-        {
-          type = type.getArrayType();
-        }
         return MetaType.get( type );
       }
     };
@@ -117,10 +112,5 @@ public class BlockLiteral extends TypeLiteral implements IBlockLiteralExpression
   public void setDefValueExpressions( ArrayList<IExpression> defValues )
   {
     _defValues = defValues;
-  }
-
-  public void setDimensions( int numArrays )
-  {
-    _dimensions = numArrays;
   }
 }

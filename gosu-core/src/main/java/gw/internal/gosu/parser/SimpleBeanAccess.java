@@ -115,21 +115,6 @@ public class SimpleBeanAccess
       property = beanInfo.getProperty( strMember );
     }
 
-    if( property == null )
-    {
-      CharSequence propertyName = beanInfo.getRealPropertyName( strMember );
-      if( propertyName != null )
-      {
-        if( beanInfo instanceof IRelativeTypeInfo )
-        {
-          property = ((IRelativeTypeInfo)beanInfo).getProperty( classBean, propertyName );
-        }
-        else
-        {
-          property = beanInfo.getProperty( propertyName );
-        }
-      }
-    }
     return property;
   }
 }

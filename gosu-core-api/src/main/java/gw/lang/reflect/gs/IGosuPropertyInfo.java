@@ -4,8 +4,6 @@
 
 package gw.lang.reflect.gs;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
-import gw.lang.parser.IDynamicPropertySymbol;
 import gw.lang.parser.IReducedDynamicPropertySymbol;
 import gw.lang.reflect.*;
 

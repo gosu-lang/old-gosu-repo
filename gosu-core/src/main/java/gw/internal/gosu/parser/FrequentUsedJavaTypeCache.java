@@ -96,7 +96,7 @@ public class FrequentUsedJavaTypeCache {
     classes.add(Enum.class);    
 
     IModule root = _execEnv.getGlobalModule();
-    _execEnv.pushModule(root);
+    TypeSystem.pushModule(root);
     try {
       for (Class<?> c : classes) {
         IJavaType type = (IJavaType) TypeSystem.get(c);
@@ -104,7 +104,7 @@ public class FrequentUsedJavaTypeCache {
         _typesByName.put(c.getName(), type);
       }
     } finally {
-      _execEnv.popModule(root);
+      TypeSystem.popModule(root);
     }
   }
   

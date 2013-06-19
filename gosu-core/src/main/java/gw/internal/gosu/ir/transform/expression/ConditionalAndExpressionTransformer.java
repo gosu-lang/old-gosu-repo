@@ -8,7 +8,6 @@ import gw.internal.gosu.parser.expressions.ConditionalAndExpression;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
 import gw.lang.ir.builder.IRArgConverter;
 import gw.lang.ir.expression.IRConditionalAndExpression;
@@ -30,8 +29,8 @@ public class ConditionalAndExpressionTransformer extends AbstractExpressionTrans
 
   protected IRExpression compile_impl()
   {
-    IRExpression lhs = IRArgConverter.castOrConvertIfNecessary( IRTypeConstants.pBOOLEAN, ExpressionTransformer.compile( _expr().getLHS(), _cc() ) );
-    IRExpression rhs = IRArgConverter.castOrConvertIfNecessary( IRTypeConstants.pBOOLEAN, ExpressionTransformer.compile( _expr().getRHS(), _cc() ) );
+    IRExpression lhs = IRArgConverter.castOrConvertIfNecessary(IRTypeConstants.pBOOLEAN(), ExpressionTransformer.compile( _expr().getLHS(), _cc() ) );
+    IRExpression rhs = IRArgConverter.castOrConvertIfNecessary(IRTypeConstants.pBOOLEAN(), ExpressionTransformer.compile( _expr().getRHS(), _cc() ) );
 
     return new IRConditionalAndExpression( lhs, rhs );
   }

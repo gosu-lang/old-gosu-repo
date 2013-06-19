@@ -190,17 +190,6 @@ public class FunctionLiteralType extends TypeBase implements IType, INonLoadable
     }
 
     @Override
-    public CharSequence getRealPropertyName( CharSequence propName )
-    {
-      IPropertyInfo property = getProperty( propName );
-      if( property != null )
-      {
-        return property.getName();
-      }
-      return null;
-    }
-
-    @Override
     public MethodList getMethods()
     {
       return _superType.getTypeInfo().getMethods();

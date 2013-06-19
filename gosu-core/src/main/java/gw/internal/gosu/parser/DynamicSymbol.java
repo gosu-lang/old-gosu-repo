@@ -13,7 +13,6 @@ import gw.lang.parser.ScriptPartId;
 import gw.lang.reflect.IType;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 
 /**
  */
@@ -30,7 +29,7 @@ public class DynamicSymbol extends AbstractDynamicSymbol
   {
     // We shouldn't need to copy the arguments because they should always have null values
     DynamicSymbol copy = new DynamicSymbol( getGosuClass(), _symTable, getName(), getType(), _value );
-    copy.setCaseInsensitiveName( getCaseInsensitiveName() );
+    copy.setName( (String)getName() );
     copy.setModifierInfo( getModifierInfo() );
     return copy;
   }
@@ -88,4 +87,10 @@ public class DynamicSymbol extends AbstractDynamicSymbol
       throw new RuntimeException( e );
     }
   }
+
+  public String toString()
+  {
+    return getName() + " : " + getType();
+  }
+
 }

@@ -39,10 +39,6 @@ public class BaseTypeInfo extends BaseFeatureInfo implements ITypeInfo
     return null;
   }
 
-  public CharSequence getRealPropertyName(CharSequence propName) {
-    return null;
-  }
-
   public MethodList getMethods()
   {
     return MethodList.EMPTY;

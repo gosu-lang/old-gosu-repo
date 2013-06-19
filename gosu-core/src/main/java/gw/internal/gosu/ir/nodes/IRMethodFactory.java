@@ -85,7 +85,7 @@ public class IRMethodFactory {
   }
 
   public static IRMethod createConstructorIRMethod(IType owner, IRType[] parameterTypes ) {
-    return new SyntheticIRMethod( owner, "<init>", IRTypeConstants.pVOID, Arrays.asList(parameterTypes), IRelativeTypeInfo.Accessibility.PUBLIC, false );
+    return new SyntheticIRMethod( owner, "<init>", IRTypeConstants.pVOID(), Arrays.asList(parameterTypes), IRelativeTypeInfo.Accessibility.PUBLIC, false );
   }
 
   private static List<IRType> convertToIRTypes(IType[] types) {

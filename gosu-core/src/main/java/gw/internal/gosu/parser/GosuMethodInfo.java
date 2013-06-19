@@ -4,34 +4,35 @@
 
 package gw.internal.gosu.parser;
 
+import gw.internal.gosu.ir.nodes.IRMethodFactory;
+import gw.internal.gosu.ir.nodes.IRMethodFromMethodInfo;
+import gw.internal.gosu.ir.transform.AbstractElementTransformer;
+import gw.internal.gosu.ir.transform.util.NameResolver;
+import gw.lang.ir.IRType;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IReducedSymbol;
 import gw.lang.parser.TypeVarToTypeMap;
-import gw.lang.reflect.java.JavaTypes;
-import gw.util.GosuStringUtil;
-import gw.util.GosuExceptionUtil;
 import gw.lang.parser.exceptions.ErrantGosuClassException;
-import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.reflect.*;
+import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IFeatureInfo;
+import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IMethodCallHandler;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuMethodInfo;
 import gw.lang.reflect.gs.IGosuProgram;
-import gw.internal.gosu.ir.transform.util.NameResolver;
-import gw.internal.gosu.ir.transform.AbstractElementTransformer;
-import gw.internal.gosu.ir.nodes.IRMethodFactory;
-import gw.internal.gosu.ir.nodes.IRMethodFromMethodInfo;
-import gw.lang.ir.IRType;
+import gw.lang.reflect.java.JavaTypes;
+import gw.util.GosuExceptionUtil;
+import gw.util.GosuStringUtil;
 
-import java.util.Collections;
-import java.util.List;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
  */
@@ -191,16 +192,19 @@ public class GosuMethodInfo extends AbstractGenericMethodInfo implements IGosuMe
 
   protected List<IGosuAnnotation> getGosuAnnotations()
   {
-    // PL-21981: if annotation is coming from the interface CCE is thrown
-//    ReducedDynamicFunctionSymbol dfs = getDfs();
-//    if( dfs instanceof ReducedDelegateFunctionSymbol )
-//    {
-//      IMethodInfo miTarget = ((ReducedDelegateFunctionSymbol)dfs).getTargetMethodInfo();
-//      if( miTarget != this && miTarget instanceof AbstractGenericMethodInfo )
-//      {
-//        return ((AbstractGenericMethodInfo)miTarget).getGosuAnnotations();
-//      }
-//    }
+    ReducedDynamicFunctionSymbol dfs = getDfs();
+    if( dfs instanceof ReducedDelegateFunctionSymbol )
+    {
+      IMethodInfo miTarget = ((ReducedDelegateFunctionSymbol)dfs).getTargetMethodInfo();
+      if( miTarget != this && miTarget instanceof AbstractGenericMethodInfo )
+      {
+        if( getOwnersType().isCompiled() ) {
+          // Ensure the delegate's owner is fully compiled, otherwise the annotations won't be fully formed (have NewExpressions, see PL-21981)
+          miTarget.getOwnersType().isValid();
+        }
+        return ((AbstractGenericMethodInfo)miTarget).getGosuAnnotations();
+      }
+    }
     return super.getGosuAnnotations();
   }
 

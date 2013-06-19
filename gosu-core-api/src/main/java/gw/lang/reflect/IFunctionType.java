@@ -4,7 +4,6 @@
 
 package gw.lang.reflect;
 
-import gw.lang.parser.CaseInsensitiveCharSequence;
 import gw.lang.parser.IScriptPartId;
 import gw.util.Pair;
 
@@ -25,8 +24,8 @@ public interface IFunctionType extends IInvocableType
   /**
    * Formatted signature of the form "<function> ( param-list )"
    */
-  public CaseInsensitiveCharSequence getParamSignature();
-  public CaseInsensitiveCharSequence getParamSignatureForCurrentModule();
+  public String getParamSignature();
+  public String getParamSignatureForCurrentModule();
 
   public IFunctionType inferParameterizedTypeFromArgTypesAndContextType(IType[] eArgs, IType ctxType);
 

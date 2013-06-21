@@ -26,6 +26,7 @@
     <module>../gosu-test-api</module>
     <module>../webservices</module>
     <module>../ij-editor</module>
+    <module>../ij-compiler-api</module>
     <module>../xml</module>
   </modules>
 

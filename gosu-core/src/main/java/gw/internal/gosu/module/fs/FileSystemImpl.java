@@ -137,8 +137,7 @@ public class FileSystemImpl extends BaseService implements IFileSystem {
   }
 
   private IDirectory createDir( File dir ) {
-    // PL-21817 in OSGi/Equinox JAR could be named as "bundlefile"
-    if ( (dir.getName().endsWith(".jar") || dir.getName().equals("bundlefile")) && dir.isFile()) {
+    if (dir.getName().endsWith(".jar")) {
       return new JarFileDirectoryImpl( dir );
     } else {
       return new JavaDirectoryImpl( dir, _cachingMode );

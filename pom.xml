@@ -18,6 +18,7 @@
     <module>gosu-core-api</module>
     <module>gosu-interactive</module>
     <module>gosu-itcase-utils</module>
+    <module>gosu-maven-plugin</module>
     <module>gosu-parent</module>
     <module>gosu-process</module>
     <module>gosu-servlet</module>

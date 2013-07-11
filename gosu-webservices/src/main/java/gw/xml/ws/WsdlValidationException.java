@@ -1,0 +1,30 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
+package gw.xml.ws;
+
+import gw.lang.PublishInGosu;
+
+/**
+ * This exception is thrown when there is a problem with a loaded WSDL.
+ */
+@PublishInGosu
+public class WsdlValidationException extends RuntimeException {
+
+  /**
+   * Constructor
+   */
+  @gw.lang.InternalAPI
+  public WsdlValidationException(String message){
+    super( message );
+  }
+
+  /**
+   * Constructor
+   */
+  @gw.lang.InternalAPI
+  public WsdlValidationException( String message, Throwable cause ) {
+    super( message, cause );
+  }
+}

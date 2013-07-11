@@ -15,7 +15,7 @@ Gosu directory. For example, gosu.cmd for Windows users.
 
 For complete installation instructions and important information 
 about Apache Eclipse and IntelliJ IDEA plugins, refer to:
-http://gosu-lang.org/doc/wwhelp/wwhimpl/api.htm?&context=gosu&topic=Getting_Started_with_Gosu
+http://gosu-lang.org/docs.html
 
 
 COMMAND LINE OPTIONS
@@ -30,8 +30,8 @@ Gosu also includes an interactive shell for writing and running lines of Gosu
 by using the -i option:
    gosu -i
    
-For more information, refer to the documentation for the Gosu shell:
-http://gosu-lang.org/doc/wwhelp/wwhimpl/api.htm?&context=gosu&topic=Gosu_Shell_Basics
+For more information, refer to the Gosu shell section in the documentation:
+http://gosu-lang.org/doc/index.html
 
 
 DOCUMENTATION AND EXAMPLES

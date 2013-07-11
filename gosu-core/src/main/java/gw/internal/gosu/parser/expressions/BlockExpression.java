@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.expressions;
@@ -189,7 +189,7 @@ public final class BlockExpression extends Expression implements IBlockExpressio
     return _scope;
   }
 
-  // Don't clear parse tree information.  Ugh, this sucks.
+  // Don't clear parse tree information.  Ugh, this is bad.
 
   @Override
   public boolean shouldClearParseInfo() {

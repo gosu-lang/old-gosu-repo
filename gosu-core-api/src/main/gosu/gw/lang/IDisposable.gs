@@ -13,7 +13,7 @@ interface IDisposable
    * always cleaned up appropriately, a dispose method should be callable multiple 
    * times without throwing an exception.
    *
-   *  Copyright 2010 Guidewire Software, Inc.
+   *  Copyright 2013 Guidewire Software, Inc.
    */
   function dispose()
 }

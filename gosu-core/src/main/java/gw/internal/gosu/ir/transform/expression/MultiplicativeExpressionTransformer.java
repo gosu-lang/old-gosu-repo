@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.ir.transform.expression;
@@ -98,36 +98,15 @@ public class MultiplicativeExpressionTransformer extends AbstractExpressionTrans
   {
     // Call into Gosu's runtime for the answer.  The arguments are the result type, the boxed LHS, the boxed RHS,
     // the LHS type, the RHS type, whether it's addition, and whether it's numeric
-    IRExpression evaluateCall;
-    if( CommonServices.getEntityAccess().getLanguageLevel().richNPEsInMathematicalExpressions() &&
-        _expr().getLHS().getLocation() != null && _expr().getRHS().getLocation() != null )
-    {
-      evaluateCall = callStaticMethod( MultiplicativeExpression.class, "evaluate",
-                                       new Class[]{IType.class, Object.class, Object.class, IType.class, IType.class, int.class, boolean.class,
-                                         Object.class, int.class, int.class, int.class, int.class},
-                                       exprList( pushType( _expr().getType() ),
-                                                 boxValue( _expr().getLHS().getType(), ExpressionTransformer.compile( _expr().getLHS(), _cc() ) ),
-                                                 boxValue( _expr().getRHS().getType(), ExpressionTransformer.compile( _expr().getRHS(), _cc() ) ),
-                                                 pushType( _expr().getLHS().getType() ),
-                                                 pushType( _expr().getRHS().getType() ),
-                                                 pushConstant( _expr().getOperator().charAt( _expr().getOperator().length() - 1 ) ),
-                                                 pushConstant( _expr().isNullSafe() ),
-                                                 pushType( _cc().getGosuClass() ),
-                                                 pushConstant( _expr().getLHS().getLocation().getOffset() ),
-                                                 pushConstant( _expr().getLHS().getLocation().getExtent() ),
-                                                 pushConstant( _expr().getRHS().getLocation().getOffset() ),
-                                                 pushConstant( _expr().getRHS().getLocation().getExtent() ) ) );
-    } else {
-      evaluateCall = callStaticMethod( MultiplicativeExpression.class, "evaluate",
-                                                    new Class[]{IType.class, Object.class, Object.class, IType.class, IType.class, int.class, boolean.class },
-                                                    exprList( pushType( _expr().getType() ),
-                                                              boxValue( _expr().getLHS().getType(), ExpressionTransformer.compile( _expr().getLHS(), _cc() ) ),
-                                                              boxValue( _expr().getRHS().getType(), ExpressionTransformer.compile( _expr().getRHS(), _cc() ) ),
-                                                              pushType( _expr().getLHS().getType() ),
-                                                              pushType( _expr().getRHS().getType() ),
-                                                              pushConstant( _expr().getOperator().charAt( _expr().getOperator().length()-1 ) ),
-                                                              pushConstant( _expr().isNullSafe() ) ) );
-    }
+    IRExpression evaluateCall = callStaticMethod( MultiplicativeExpression.class, "evaluate",
+                                                  new Class[]{IType.class, Object.class, Object.class, IType.class, IType.class, int.class, boolean.class },
+                                                  exprList( pushType( _expr().getType() ),
+                                                            boxValue( _expr().getLHS().getType(), ExpressionTransformer.compile( _expr().getLHS(), _cc() ) ),
+                                                            boxValue( _expr().getRHS().getType(), ExpressionTransformer.compile( _expr().getRHS(), _cc() ) ),
+                                                            pushType( _expr().getLHS().getType() ),
+                                                            pushType( _expr().getRHS().getType() ),
+                                                            pushConstant( _expr().getOperator().charAt( _expr().getOperator().length()-1 ) ),
+                                                            pushConstant( _expr().isNullSafe() ) ) );
 
     // Ensure value is unboxed if type is primitive
     return unboxValueToType( _expr().getType(), evaluateCall );

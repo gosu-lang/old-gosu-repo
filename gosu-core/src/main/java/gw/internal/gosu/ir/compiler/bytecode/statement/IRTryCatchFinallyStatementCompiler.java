@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.ir.compiler.bytecode.statement;
@@ -60,7 +60,7 @@ public class IRTryCatchFinallyStatementCompiler extends AbstractBytecodeCompiler
     {
       compileTryStatement( mv, tryStart, tryEnd, tryCatchFinallyEnd );
 
-      if( catchStmts != null )
+      if( catchStmts != null && !catchStmts.isEmpty() )
       {
         compileCatchStatements( mv, tryStart, tryEnd, tryCatchFinallyEnd, catchStmts );
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.statements;
@@ -52,6 +52,7 @@ public class VarStatement extends Statement implements IVarStatement
   private int _iNameOffset;
   private int _iPropertyNameOffset;
   private boolean _bDefinitionParsed;
+  private boolean _bIsInitializedTopLevelProgVar;
 
   public VarStatement()
   {
@@ -383,7 +384,7 @@ public class VarStatement extends Statement implements IVarStatement
   
   public boolean getHasInitializer()
   {
-    return _expression != null;
+    return _expression != null || _bIsInitializedTopLevelProgVar;
   }
 
   public boolean isImplicitlyUsed() {
@@ -398,5 +399,8 @@ public class VarStatement extends Statement implements IVarStatement
   public boolean isFieldDeclaration() {
     return getParent() instanceof IClassStatement;
   }
-    
+
+  public void setIsInitializedTopLevelProgVar() {
+    _bIsInitializedTopLevelProgVar = true;
+  }
 }

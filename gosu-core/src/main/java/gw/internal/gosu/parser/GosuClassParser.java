@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -2076,7 +2076,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     }
     try
     {
-      //## perf: this is dog-ass slow, maybe use a tokenizer mark instead
+      //## perf: this is very slow, maybe use a tokenizer mark instead
       getTokenizer().goToPosition( iEnd );
     }
     catch( IOException e )
@@ -2531,12 +2531,12 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         return modifiers;
       }
       popModifierList();
-
+      boolean bAte = false;
       if( getGosuClass() instanceof IGosuProgram )
       {
-        eatPossibleEnclosedVarInStmt(); // e.g., for( var foo in foos ) {...}   we don't want the var foo to be consumed as a field (applies to GosuPrograms).
+        bAte = eatPossibleEnclosedVarInStmt(); // e.g., for( var foo in foos ) {...}   we don't want the var foo to be consumed as a field (applies to GosuPrograms).
       }
-      boolean bAte = eatPossibleStatementBlock();
+      bAte = eatPossibleStatementBlock() || bAte;
       if( location != null )
       {
         // Mark possible end location of member definition

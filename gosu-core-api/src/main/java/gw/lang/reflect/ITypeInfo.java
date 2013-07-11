@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.lang.reflect;
@@ -360,7 +360,7 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       return type;
     }
 
-    //## todo: Rewrite this piece of total shit.  Maybe use this technique: http://stackoverflow.com/questions/14315437/get-best-matching-overload-from-set-of-overloads
+    //## todo: Rewrite this.  Maybe use this technique: http://stackoverflow.com/questions/14315437/get-best-matching-overload-from-set-of-overloads
     //## todo: Note it'll be easier to manage if the best match is designed to have the _lowest_ score.  Again the link above provides a decent strategy.
     public static List<MethodScore> scoreMethods( List<? extends IInvocableType> listFunctionTypes, List<IType> argTypes, List<IType> inferringTypes )
     {

@@ -4,7 +4,7 @@ package gw.lang.enhancements
  * This enhancement allows for some overloading of methods that would be in CoreArrayEnhancement,
  * but can't because of the methods erasure
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreArrayEnhancementHelper<T> : T[] {
   

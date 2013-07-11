@@ -4,7 +4,7 @@ uses java.util.Collections
 uses java.util.Comparator
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreListOfComparablesEnhancement<T extends Comparable> : List<T>
 {

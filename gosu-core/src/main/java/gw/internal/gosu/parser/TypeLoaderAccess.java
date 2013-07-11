@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -547,7 +547,7 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
         }
       }
 
-      // Step 3: Some shit
+      // Step 3: Some stuff
       Iterator<ITypeRef> iterator = typesToMakeStaleSet.iterator();
       while (iterator.hasNext()) {
         IType typeToRefresh = iterator.next();

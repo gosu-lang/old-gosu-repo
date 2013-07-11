@@ -2,7 +2,7 @@ package gw.lang.enhancements
 uses java.lang.Float
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfFloatsEnhancement : java.lang.Iterable<Float> {
   function sum() : Float {

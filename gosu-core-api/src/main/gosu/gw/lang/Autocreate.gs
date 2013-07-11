@@ -8,7 +8,7 @@ uses gw.lang.annotation.IInherited
  * of a subproperty. If a block is supplied, the block will be called to create the new object, otherwise
  * the parameterless contructor will be used.
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 @AnnotationUsage(:target = PropertyTarget, :usageModifier = One)
 class Autocreate implements IAnnotation, IInherited, IAutocreate

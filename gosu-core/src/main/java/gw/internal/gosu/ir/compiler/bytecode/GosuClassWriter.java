@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.internal.gosu.ir.compiler.bytecode;
 
 import gw.internal.ext.org.objectweb.asm.ClassWriter;

@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.test.util;
 
 import gw.util.process.OutputHandler;

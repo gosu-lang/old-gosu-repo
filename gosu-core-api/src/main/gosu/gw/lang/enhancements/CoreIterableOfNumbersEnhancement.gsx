@@ -3,7 +3,7 @@ uses java.math.BigDecimal
 uses java.lang.Iterable
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfNumbersEnhancement<N extends java.lang.Number> : Iterable<N> {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -30,8 +30,6 @@ import gw.util.cache.FqnCache;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -255,6 +253,9 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
           break;
         }
         fqn = i + 1 < fqn.length() ? fqn.substring(i + 1) : null;
+      }
+      for( FqnCache cache : _missCaches.values() ) {
+        cache.remove( fqn );
       }
     }
   }

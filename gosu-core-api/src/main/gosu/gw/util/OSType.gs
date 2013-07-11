@@ -1,7 +1,7 @@
 package gw.util
 
 /**
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enum OSType
 {

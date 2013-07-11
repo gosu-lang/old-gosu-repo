@@ -9,7 +9,7 @@ uses java.lang.Iterable
  * works (all blocks with the same arity have the same erasure).  Splitting the methods up into different enhancements
  * prevents them from conflicting, since they become part of different Java classes.
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableBigDecimalSumEnhancement<T> : Iterable<T> {
   /**

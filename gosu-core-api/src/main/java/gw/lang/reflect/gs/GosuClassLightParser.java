@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.lang.reflect.gs;
 
 import gw.lang.GosuShop;

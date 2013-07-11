@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -416,7 +416,7 @@ public class ExecutionEnvironment implements IExecutionEnvironment
    * Java class has been redefined by a debugger.  If so, it reloads Gosu classes
    * that have changed.
    * <p>
-   * Wtf, you ask?  Well since Gosu classes are not compiled to disk, the IDE hosting
+   * Why, you ask?  Well since Gosu classes are not compiled to disk, the IDE hosting
    * Gosu can't simply send the bytes in a conventional JDI redefineClasses() call.
    * Yet it somehow needs to at least inform Gosu's type system in the target process
    * that Gosu classes have changed.  The JVMTI doesn't offer much help; there's no

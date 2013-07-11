@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -2132,7 +2132,7 @@ public abstract class ParserBase implements IParserPart
     }
     if( enclosingClass == null )
     {
-      // enclosingClass can be null, for example, if the block is inside a fucking string template
+      // enclosingClass can be null, for example, if the block is inside a string template
       enclosingClass = getOuterFromScriptPartStack();
     }
     return enclosingClass;

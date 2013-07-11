@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.lang.parser;
@@ -34,12 +34,6 @@ public interface ILanguageLevel
   boolean allowGlobalNowSymbol();
 
   boolean allowAllImplicitCoercions();
-
-  boolean allowImplicitBigNumbersWithinExpressions();
-
-  boolean errorOnStringCoercionInAdditiveRhs();
-
-  boolean richNPEsInMathematicalExpressions();
 
   boolean supportsNakedCatchStatements();
 

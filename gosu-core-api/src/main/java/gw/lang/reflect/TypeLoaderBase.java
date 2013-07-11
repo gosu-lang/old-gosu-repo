@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.lang.reflect;
@@ -222,7 +222,7 @@ public abstract class TypeLoaderBase extends BaseService implements ITypeLoader 
       if (names != null) {
         _typeNames = names;
       } else {
-        _typeNames = computeTypeNames();
+        _typeNames = new HashSet<String>(computeTypeNames());
       }
     }
     return _typeNames;

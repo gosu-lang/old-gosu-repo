@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.util.servlet;
 
 import gw.lang.reflect.IMethodInfo;
@@ -20,9 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 
-/**
- *  Copyright 2010 Guidewire Software, Inc.
- */
 @SuppressWarnings("serial")
 public class GosuServlet extends HttpServlet
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.lang.reflect.java;
@@ -110,7 +110,7 @@ public class JavaTypes {
   }
 
   public static IType THROWS() {
-    return getJreType(Throws.class);
+    return getSystemType(Throws.class);
   }
 
   public static IType VOID() {

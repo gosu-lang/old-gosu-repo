@@ -3,7 +3,7 @@ uses java.lang.Iterable
 uses java.util.Iterator
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfIterablesEnhancement<E, T extends Iterable<E>> : Iterable<T> {
   function flatten() : Iterable<E> {

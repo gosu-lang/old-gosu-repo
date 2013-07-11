@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.ir.transform.statement;
@@ -239,6 +239,12 @@ public class UsingStatementTransformer extends AbstractStatementTransformer<Usin
     if( tempVar != null )
     {
       releaseStmt = new IRStatementList( false, tempVar, releaseStmt );
+    }
+
+    if(_stmt().getFinallyStatement() != null )
+    {
+      IRStatement finallyBody = _cc().compile( _stmt().getFinallyStatement() );
+      releaseStmt = new IRStatementList( false, releaseStmt, finallyBody );
     }
     return releaseStmt;
   }

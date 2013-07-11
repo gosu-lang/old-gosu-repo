@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -1443,6 +1443,9 @@ public final class GosuParser extends ParserBase implements IGosuParser
       _ctxInferenceMgr.pushCtx();
       List<IType> list = new ArrayList<IType>();
 
+      first = wrapExpressionIfNeeded( first, second );
+      second = wrapExpressionIfNeeded( second, first );
+
       //Do not allow literals that are coercable to the type of the other side to modify the
       //type of the expression
       if( !(first instanceof ILiteralExpression) ||
@@ -1512,6 +1515,20 @@ public final class GosuParser extends ParserBase implements IGosuParser
     }
     _ctxInferenceMgr.popCtx( !foundCondExpr );
   }
+
+  private Expression wrapExpressionIfNeeded( Expression first, Expression second )
+  {
+    if( first.getType() == JavaTypes.pVOID() && second.getType().isPrimitive() )
+    {
+      return possiblyWrapWithImplicitCoercion( first, TypeSystem.getBoxType( second.getType() ) );
+    }
+    else if( second.getType() == JavaTypes.pVOID() && first.getType().isPrimitive() )
+    {
+      return possiblyWrapWithImplicitCoercion( first, TypeSystem.getBoxType( first.getType() ) );
+    }
+    return first;
+  }
+
 
   //------------------------------------------------------------------------------
   // conditional-or-expression
@@ -2404,16 +2421,11 @@ public final class GosuParser extends ParserBase implements IGosuParser
           match( T, "-", SourceCodeTokenizer.TT_OPERATOR ) ||
           match( T, "?-", SourceCodeTokenizer.TT_OPERATOR ))
       {
-        verifyStringCoercion( bPlus, peekExpression() );
         parseMultiplicativeExpression();
 
         AdditiveExpression e = new AdditiveExpression();
         Expression rhs = popExpression();
         Expression lhs = popExpression();
-        if( !JavaTypes.STRING().equals( lhs.getType() ) )
-        {
-          verifyStringCoercion( bPlus, rhs );
-        }
         e.setLHS( lhs );
         e.setRHS( rhs );
         e.setOperator( T._strValue );
@@ -2428,21 +2440,6 @@ public final class GosuParser extends ParserBase implements IGosuParser
       }
     }
     while( true );
-  }
-
-  private void verifyStringCoercion( boolean bPlus, Expression rhs )
-  {
-    if( CommonServices.getEntityAccess().getLanguageLevel().errorOnStringCoercionInAdditiveRhs() )
-    {
-      if( bPlus && rhs.getClass() == TypeAsExpression.class )
-      {
-        TypeAsExpression typeAs = (TypeAsExpression)rhs;
-        if( JavaTypes.STRING().equals( typeAs.getType() ) )
-        {
-          verify( typeAs, false, Res.MSG_STRING_COERCION_ON_RHS_OF_ADDITIVE_EXPRESSION_MUST_BE_PARENTHESIZED );
-        }
-      }
-    }
   }
 
   //------------------------------------------------------------------------------
@@ -3952,12 +3949,13 @@ public final class GosuParser extends ParserBase implements IGosuParser
       if (JavaTypes.ANNOTATION().isAssignableFrom(declaringClass)) {
         if (listConstructorTypes.size() == 1) {
           IParameterInfo[] parameters = listConstructorTypes.get(0).getConstructor().getParameters();
-          //Seriously, Sun, WTF where you smoking?
           if (parameters.length == 1 && parameters[0].getName().equals("value")) {
-            return JavaAnnotationParsingState.PARSING_JAVA_VALUE_ENUM;
+            throw new RuntimeException("DEPRECATED 0: GosuParser@getJavaAnnotationParsingState");
+            //return JavaAnnotationParsingState.PARSING_JAVA_VALUE_ENUM;
           }
         }
-        return JavaAnnotationParsingState.PARSING_JAVA_NON_VALUE_ENUM;
+        throw new RuntimeException("DEPRECATED 0: GosuParser@getJavaAnnotationParsingState");
+        //return JavaAnnotationParsingState.PARSING_JAVA_NON_VALUE_ENUM;
       }
     }
     return JavaAnnotationParsingState.NOT_PARSING_ENUM;
@@ -6032,7 +6030,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
     {
       if( rootType instanceof IFunctionType && rootExpression instanceof Identifier )
       {
-        // Can't deref functions, convert to namespace if possible (this is to handle a shitty
+        // Can't deref functions, convert to namespace if possible (this is to handle a bad
         // relative namespaace problem e.g., print.foo.SomeTime where print is a namespace in gw.api.print  ..yeeeaaah)
         Identifier identifier = (Identifier)rootExpression;
         INamespaceType namespaceType = resolveNamespace( identifier.getSymbol().getName() );
@@ -6147,7 +6145,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
 
       if( rootExpression instanceof Identifier && !(rootType instanceof INamespaceType) )
       {
-        // This is to handle yet another shitty relative namespaace problem e.g., new activity.ActivityDetailHelper(Activity)
+        // This is to handle yet another bad relative namespaace problem e.g., new activity.ActivityDetailHelper(Activity)
         Identifier identifier = (Identifier)rootExpression;
         INamespaceType namespaceType = resolveNamespace( identifier.getSymbol().getName().toLowerCase() );
         if( namespaceType != null )
@@ -7230,7 +7228,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
         NumericLiteral e;
         if( strValue.indexOf( '.' ) != -1 )
         {
-          if( ctxType == JavaTypes.BIG_DECIMAL() && CommonServices.getEntityAccess().getLanguageLevel().allowImplicitBigNumbersWithinExpressions() )
+          if( ctxType == JavaTypes.BIG_DECIMAL() )
           {
             e = new NumericLiteral( strValue,  new BigDecimal( strValue ), JavaTypes.BIG_DECIMAL());
           }
@@ -7241,7 +7239,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
         }
         else
         {
-          if( ctxType == JavaTypes.BIG_INTEGER() && CommonServices.getEntityAccess().getLanguageLevel().allowImplicitBigNumbersWithinExpressions() )
+          if( ctxType == JavaTypes.BIG_INTEGER() )
           {
             if( isPrefixNumericLiteral(strValue))
             {
@@ -8679,6 +8677,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
     if( verify( varStmt, match( t, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_VAR ) )
     {
       varStmt.setNameOffset( iNameOffset, t._strValue );
+      warn( varStmt, !Keyword.isReserved( t._strValue ), Res.MSG_IMPROPER_USE_OF_KEYWORD, t._strValue );
     }
     else
     {
@@ -8690,6 +8689,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
   void parseVarStatement( VarStatement varStmt, Token idToken, boolean bClassMember )
   {
     String strIdentifier = idToken._strValue == null ? "" : idToken._strValue;
+    warn( varStmt, !Keyword.isReserved( strIdentifier ), Res.MSG_IMPROPER_USE_OF_KEYWORD, strIdentifier );
     IToken priorToken = getTokenizer().getPriorToken();
     boolean bZeroLength = strIdentifier.length() <= 0;
     addNameInDeclaration( strIdentifier,
@@ -8949,6 +8949,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
     if( verify( varStmt, match( T, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_NAME_PROPERTY ) )
     {
       strPropertyName = T._strValue;
+      warn( varStmt, !Keyword.isReserved( strPropertyName ), Res.MSG_IMPROPER_USE_OF_KEYWORD, strPropertyName );
     }
 
     String strIdentifier = strPropertyName == null ? "" : strPropertyName;
@@ -9279,6 +9280,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
     if( !bLoneInterval && verify( forEachStmt, match( t, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FOREACH ) )
     {
       forEachStmt.setNameOffset( iOffset, t._strValue );
+      warn( forEachStmt, !Keyword.isReserved( t._strValue ), Res.MSG_IMPROPER_USE_OF_KEYWORD, t._strValue );
     }
     else
     {
@@ -9403,7 +9405,10 @@ public final class GosuParser extends ParserBase implements IGosuParser
     iColumn = getTokenizer().getTokenColumn();
 
     Token Tindex = new Token();
-    verify( forEachStmt, match( Tindex, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FOREACH_INDEX );
+    if( verify( forEachStmt, match( Tindex, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FOREACH_INDEX ) )
+    {
+      warn( forEachStmt, !Keyword.isReserved( Tindex._strValue ), Res.MSG_IMPROPER_USE_OF_KEYWORD, Tindex._strValue );
+    }
 
     String strIndexIdentifier = Tindex._strValue;
 
@@ -9435,10 +9440,13 @@ public final class GosuParser extends ParserBase implements IGosuParser
     iLineNum = getTokenizer().getLineNumber();
     iColumn = getTokenizer().getTokenColumn();
 
-    Token Tindex = new Token();
-    verify( forEachStmt, match( Tindex, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FOREACH_ITERATOR );
+    Token Titer = new Token();
+    if( verify( forEachStmt, match( Titer, SourceCodeTokenizer.TT_WORD ), Res.MSG_EXPECTING_IDENTIFIER_FOREACH_ITERATOR ) )
+    {
+      warn( forEachStmt, !Keyword.isReserved( Titer._strValue ), Res.MSG_IMPROPER_USE_OF_KEYWORD, Titer._strValue );
+    }
 
-    String strIterIdentifier = Tindex._strValue;
+    String strIterIdentifier = Titer._strValue;
 
     boolean isIterable = JavaTypes.ITERABLE().isAssignableFrom( type );
     verify( forEachStmt, isIterable, Res.MSG_ITERATOR_SYMBOL_ONLY_SUPPORTED_ON_ITERABLE_OBJECTS );
@@ -9460,7 +9468,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
     verify( forEachStmt, _symTable.getSymbol( strIterIdentifier ) == null, Res.MSG_VARIABLE_ALREADY_DEFINED, strIterIdentifier );
 
 
-    forEachStmt.setIndexNameOffset( Tindex.getTokenStart() );
+    forEachStmt.setIndexNameOffset( Titer.getTokenStart() );
 
     Symbol iteratorIdentifier = new TypedSymbol( strIterIdentifier, iterType, _symTable, null, SymbolType.FOREACH_VARIABLE );
     iteratorIdentifier.setFinal( true );
@@ -9798,9 +9806,19 @@ public final class GosuParser extends ParserBase implements IGosuParser
       }
 
       verify( usingStmt, match( null, ')' ), Res.MSG_EXPECTING_RIGHTPAREN_USING );
-      if( verify( usingStmt, parseStatement(), Res.MSG_EXPECTING_STATEMENT ) )
+      if( verify( usingStmt, match( null, null, '{', true ), Res.MSG_EXPECTING_LEFTBRACE_STMTBLOCK ) )
       {
+        parseStatement();
         usingStmt.setStatement( popStatement() );
+      }
+      if( match( null, Keyword.KW_finally ))
+      {
+         if( verify( usingStmt, match( null,  null, '{', true ), Res.MSG_EXPECTING_LEFTBRACE_STMTBLOCK ) )
+         {
+           parseStatement();
+           Statement finallyStmt = popStatement();
+           usingStmt.setFinallyStatement( finallyStmt );
+         }
       }
       pushStatement( usingStmt );
     }
@@ -11867,6 +11885,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
       maybeEatNonDeclKeyword( bHasName, strFunctionName );
 
       strFunctionName = strFunctionName == null ? "" : strFunctionName;
+      warn( element, !Keyword.isReserved( strFunctionName ), Res.MSG_IMPROPER_USE_OF_KEYWORD, strFunctionName );
 
       ICompilableType gsClass = getGosuClass();
       if( gsClass != null && strFunctionName.equals( gsClass.getRelativeName() ) && gsClass.isEnum() )

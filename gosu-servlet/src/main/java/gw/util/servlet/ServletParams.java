@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.util.servlet;
 
 import javax.servlet.ServletContext;
@@ -5,9 +9,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-/**
- *  Copyright 2010 Guidewire Software, Inc.
- */
 public class ServletParams {
   private HttpServletRequest _request;
   private HttpServletResponse _response;

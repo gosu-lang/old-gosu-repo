@@ -5,7 +5,7 @@ uses java.util.concurrent.locks.ReadWriteLock
  * Adds block-based convenience methods to all implementers of the ReadWriteLock
  * interface.
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreReadWriteLockEnhancement : ReadWriteLock {
 

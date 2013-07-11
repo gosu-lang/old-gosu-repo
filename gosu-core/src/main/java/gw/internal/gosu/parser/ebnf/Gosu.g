@@ -53,37 +53,39 @@ enumBody : '{' enumConstants? classMembers '}' ;
 
 enumConstants : enumConstant  (',' enumConstant)*  ','? ';'?  ;
 
-enumConstant : annotation* id arguments? ;
+enumConstant : annotation* id optionalArguments ;
 
 interfaceMembers : ( modifiers 
                         (
-                          'function'  baseFunctionDefinition                             |
-                          (PropertyGet | PropertySet) baseFunctionDefinitionProperty     |
-                          fieldDefn                                                      |
-                          gClass                                                         |
+                          functionDefn     |
+                          propertyDefn     |
+                          fieldDefn        |
+                          gClass           |
                           gEnum
                         ) ';'?
                    )*;
 
 
-classMembers : ( modifiers 
-                    (
-                      'function'  baseFunctionDefinition functionBody?                         |
-                      'construct' baseConstructorDefinition functionBody                       |
-                      (PropertyGet | PropertySet) baseFunctionDefinitionProperty functionBody? |
-                      fieldDefn                                                                |
-                      delegateDefn                                                  |
-                      gClass                                                                   |
-                      gInterface                                                               |
-                      gEnum
-                    ) ';'?
-               )*
-             ;
+classMembers : declaration* ;
+
+declaration :
+                 modifiers
+                 (
+                   functionDefn functionBody?     |
+                   constructorDefn functionBody   |
+                   propertyDefn functionBody?     |
+                   fieldDefn                      |
+                   delegateDefn                   |
+                   gClass                         |
+                   gInterface                     |
+                   gEnum
+                 ) ';'?
+            ;
 
 enhancementMembers : ( modifiers
                         (
-                          'function'  baseFunctionDefinition functionBody                          |
-                          (PropertyGet | PropertySet) baseFunctionDefinitionProperty functionBody
+                          functionDefn functionBody  |
+                          propertyDefn functionBody
                         ) ';'?
                      )*
                    ;
@@ -92,9 +94,11 @@ delegateDefn : 'delegate' id delegateStatement ;
 
 delegateStatement : (':' typeLiteral)? 'represents' typeLiteral (',' typeLiteral)* ('=' expression)? ;
 
-optionalType : ':' typeLiteral | blockTypeLiteral | ;
+optionalType : (':' typeLiteral | blockTypeLiteral)? ;
 
 fieldDefn : 'var' id optionalType ('as' 'readonly'? id)? ('=' expression)? ;
+
+propertyDefn : 'property' ('get' | 'set') id parameters (':' typeLiteral)? ;
 
 dotPathWord : id ('.' id)*;
 
@@ -112,13 +116,9 @@ functionBody : statementBlock ;
 
 parameters : '(' parameterDeclarationList? ')' ;
 
-baseFunctionDefinition : id typeVariableDefs  parameters (':' typeLiteral)? ;
+functionDefn : 'function' id typeVariableDefs  parameters (':' typeLiteral)? ;
 
-baseConstructorDefinition : parameters (':' typeLiteral)? ;
-
-singleParameter : '(' parameterDeclaration? ')' ;
-
-baseFunctionDefinitionProperty : id singleParameter (':' typeLiteral)? ;
+constructorDefn : 'construct' parameters (':' typeLiteral)? ;
 
 modifiers :  (annotation  |
               'private'   |
@@ -151,7 +151,7 @@ statement : (
               localVarStatement             |
               evalExpr                      |
               assignmentOrMethodCall        |
-              statementBlock) ';'?                 |
+              statementBlock) ';'?          |
               ';'
           ;
 
@@ -163,7 +163,7 @@ catchClause :  'catch' '(' 'var'? id (':' typeLiteral)? ')' statementBlock ;
 
 assertStatement : 'assert' expression (':' expression )? ;
 
-usingStatement : 'using' '(' (localVarStatement (',' localVarStatement)* | expression) ')' statement ;
+usingStatement : 'using' '(' (localVarStatement (',' localVarStatement)* | expression) ')' statementBlock ('finally' statementBlock)? ;
 
 returnStatement : 'return' ( (expression ((~'=')|EOF)) => expression )? ;
 
@@ -194,7 +194,7 @@ iteratorVar : 'iterator' id ;
 thisSuperExpr : 'this' | 'super' ;
 
 assignmentOrMethodCall : (
-                           (newExpr | thisSuperExpr | typeLiteralExpr | parenthExpr)
+                           (newExpr | thisSuperExpr | typeLiteralExpr | parenthExpr | StringLiteral)
                            indirectMemberAccess
                          ) (incrementOp | assignmentOp expression)?
                          
@@ -280,23 +280,19 @@ parameterDeclarationList : parameterDeclaration (',' parameterDeclaration)* ;
 
 parameterDeclaration : annotation* 'final'? id ((':' typeLiteral ('=' expression)?) | blockTypeLiteral | '=' expression )? ;
 
-arguments : argumentsInternal ;
+annotationArguments : arguments ;
 
-annotationArguments : argumentsInternal ;
+arguments : '(' (argExpression (',' argExpression)*)? ')' ;
 
-argumentList : argExpression (',' argExpression)* ;
-
-argumentsInternal : '(' argumentList? ')' ;
+optionalArguments : arguments? ;
 
 argExpression : namedArgumentExpression | expression ;
 
-namedArgumentExpression : ':' namedArgumentIdentifier '=' expression;
-
-namedArgumentIdentifier : id;
+namedArgumentExpression : ':' id '=' expression;
 
 evalExpr : 'eval' '(' expression ')' ;
 
-featureLiteral : '#' (id | 'construct')  typeArguments  arguments? ;
+featureLiteral : '#' (id | 'construct')  typeArguments  optionalArguments ;
 
 standAloneDataStructureInitialization : '{' (initializerExpression)? '}' ;
 
@@ -441,10 +437,6 @@ multiplicativeOp : '*' | '/' | '%' | '?*' | '?/' | '?%' ;
 typeAsOp : 'typeas' | 'as' ;
 
 unaryOp : '~' | '!' | 'not' | 'typeof' | 'statictypeof';
-
-PropertyGet : 'property' ' '+ 'get' ;
-
-PropertySet : 'property' ' '+ 'set' ;
 
 id : Ident               | 
      'true'              |

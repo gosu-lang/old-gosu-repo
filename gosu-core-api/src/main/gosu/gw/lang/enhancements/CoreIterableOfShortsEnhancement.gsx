@@ -2,7 +2,7 @@ package gw.lang.enhancements
 uses java.lang.Short
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfShortsEnhancement : java.lang.Iterable<Short> {
   function sum() : int {

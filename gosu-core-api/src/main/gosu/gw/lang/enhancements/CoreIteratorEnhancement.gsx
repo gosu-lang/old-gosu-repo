@@ -6,7 +6,7 @@ uses java.util.LinkedList
  * Defines the core enhancements to the standard java.util.Iterator interface that
  * Guidewire provides.
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIteratorEnhancement<T> : java.util.Iterator<T> {
 

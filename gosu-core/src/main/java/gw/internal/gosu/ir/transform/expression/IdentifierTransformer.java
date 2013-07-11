@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.ir.transform.expression;
@@ -193,7 +193,7 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
   private int getArrayDims( IReducedSymbol reducedSym ) {
     IType type = reducedSym.getType();
     if( type == JavaTypes.OBJECT() ) {
-      // Special case for handling Object -- pcf does strange shit where it says a var is Object but expects a on dim array
+      // Special case for handling Object -- pcf does strange stuff where it says a var is Object but expects a on dim array
       return -1;
     }
     int iDims;

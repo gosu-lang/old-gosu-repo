@@ -5,7 +5,7 @@ uses java.util.Arrays
 uses java.util.Comparator
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreArrayOfComparablesEnhancement<T extends Comparable> : T[]
 {

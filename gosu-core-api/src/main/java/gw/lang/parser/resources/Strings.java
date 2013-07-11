@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 package gw.lang.parser.resources;
 
@@ -344,6 +344,7 @@ public class Strings extends ListResourceBundle
        {Res.MSG_EXPECTING_MESSAGE_FOR_ASSERT.getKey(), "Expecting message for 'assert'" },
        {Res.MSG_ASSERTIONS_NOT_ALLOWED_HERE.getKey(), "Assert statement not allowed here" },
        {Res.MSG_ARRAY_NOT_SUPPORTED.getKey(), "Array type not supported for {0}"},
+       {Res.MSG_IMPROPER_USE_OF_KEYWORD.getKey(), "Improper use of keyword, {0}" },
        {Res.MSG_ARRAY_INDEX_MUST_BE_INT.getKey(), "Arrays must be indexed with an int value"},
        {Res.MSG_PARAM_TYPE_CANT_BE_INFERRED_FROM_LATE_BOUND_EXPRESSION.getKey(), "Parameter type can't be inferred from late bound expression type"},
        {Res.MSG_USE_INTERVAL_ITERATION_INSTEAD.getKey(), "Use the range operator, 0..|{0} rather than a single number for numeric iteration"},

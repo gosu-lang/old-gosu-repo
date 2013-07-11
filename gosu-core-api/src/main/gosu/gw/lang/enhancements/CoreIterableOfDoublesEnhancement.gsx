@@ -2,7 +2,7 @@ package gw.lang.enhancements
 uses java.lang.Double
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfDoublesEnhancement : java.lang.Iterable<Double> {
   function sum() : Double {

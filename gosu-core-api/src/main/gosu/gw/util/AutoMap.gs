@@ -8,7 +8,7 @@ uses java.util.HashMap
  * block passed in will be evaluated and the return value will be stored into the map
  * for that key, then returned.  All other methods delegate directly to the wrapped map.
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 class AutoMap<K, V> implements Map<K, V>
 {

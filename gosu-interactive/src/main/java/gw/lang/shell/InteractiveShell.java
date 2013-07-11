@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.lang.shell;
 
 import gw.config.CommonServices;
@@ -33,9 +37,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- *  Copyright 2010 Guidewire Software, Inc.
- */
 class InteractiveShell implements Runnable
 {
   private static final String GOSU_PROMPT = "gs> ";

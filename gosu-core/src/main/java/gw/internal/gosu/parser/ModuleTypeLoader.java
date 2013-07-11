@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -739,6 +739,7 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
   private void refreshNamespaceCaches( String namespace, ITypeLoader typeLoader, RefreshKind kind ) {
     if (kind == RefreshKind.CREATION) {
       _namespaceTypesByName.remove(namespace);
+      clearErrorTypes();
     } else if (kind == RefreshKind.DELETION) {
       if( typeLoader.getClass() == GosuClassTypeLoader.class ) {
         IGosuClassRepository repository = ((GosuClassTypeLoader)typeLoader).getRepository();

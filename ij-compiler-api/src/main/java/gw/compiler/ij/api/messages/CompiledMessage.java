@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.compiler.ij.api.messages;
 
 import gw.fs.IFile;

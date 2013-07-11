@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.lang.psi;
 
 public interface IBlock6<R, P0, P1, P2, P3, P4, P5> { 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.statements;
@@ -293,7 +293,7 @@ public class VarInitializationVerifier {
   private void verifyStaticField( IGosuClassInternal gsClass, VarStatement varStmt ) {
     //## todo: introduce static constructors
 
-    boolean bAssigned = varStmt.getAsExpression() != null;
+    boolean bAssigned = varStmt.getHasInitializer();
     if( !bAssigned ) {
       ParseException parseException = new ParseException( varStmt.getLineNum(), 1, varStmt.getLocation().getColumn(), varStmt.getLocation().getOffset(), varStmt.getLocation().getExtent(),
                                                           new StandardSymbolTable(), Res.MSG_VAR_MIGHT_NOT_HAVE_BEEN_INIT, varStmt.getSymbol().getName() );

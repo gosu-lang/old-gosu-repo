@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.test;
 
 import gw.lang.UnstableAPI;
@@ -7,13 +11,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * NOTE:  This class is currently not a fixed part of the API and may change in future releases.
- *
- * This class serves as a utility to read module.xml definition file.
- *
- * $Copyright$
- */
 @UnstableAPI
 public class ClassPathUtil {
   /**

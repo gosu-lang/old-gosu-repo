@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.statements;
@@ -21,7 +21,7 @@ import java.util.List;
  * Represents the using-statement as specified in the Gosu grammar:
  * <pre>
  * <i>using-statement</i>
- *   <b>using</b> <b>(</b> &lt;expression&gt; | &lt;var-statement-list&gt; <b>)</b> &lt;statement&gt;
+ *   <b>using</b> <b>(</b> &lt;expression&gt; | &lt;var-statement-list&gt; <b>)</b> &lt;statement&gt; [ <b>finally</b> &lt;statement&gt; ]
  * <i>var-statement-list</i>
  *   &lt;var-statement&gt; [, var-statement-list]
  * </pre>
@@ -34,6 +34,7 @@ public final class UsingStatement extends Statement implements IUsingStatement
   private Expression _expression;
   private List<IVarStatement> _varStmts;
   private Statement _statement;
+  private Statement _finallyStatement;
 
   public UsingStatement()
   {
@@ -82,6 +83,16 @@ public final class UsingStatement extends Statement implements IUsingStatement
     _varStmts = varStmts;
   }
 
+  public Statement getFinallyStatement()
+  {
+    return _finallyStatement;
+  }
+
+  public void setFinallyStatement( Statement finallyStatement )
+  {
+    _finallyStatement = finallyStatement;
+  }
+
   public Object execute()
   {
     if( !isCompileTimeConstant() )
@@ -107,7 +118,11 @@ public final class UsingStatement extends Statement implements IUsingStatement
 
            getStatement() == null
            ? ""
-           :getStatement().toString();
+           : getStatement().toString() +
+
+           (getFinallyStatement() == null
+           ? ""
+           : ("\nfinally\n" + getFinallyStatement().toString()));
   }
 
   private String varStatementsToString()

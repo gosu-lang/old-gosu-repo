@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.util.transform.java.Visitor;
 
 import com.sun.source.tree.*;
@@ -244,7 +248,7 @@ public class GosuVisitor implements TreeVisitor<String, Void> {
     BlockTree finallyBlock = node.getFinallyBlock();
     List<String> resIdents = new ArrayList<String>();
 
-    if (catches.isEmpty() && finallyBlock == null) {
+    if(catches.isEmpty() && !resources.isEmpty()) {
       out.append("using (");
       boolean first = true;
       Mode oldMode = mode;
@@ -259,6 +263,11 @@ public class GosuVisitor implements TreeVisitor<String, Void> {
       mode = oldMode;
       out.append(")");
       out.append(block.accept(this, v));
+      if(finallyBlock != null) {
+        appendIndent(out);
+        out.append("finally ");
+        out.append(finallyBlock.accept(this, v));
+      }
       return out.toString();
     }
     if(!resources.isEmpty()) {
@@ -361,10 +370,13 @@ public class GosuVisitor implements TreeVisitor<String, Void> {
       skipPopScope = true;
     }
     if(mode == Mode.ADD_RESOURCES_FINALLY_BLOCK) {
-      for(String id : currentResourcesIdents) {
+      int i = currentResourcesIdents.size()-1;
+      while(i >= 0) {
+        String id =  currentResourcesIdents.get(i);
         appendIndent(out);
         String newId = symTable.convertLocalSymbol(id);
         out.append("if (").append(newId).append(" != null) ").append(newId).append(".close()\n");
+        i--;
       }
     }
     List<? extends StatementTree> statements = node.getStatements();

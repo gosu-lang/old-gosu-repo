@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -33,27 +33,9 @@ public class StandardLanguageLevel implements ILanguageLevel
   }
 
   @Override
-  public boolean allowImplicitBigNumbersWithinExpressions()
-  {
-    return false;
-  }
-
-  @Override
   public boolean isStandard()
   {
     return true;
-  }
-
-  @Override
-  public boolean errorOnStringCoercionInAdditiveRhs()
-  {
-    return false;
-  }
-
-  @Override
-  public boolean richNPEsInMathematicalExpressions()
-  {
-    return false;
   }
 
   @Override

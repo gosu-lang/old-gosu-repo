@@ -5,7 +5,7 @@ uses java.lang.StringBuilder
 uses java.math.BigDecimal
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreArrayOfPFloatsEnhancement : float[] {
   

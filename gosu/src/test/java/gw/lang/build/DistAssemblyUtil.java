@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.lang.build;
 
 import gw.test.util.ITCaseUtils;

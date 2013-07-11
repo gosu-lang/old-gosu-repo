@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.lang.reflect.gs;
@@ -45,7 +45,7 @@ public class GosuClassPathThing {
     catch( Exception e ) {
       // If our Handler class is not in the system loader and not accessible within the Caller's
       // classloader from the URL constructor (3 activation records deep), then our Handler class
-      // is not loadable by the URL class, but the honey badget really doesn't give a shit; it gets
+      // is not loadable by the URL class, but the honey badget  doesn't really care; it gets
       // what it wants.
       addOurProtocolHandler();
       url = new URL( null, protocol + "://honeybadger/" );

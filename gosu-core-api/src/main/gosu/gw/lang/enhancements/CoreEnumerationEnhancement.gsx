@@ -4,7 +4,7 @@ uses java.util.Enumeration
 uses java.util.Collections
 
 /**
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreEnumerationEnhancement<E> : Enumeration<E> {
 

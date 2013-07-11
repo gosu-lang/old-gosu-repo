@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 package gw.lang.parser.resources;
 
@@ -391,6 +391,7 @@ public class Res
   public static final ResourceKey MSG_EXPECTING_MESSAGE_FOR_ASSERT = new ResourceKey( "MSG_EXPECTING_MESSAGE_FOR_ASSERT" );
   public static final ResourceKey MSG_ASSERTIONS_NOT_ALLOWED_HERE = new ResourceKey( "MSG_ASSERTIONS_NOT_ALLOWED_HERE" );
   public static final ResourceKey MSG_ARRAY_NOT_SUPPORTED = new ResourceKey( "MSG_ARRAY_NOT_SUPPORTED" );
+  public static final ResourceKey MSG_IMPROPER_USE_OF_KEYWORD = new ResourceKey( "MSG_IMPROPER_USE_OF_KEYWORD" );
   public static final ResourceKey MSG_PARAM_TYPE_CANT_BE_INFERRED_FROM_LATE_BOUND_EXPRESSION = new ResourceKey( "MSG_PARAM_TYPE_CANT_BE_INFERRED_FROM_LATE_BOUND_EXPRESSION" );
 
   public static final ResourceKey MSG_FL_EXPECTING_FEATURE_NAME = new ResourceKey( "MSG_FL_EXPECTING_FEATURE_NAME");

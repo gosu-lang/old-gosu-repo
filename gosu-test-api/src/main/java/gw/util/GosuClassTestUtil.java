@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.util;
 
 import gw.lang.reflect.gs.IGosuClass;

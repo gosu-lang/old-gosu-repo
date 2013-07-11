@@ -1,7 +1,7 @@
 /*
  * Used to generate the block classes.  Should be run from this directory
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 uses java.lang.StringBuilder
 

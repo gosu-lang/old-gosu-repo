@@ -13,7 +13,7 @@ uses java.util.Date
 uses java.text.MessageFormat
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreStringEnhancement : java.lang.String
 {  

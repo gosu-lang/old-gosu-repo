@@ -4,7 +4,7 @@ uses java.lang.StringBuilder
 uses java.lang.Character
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreArrayOfPCharsEnhancement : char[] {
   

@@ -7,7 +7,7 @@ uses java.io.PrintWriter
 uses java.util.IdentityHashMap
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreThrowableEnhancement : java.lang.Throwable
 {

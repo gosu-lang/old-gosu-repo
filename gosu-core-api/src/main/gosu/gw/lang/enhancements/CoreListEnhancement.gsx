@@ -11,7 +11,7 @@ uses java.util.Comparator
 /**
  * List goodies
  *
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreListEnhancement<T> : List<T>  {
 

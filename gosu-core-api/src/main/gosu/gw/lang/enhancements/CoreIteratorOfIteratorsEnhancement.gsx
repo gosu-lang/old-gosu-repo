@@ -3,7 +3,7 @@ package gw.lang.enhancements
 uses java.util.Iterator
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIteratorOfIteratorsEnhancement<E, T extends Iterator<E>> : Iterator<T> {
   function flatten() : Iterator<E> {

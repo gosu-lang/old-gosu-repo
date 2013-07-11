@@ -2,7 +2,7 @@ package gw.lang.enhancements
 uses java.math.BigDecimal
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreArrayOfNumbersEnhancement<N extends java.lang.Number> : N[]
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.expressions;
@@ -26,7 +26,7 @@ public final class StaticTypeOfExpression extends Expression implements IStaticT
   @Override
   public IType getTypeImpl()
   {
-    return _expression == null ? MetaType.get( null ) : MetaType.get( _expression.getType() );
+    return _expression == null ? MetaType.DEFAULT_TYPE_TYPE.get() : MetaType.get( _expression.getType() );
   }
 
   public Expression getExpression()

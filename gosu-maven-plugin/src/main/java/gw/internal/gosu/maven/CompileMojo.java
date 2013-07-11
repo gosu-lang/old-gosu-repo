@@ -1,3 +1,7 @@
+/*
+ * Copyright 2013 Guidewire Software, Inc.
+ */
+
 package gw.internal.gosu.maven;
 
 import com.google.common.collect.Lists;

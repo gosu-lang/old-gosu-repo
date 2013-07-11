@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -78,5 +78,6 @@ public class GosuProgramParseInfo extends GosuClassParseInfo {
     super.addMemberField( varStmt );
     // Remove initializers, fields are assigned in the programs entry point function
     varStmt.setAsExpression( null );
+    varStmt.setIsInitializedTopLevelProgVar();
   }
 }

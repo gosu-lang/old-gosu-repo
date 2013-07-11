@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.java;// $ANTLR 3.4 GrammarProcessor.g 2012-10-01 17:25:14

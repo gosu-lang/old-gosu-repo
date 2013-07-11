@@ -15,7 +15,7 @@ uses java.util.HashMap
 uses java.util.Collections
  
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableEnhancement<T> : java.lang.Iterable<T> {    
 

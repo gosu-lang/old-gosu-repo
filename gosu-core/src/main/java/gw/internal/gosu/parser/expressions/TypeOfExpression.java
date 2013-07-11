@@ -1,15 +1,14 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.expressions;
 
-import gw.internal.gosu.parser.Expression;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.parser.expressions.ITypeOfExpression;
-import gw.internal.gosu.parser.MetaType;
 import gw.internal.gosu.parser.CannotExecuteGosuException;
+import gw.internal.gosu.parser.Expression;
+import gw.internal.gosu.parser.MetaType;
+import gw.lang.parser.expressions.ITypeOfExpression;
+import gw.lang.reflect.IType;
 
 
 /**
@@ -29,13 +28,9 @@ public final class TypeOfExpression extends Expression implements ITypeOfExpress
   @Override
   public IType getTypeImpl()
   {
-    // Note the static type of typeof must always be IType, not the metatype of the expression.
-    // This is because the metatype of the expression may be incompatible with the runtime type
-    // of the expression e.g,.:
-    // var a = new Foo() // Foo is a Gosu class
-    // var o = a as Object // Object is a Java clas
-    // (typeof o). <--- the compile time type here must be just IType because it is the least upper bound of all meta types 
-    return _expression == null ? MetaType.get( null ) : JavaTypes.ITYPE();
+    // Note the static type of typeof must always be the raw/defaut metatype, Type<DefaultType>,
+    // because it is the least upper bound of all meta types.
+    return MetaType.DEFAULT_TYPE_TYPE.get();
   }
 
   public Expression getExpression()

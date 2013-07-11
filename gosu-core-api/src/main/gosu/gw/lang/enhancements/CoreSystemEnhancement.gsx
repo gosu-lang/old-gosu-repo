@@ -3,7 +3,7 @@ uses java.lang.System
 uses java.lang.Throwable
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreSystemEnhancement : java.lang.System
 {

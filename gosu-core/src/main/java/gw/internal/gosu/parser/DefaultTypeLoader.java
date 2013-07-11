@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -199,6 +199,7 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
       _classCache.remove(fullyQualifiedTypeName);
       _classInfoCache.remove(fullyQualifiedTypeName);
     }
+    _module.getFileRepository().typesRefreshed( request );
   }
 
   @Override
@@ -228,6 +229,8 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
     _namespaces = null;
 
     _classInfoCache.clear();
+
+    _module.getFileRepository().typesRefreshed( null );
   }
 
   public void clearMisses() {

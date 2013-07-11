@@ -4,7 +4,7 @@ uses java.lang.Comparable
 uses gw.util.IOrderedList
 
 /*
- *  Copyright 2010 Guidewire Software, Inc.
+ *  Copyright 2013 Guidewire Software, Inc.
  */
 enhancement CoreIterableOfComparablesEnhancement<T extends Comparable> : Iterable<T> {
 

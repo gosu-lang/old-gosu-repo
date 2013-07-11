@@ -1,5 +1,5 @@
 /*
- * Copyright 2012. Guidewire Software, Inc.
+ * Copyright 2013 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser;
@@ -541,6 +541,11 @@ public abstract class ParsedElement implements IParsedElement
 
   public void addParseWarning( IParseIssue warning )
   {
+    if( hasParseIssue( warning ) )
+    {
+      return;
+    }
+
     if( getLocation() == null ||
         getLocation().getEnclosingType() == null ||
         CommonServices.getEntityAccess().shouldAddWarning( getLocation().getEnclosingType(), warning ) )

@@ -28,7 +28,7 @@ It was nominated Language of the Month in a Dr Dobb's [article](http://www.drdob
 
 The Open Type System
 --------------------
-Excerpt from the [article](http://devblog.guidewire.com/2012/02/27/what-differentiates-gosu-from-other-languages/ "Link"):
+Excerpt from the article [What Differentiates Gosu From Other Languages?](http://devblog.guidewire.com/2012/02/27/what-differentiates-gosu-from-other-languages/ "Link"):
 
 "The idea itself is simple: programmatic expansion of the type system.
 The only language with a similar feature is F#, the idea was independently developed around the same time.

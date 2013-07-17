@@ -2,6 +2,7 @@ WELCOME
 
 Thanks for downloading Gosu.  You are using version ${project.version}.
 
+
 QUICK INSTALL
 
 1. Confirm that you have Java version 1.7 (Sun/Oracle J2SE release 7) or
@@ -10,28 +11,13 @@ SDK version of Java. For Java downloads, visit http://java.com
 
 2. Expand the gosu.zip download file into its own directory.
 
-3. Run the platform-specific launch scripts in the /bin directory of the 
+3. Run the interactive shell by executing the platform-specific launch scripts in the /bin directory of the 
 Gosu directory. For example, gosu.cmd for Windows users.
 
-For complete installation instructions and important information 
-about Apache Eclipse and IntelliJ IDEA plugins, refer to:
-http://gosu-lang.org/docs.html
-
-
-COMMAND LINE OPTIONS
-
-If you run the Gosu command-line tool without any arguments, Gosu 
-opens a code editor that lets you create and run Gosu scripts. This editor
-understands the Gosu type system. It offers code completion of Gosu
-code based on the available Gosu and Java types when you type a "." or
-CTRL+SPACE.
-
-Gosu also includes an interactive shell for writing and running lines of Gosu
-by using the -i option:
-   gosu -i
-   
-For more information, refer to the Gosu shell section in the documentation:
-http://gosu-lang.org/doc/index.html
+The Gosu Plugin for IntelliJ is the recommended way to use Gosu.
+The plugin is hosted on the IntelliJ IDEA Plugin Repository and you can download it directly from within IntelliJ IDEA.
+For complete installation instructions and important information about the IntelliJ IDEA plugin, refer to 
+http://gosu-lang.org/intellij.html
 
 
 DOCUMENTATION AND EXAMPLES
@@ -39,7 +25,6 @@ DOCUMENTATION AND EXAMPLES
 The latest Gosu language documentation is at:
   http://www.gosu-lang.org/
 
-You can browse the latest documentation on the web site. To use the documentation locally,
-download the latest Gosu software, which includes the documentation.
+You can browse the latest documentation or download a pdf copy of it on the web site.
 
 Enjoy!

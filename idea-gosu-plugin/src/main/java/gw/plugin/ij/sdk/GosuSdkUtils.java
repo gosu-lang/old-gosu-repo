@@ -175,7 +175,7 @@ public class GosuSdkUtils {
   public static Sdk createJavaSdk() {
     Sdk sdk = null;
     String javaHome = System.getProperty("java.home");
-    if (!Strings.isNullOrEmpty(javaHome)) {
+    if (!Strings.isNullOrEmpty(javaHome) && !javaHome.toLowerCase().contains("intellij")) {
       if (javaHome.endsWith("jre")) {
         javaHome = javaHome.substring(0, javaHome.length() - 3);
       }
@@ -231,6 +231,9 @@ public class GosuSdkUtils {
   public static boolean isApplicableJdk(@NotNull Sdk sdk) {
     if (sdk.getSdkType() instanceof JavaSdk) {
       final JavaSdkVersion version = JavaSdk.getInstance().getVersion(sdk);
+      if(version == null) {
+        return false;
+      }
       return version.getMaxLanguageLevel().isAtLeast(LanguageLevel.JDK_1_5);
     }
     return false;

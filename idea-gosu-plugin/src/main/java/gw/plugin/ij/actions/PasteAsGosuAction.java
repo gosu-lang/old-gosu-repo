@@ -12,7 +12,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import gw.plugin.ij.icons.GosuIcons;
 import gw.plugin.ij.util.GosuBundle;
-import gw.util.transform.java.JavaToGosu;
+import gw.plugin.ij.util.transform.java.JavaToGosu;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;

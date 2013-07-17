@@ -30,3 +30,15 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 THE POSSIBILITY OF SUCH DAMAGE.
+
+
+The Java to Gosu converter test suite uses the examples from the following book as
+test files:
+Peter Sestoft: Java Precisely, The MIT Press 2002. ISBN 0-262-69276-7.
+
+These files are from http://www.dina.kvl.dk/~sestoft/javaprecisely/
+
+Java Precisely and its example programs come with no warranty of any
+kind, either expressed or implied. In no event shall I or the Royal
+Veterinary and Agricultural University or the IT University of
+Copenhagen be liable for any damage resulting from its use.

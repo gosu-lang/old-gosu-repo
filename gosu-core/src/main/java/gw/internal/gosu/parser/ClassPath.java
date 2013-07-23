@@ -14,22 +14,18 @@ import gw.util.cache.FqnCache;
 import gw.util.cache.FqnCacheNode;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 public class ClassPath implements IClassPath
 {
   private static final String CLASS_FILE_EXT = ".class";
   private IModule module;
   private ClassPathFilter filter;
-  private FqnCache<Object> cache = new FqnCache<Object>();
+  private FqnCache<IFile> cache = new FqnCache<IFile>();
 
   public ClassPath(IModule module, ClassPathFilter filter)
   {
@@ -47,8 +43,16 @@ public class ClassPath implements IClassPath
     return cache.contains(fqn);
   }
 
+  public IFile get( String fqn ) {
+    return cache.get( fqn );
+  }
+
   public Set<String> getFilteredClassNames() {
     return cache.getFqns();
+  }
+
+  public boolean isEmpty() {
+    return cache.getRoot().isLeaf();
   }
 
   // ====================== PRIVATE ====================================
@@ -70,7 +74,7 @@ public class ClassPath implements IClassPath
         String strClassName = getClassNameFromFile( root, file );
         if( isValidClassName( strClassName ) )
         {
-          putClassName( strClassName, filter );
+          putClassName( file, strClassName, filter );
         }
       }
     }
@@ -79,7 +83,7 @@ public class ClassPath implements IClassPath
     }
   }
 
-  private void putClassName(String strClassName, ClassPathFilter filter)
+  private void putClassName( IFile file, String strClassName, ClassPathFilter filter )
   {
     boolean bFiltered = filter != null && !filter.acceptClass( strClassName );
     if( bFiltered )
@@ -89,7 +93,7 @@ public class ClassPath implements IClassPath
     }
     if( strClassName != null )
     {
-      cache.add(strClassName);
+      cache.add( strClassName, file );
     }
   }
 
@@ -145,7 +149,8 @@ public class ClassPath implements IClassPath
     }
     // look for private or anonymous inner classes
     int index = strClassName.lastIndexOf('$');
-    if (index >= 0 && index < strClassName.length() - 1 &&
+    if (filter.isIgnoreAnonymous() &&
+            index >= 0 && index < strClassName.length() - 1 &&
             Character.isDigit(strClassName.charAt(index + 1))) {
       return false;
     }

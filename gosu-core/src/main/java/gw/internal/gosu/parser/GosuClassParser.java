@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser;
 
+import gw.config.CommonServices;
 import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.expressions.ClassDeclaration;
 import gw.internal.gosu.parser.expressions.InterfacesClause;
@@ -446,7 +447,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         assignTokens( classStmt );
       }
 
-      if( !ILanguageLevel.Util.STANDARD_GOSU() )
+      if( !ILanguageLevel.Util.STANDARD_GOSU() && !CommonServices.getPlatformHelper().isInIDE() )
       {
         // Only support this insanity in gw gosu
         CompileTimeAnnotationHandler.postDefinitionVerification( classStmt );
@@ -1697,6 +1698,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         verify( getClassStatement(), !Modifier.isProtected( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_protected, classType.name() );
         verify( getClassStatement(), !Modifier.isInternal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_internal, classType.name() );
         verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
+        verify( getClassStatement(), !Modifier.isAbstract( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_abstract, classType.name() );
         verifyNoAbstractHideOverrideStaticModifierDefined( getClassStatement(), false, modifiers.getModifiers(), Keyword.KW_enhancement );
         gsClass.setModifierInfo(modifiers);
       }
@@ -1708,6 +1710,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       {
         verify( getClassStatement(), !Modifier.isHide( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, classType.name() );
         verify( getClassStatement(), !Modifier.isOverride( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, classType.name() );
+        verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
         gsClass.setModifierInfo(modifiers);
       }
     }

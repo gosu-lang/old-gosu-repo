@@ -4,7 +4,10 @@
 
 package gw.internal.gosu.parser;
 
+import gw.fs.IFile;
 import gw.internal.gosu.module.DefaultSingleModule;
+import gw.lang.reflect.java.asm.AsmClass;
+import gw.lang.reflect.java.asm.AsmClassLoader;
 import gw.lang.reflect.IInjectableClassLoader;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.TypeName;
@@ -12,7 +15,7 @@ import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IModule;
 import gw.util.concurrent.LockingLazyVar;
 
-import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,6 +93,49 @@ public class ClassCache {
         dotIndex = nextDot == -1 ? -1 : nextDot + 1;
       }
     }
+  }
+
+  public AsmClass loadAsmClass( String className ) {
+    AsmClass primitiveClazz = AsmClass.findPrimitive( className );
+    try {
+      IModule jreModule = _module.getExecutionEnvironment().getJreModule();
+      if( jreModule == _module && primitiveClazz != null ) {
+        return primitiveClazz;
+      }
+    }
+    catch( Exception e ) {
+      // ignore, jreModule isn't available yet
+    }
+
+    if( _classPathCache.get().isEmpty() ) {
+      return null;
+    }
+
+    StringBuilder s = new StringBuilder( className );
+    int i;
+    do {
+      if( ignoreTheCache || _classPathCache.get().contains( className ) ) {
+        IFile file = _classPathCache.get().get( className );
+        if( file != null ) {
+          try {
+            return AsmClassLoader.loadClass( _module, className, file.openInputStream() );
+          }
+          catch( IOException e ) {
+            throw new RuntimeException( e );
+          }
+        }
+      }
+      i = s.lastIndexOf( "." );
+      if( i >= 0 ) {
+        if( isPackage( s, i ) ) {
+          return null;
+        }
+        s.setCharAt( i, '$' );
+        className = s.toString();
+      }
+    } while( i >= 0 );
+
+    return null;
   }
 
   public Class loadClass(String className) {

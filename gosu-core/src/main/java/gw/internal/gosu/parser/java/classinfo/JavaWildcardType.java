@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.java.classinfo;
@@ -10,11 +10,11 @@ import gw.lang.reflect.java.IJavaClassType;
 import gw.lang.reflect.java.IJavaClassWildcardType;
 import gw.lang.reflect.module.IModule;
 
-public class JavaSourceWildcardType implements IJavaClassWildcardType {
+public class JavaWildcardType implements IJavaClassWildcardType {
   private IJavaClassType _bound;
   private IModule _module;
 
-  public JavaSourceWildcardType(IJavaClassType bound) {
+  public JavaWildcardType( IJavaClassType bound ) {
     _bound = bound;
     _module = bound.getModule();
   }

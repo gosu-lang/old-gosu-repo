@@ -15,7 +15,17 @@ import gw.internal.schema.gw.xsd.config.xml.schemalocations.anonymous.elements.S
 import gw.internal.schema.gw.xsd.w3c.wsdl.Definitions;
 import gw.internal.schema.gw.xsd.w3c.wsdl.anonymous.elements.TDefinitions_Import;
 import gw.internal.schema.gw.xsd.w3c.wsdl.anonymous.elements.TDefinitions_Types;
-import gw.internal.schema.gw.xsd.w3c.xmlschema.*;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Attribute;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.AttributeGroup;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.ComplexContent;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.ComplexType;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Element;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Group;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Import;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Include;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.Redefine;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.SimpleContent;
+import gw.internal.schema.gw.xsd.w3c.xmlschema.SimpleType;
 import gw.internal.schema.gw.xsd.w3c.xmlschema.anonymous.elements.ComplexContent_Extension;
 import gw.internal.schema.gw.xsd.w3c.xmlschema.anonymous.elements.ComplexContent_Restriction;
 import gw.internal.xml.XmlConstants;
@@ -24,18 +34,48 @@ import gw.internal.xml.XmlSchemaAccessImpl;
 import gw.internal.xml.XmlSchemaLocalResourceResolver;
 import gw.internal.xml.xsd.XmlSchemaSource;
 import gw.internal.xml.xsd.typeprovider.primitive.XmlSchemaPrimitiveType;
-import gw.internal.xml.xsd.typeprovider.schema.*;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlBinding;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlDefinitions;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlImport;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlMessage;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlPortType;
+import gw.internal.xml.xsd.typeprovider.schema.WsdlTypes;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchema;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaAny;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaAttribute;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaAttributeGroup;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaCollection;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaComplexType;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaContent;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaElement;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaFacet;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaGroup;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaImport;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaObject;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleContent;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleContentExtension;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleContentRestriction;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleType;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleTypeList;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleTypeRestriction;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleTypeUnion;
+import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaType;
 import gw.internal.xml.xsd.typeprovider.schemaindexer.XmlSchemaIndexer;
 import gw.internal.xml.xsd.typeprovider.schemaparser.XmlSchemaParseContext;
 import gw.internal.xml.xsd.typeprovider.schemaparser.XmlSchemaParser;
 import gw.internal.xml.xsd.typeprovider.simplevaluefactory.XmlSchemaEnumSimpleValueFactory;
 import gw.internal.xml.xsd.typeprovider.simplevaluefactory.XmlSchemaListSimpleValueFactory;
 import gw.internal.xml.xsd.typeprovider.simplevaluefactory.XmlSimpleValueFactory;
-import gw.internal.xml.xsd.typeprovider.validator.*;
+import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleListValueValidator;
+import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleNoopValueValidator;
+import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleTypeSimpleValueValidator;
+import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleUnionValueValidator;
+import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleValueValidator;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.java.IAsmJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
@@ -64,8 +104,21 @@ import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
  * Represents an index of a schema or schemas retrieved from a particular file, which could be an XSD or a WSDL.
@@ -2197,7 +2250,7 @@ public class XmlSchemaIndex<T> {
     if (clazz == null) {
       throw new RuntimeException( "Class " + className + " does not exist. Please generate it using xsd-codegen." );
     }
-    if (clazz.getBackingClass() != null) {
+    if (!(clazz instanceof IAsmJavaClassInfo) && clazz.getBackingClass() != null) {
       try {
         Field field = clazz.getBackingClass().getDeclaredField( "FINGERPRINT" );
         field.setAccessible( true );

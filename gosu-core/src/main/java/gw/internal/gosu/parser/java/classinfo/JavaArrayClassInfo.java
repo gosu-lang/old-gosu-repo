@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.java.classinfo;
@@ -22,11 +22,12 @@ import gw.lang.reflect.java.IJavaPropertyDescriptor;
 import gw.lang.reflect.module.IModule;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 
-public class JavaSourceArrayClassInfo extends AbstractJavaClassInfo {
+public class JavaArrayClassInfo extends AbstractJavaClassInfo {
   private IJavaClassInfo _component;
 
-  public JavaSourceArrayClassInfo(IJavaClassInfo component) {
+  public JavaArrayClassInfo( IJavaClassInfo component ) {
     if (component == null) {
       throw new NullPointerException("Cannot have a null array component.");
     }
@@ -40,7 +41,7 @@ public class JavaSourceArrayClassInfo extends AbstractJavaClassInfo {
 
   @Override
   public IJavaClassInfo getArrayType() {
-    return new JavaSourceArrayClassInfo(this);
+    return new JavaArrayClassInfo(this);
   }
 
   @Override
@@ -273,7 +274,8 @@ public class JavaSourceArrayClassInfo extends AbstractJavaClassInfo {
 
   @Override
   public Class getBackingClass() {
-    return null;
+    Class backingClass = _component.getBackingClass();
+    return backingClass == null ? null : Array.newInstance( backingClass, 0 ).getClass();
   }
 
   @Override

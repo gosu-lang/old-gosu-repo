@@ -6,8 +6,9 @@ package gw.internal.xml.xsd.typeprovider.simplevaluefactory;
 
 import gw.internal.xml.XmlDeserializationContext;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.xml.XmlSimpleValue;
+
+import java.math.BigInteger;
 
 public abstract class XmlSimpleValueFactory {
 
@@ -16,14 +17,14 @@ public abstract class XmlSimpleValueFactory {
   /* AND ADD A TEST IN XMLSIMPLEVALUETEST.GS                                    */
   /******************************************************************************/
   public static final BooleanSimpleValueFactory BOOLEAN_INSTANCE = new BooleanSimpleValueFactory();
-  public static final SimpleSimpleValueFactory BYTE_INSTANCE = new SimpleSimpleValueFactory( JavaTypes.BYTE() );
+  public static final SimpleSimpleValueFactory BYTE_INSTANCE = new SimpleSimpleValueFactory( Byte.class );
   public static final BigDecimalSimpleValueFactory DECIMAL_INSTANCE = new BigDecimalSimpleValueFactory();
   public static final DoubleSimpleValueFactory DOUBLE_INSTANCE = new DoubleSimpleValueFactory();
   public static final FloatSimpleValueFactory FLOAT_INSTANCE = new FloatSimpleValueFactory();
-  public static final SimpleSimpleValueFactory INT_INSTANCE = new SimpleSimpleValueFactory( JavaTypes.INTEGER() );
-  public static final SimpleSimpleValueFactory INTEGER_INSTANCE = new SimpleSimpleValueFactory( JavaTypes.BIG_INTEGER() );
-  public static final SimpleSimpleValueFactory LONG_INSTANCE = new SimpleSimpleValueFactory( JavaTypes.LONG() );
-  public static final SimpleSimpleValueFactory SHORT_INSTANCE = new SimpleSimpleValueFactory( JavaTypes.SHORT() );
+  public static final SimpleSimpleValueFactory INT_INSTANCE = new SimpleSimpleValueFactory( Integer.class );
+  public static final SimpleSimpleValueFactory INTEGER_INSTANCE = new SimpleSimpleValueFactory( BigInteger.class );
+  public static final SimpleSimpleValueFactory LONG_INSTANCE = new SimpleSimpleValueFactory( Long.class );
+  public static final SimpleSimpleValueFactory SHORT_INSTANCE = new SimpleSimpleValueFactory( Short.class );
   public static final UnsignedLongSimpleValueFactory UNSIGNEDLONG_INSTANCE = new UnsignedLongSimpleValueFactory();
   public static final UnsignedIntSimpleValueFactory UNSIGNEDINT_INSTANCE = new UnsignedIntSimpleValueFactory();
   public static final UnsignedShortSimpleValueFactory UNSIGNEDSHORT_INSTANCE = new UnsignedShortSimpleValueFactory();

@@ -70,6 +70,7 @@ interfaceMembers : ( modifiers
                           propertyDefn     |
                           fieldDefn        |
                           gClass           |
+                          gInterface       |
                           gEnum
                         ) ';'?
                    )*;

@@ -34,6 +34,11 @@ public interface IClassPath
         return !className.startsWith( SUN_CLASS_PREFIX ) &&
                !className.startsWith( COM_SUN_CLASS_PREFIX );
       }
+
+      @Override
+      public boolean isIgnoreAnonymous() {
+        return false;
+      }
     };
 
   ClassPathFilter ONLY_API_CLASSES =
@@ -43,11 +48,21 @@ public interface IClassPath
       {
         return className.startsWith( GW_API_PREFIX ) && !className.startsWith(GW_INTERNAL_PREFIX);
       }
+
+      @Override
+      public boolean isIgnoreAnonymous() {
+        return true;
+      }
     };
 
   ClassPathFilter ALLOW_ALL_WITH_SUN_FILTER =
     new IClassPath.ClassPathFilter() {
       public boolean acceptClass( String className ) {
+        return true;
+      }
+
+      @Override
+      public boolean isIgnoreAnonymous() {
         return true;
       }
     };
@@ -60,6 +75,8 @@ public interface IClassPath
 
   public static interface ClassPathFilter
   {
-    public boolean acceptClass( String className );
+    boolean acceptClass( String className );
+
+    boolean isIgnoreAnonymous();
   }
 }

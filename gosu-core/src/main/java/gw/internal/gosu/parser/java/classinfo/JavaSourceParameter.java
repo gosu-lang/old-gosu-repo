@@ -12,7 +12,6 @@ import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.java.IJavaAnnotatedElement;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassType;
-import gw.lang.reflect.module.IModule;
 
 import java.lang.annotation.Annotation;
 

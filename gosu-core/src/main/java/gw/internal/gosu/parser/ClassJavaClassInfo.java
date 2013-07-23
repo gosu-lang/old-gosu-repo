@@ -9,7 +9,6 @@ import gw.lang.GosuShop;
 import gw.lang.javadoc.IClassDocNode;
 import gw.lang.reflect.BeanInfoUtil;
 import gw.lang.reflect.IAnnotationInfo;
-import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
@@ -44,11 +43,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClassJavaClassInfo extends TypeJavaClassType implements IClassJavaClassInfo {
-  private Class _class;
+  private Class<?> _class;
   private transient LockingLazyVar<GenericBeanInfo> _beanInfo = new LockingLazyVar<GenericBeanInfo>() {
     @Override
     protected GenericBeanInfo init() {
-      return (GenericBeanInfo) NewIntrospector.getBeanInfo(_class);
+      return NewIntrospector.getBeanInfo(_class);
     }
   };
   private IJavaClassMethod[] _declaredMethods;
@@ -129,9 +128,9 @@ public class ClassJavaClassInfo extends TypeJavaClassType implements IClassJavaC
     Class[] javaParamTypes = new Class[paramTypes.length];
     for (int i = 0; i < paramTypes.length; i++) {
       IJavaClassInfo paramType = paramTypes[i];
-      if (paramType instanceof ClassJavaClassInfo) {
-        javaParamTypes[i] = ((ClassJavaClassInfo) paramType)._class;
-      } else {
+      Class backingClass = paramType.getBackingClass();
+      javaParamTypes[i] = backingClass;
+      if( backingClass == null ) {
         throw new IllegalStateException("Class info for " + getName() + " is concrete, but class info for method parameter " + paramType.getName() + " is not (it's a " + paramType.getClass() + "), so can't get method by signature");
       }
     }

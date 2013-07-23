@@ -311,7 +311,15 @@ public class GosuFeatureResolver extends AbstractFeatureResolver {
   }
 
   public static PsiElement resolveProperty(String strProperty, @NotNull IType type, PsiElement ctx) {
-    IPropertyInfo pi = ((IRelativeTypeInfo) type.getTypeInfo()).getProperty(type, strProperty);
+
+    ITypeInfo typeInfo = type.getTypeInfo();
+    IPropertyInfo pi;
+    if( typeInfo instanceof IRelativeTypeInfo ) {
+      pi = ((IRelativeTypeInfo) typeInfo).getProperty(type, strProperty);
+    }
+    else {
+      pi = typeInfo.getProperty(strProperty);
+    }
     return pi != null ? PsiFeatureResolver.resolveProperty(pi, ctx) : null;
   }
 

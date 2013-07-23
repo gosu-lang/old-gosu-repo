@@ -252,7 +252,7 @@ public class JavaFieldPropertyInfo extends JavaBaseFeatureInfo implements IJavaF
       IExpression pr = CompileTimeExpressionParser.parse( rhs, ((IJavaType) owner).getBackingClassInfo(), getFeatureType() );
       return pr.isCompileTimeConstant();
     }
-    else if( field instanceof FieldJavaClassField ) {
+    else if( field instanceof FieldJavaClassField || field instanceof AsmFieldJavaClassField ) {
       //## todo: we need to use ASM or something to examine the bytecode to see if the rhs expr is really compile-time const
       return field.isEnumConstant() ||
              field.getType().isPrimitive() ||
@@ -282,6 +282,13 @@ public class JavaFieldPropertyInfo extends JavaBaseFeatureInfo implements IJavaF
       catch( IllegalAccessException e ) {
         throw new RuntimeException( e );
       }
+    }
+    else if( field instanceof AsmFieldJavaClassField ) {
+      if( field.isEnumConstant() ) {
+        return field.getName();
+      }
+      Object value = ((AsmFieldJavaClassField)field).getStaticValue();
+      return CompileTimeExpressionParser.convertValueToInfoFriendlyValue( value, getOwnersType().getTypeInfo() );
     }
     else {
       throw new IllegalStateException( "Unexpected field type: " + field );

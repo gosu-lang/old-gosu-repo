@@ -57,6 +57,9 @@ public class FileFactory {
   }
 
   public IFile getIFile(URL url) {
+    return getIFile( url, true );
+  }
+  public IFile getIFile(URL url, boolean bCreateIfNotExists) {
     if (url.getProtocol().equals("file")) {
       try {
         URI uri = url.toURI();
@@ -85,7 +88,11 @@ public class FileFactory {
         throw new RuntimeException(e);
       }
       JarFileDirectoryImpl jarFileDirectory = new JarFileDirectoryImpl(jarFile);
-      return jarFileDirectory.getOrCreateFile(filePath);
+
+      if( bCreateIfNotExists ) {
+        return jarFileDirectory.getOrCreateFile( filePath );
+      }
+      return jarFileDirectory.file( filePath );
     } else {
       throw new RuntimeException("Unrecognized protocol: " + url.getProtocol());
     }

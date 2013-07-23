@@ -409,7 +409,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
         @Override
         public Object newInstance( Object... args )
         {
-          Annotations.Builder<? extends Annotation> builder = Annotations.builder( ((ClassJavaClassInfo)_backingClass).getJavaClass() );
+          Annotations.Builder<? extends Annotation> builder = Annotations.builder( _backingClass.getBackingClass() );
           Iterator argIter = Arrays.asList( args ).iterator();
           for( IJavaClassMethod method : methods )
           {

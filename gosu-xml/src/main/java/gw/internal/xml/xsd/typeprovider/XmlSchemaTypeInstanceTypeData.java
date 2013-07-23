@@ -4,8 +4,6 @@
 
 package gw.internal.xml.xsd.typeprovider;
 
-import gw.config.CommonServices;
-import gw.fs.IFile;
 import gw.internal.xml.XmlDeserializationContext;
 import gw.internal.xml.XmlSimpleValueInternals;
 import gw.internal.xml.XmlSimpleValueValidationContext;
@@ -26,8 +24,20 @@ import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaSimpleTypeRestriction;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaType;
 import gw.internal.xml.xsd.typeprovider.simplevaluefactory.XmlSimpleValueFactory;
 import gw.internal.xml.xsd.typeprovider.validator.XmlSimpleValueValidator;
-import gw.lang.reflect.*;
+import gw.lang.reflect.ConstructorInfoBuilder;
+import gw.lang.reflect.IConstructorHandler;
+import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.ILocationAwareFeature;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPropertyAccessor;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.LocationInfo;
+import gw.lang.reflect.ParameterInfoBuilder;
+import gw.lang.reflect.PropertyInfoBuilder;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuObject;
+import gw.lang.reflect.java.IAsmJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassConstructor;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaType;
@@ -40,6 +50,7 @@ import gw.xml.XmlElement;
 import gw.xml.XmlSimpleValue;
 import gw.xml.XmlTypeInstance;
 
+import javax.xml.namespace.QName;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.AbstractList;
@@ -52,8 +63,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.xml.namespace.QName;
 
 /**
  * IType for statically typed XmlTypeInstance types. See XmlTypeInstance for a discussion of what an XmlTypeInstance is. 
@@ -191,7 +200,7 @@ public class XmlSchemaTypeInstanceTypeData<T> extends XmlSchemaTypeData<T> imple
   @Override
   public Class getBackingClass() {
     IJavaClassInfo clazz = getSchemaIndex().getGeneratedClass(getType().getName());
-    return clazz != null ? clazz.getBackingClass() : XmlTypeInstance.class;
+    return (!(clazz instanceof IAsmJavaClassInfo) && clazz != null) ? clazz.getBackingClass() : XmlTypeInstance.class;
   }
 
   @Override

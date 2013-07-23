@@ -125,7 +125,7 @@ public class JarContentITCase extends Assert {
 
   private void assertGosuCoreShades(IDirectory dir, boolean expected) {
     assertEquals(expected, dir.dir("gw/internal/ext/org/antlr").exists());
-    assertEquals(expected, dir.dir("gw/internal/ext/org/objectweb/asm").exists());
+    //assertEquals(expected, dir.dir("gw/internal/ext/org/objectweb/asm").exists());
   }
 
   private static String getVersion() {

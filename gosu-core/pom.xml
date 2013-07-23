@@ -22,31 +22,6 @@
       <artifactId>gw-antlr-runtime</artifactId>
       <version>3.4-2</version>
     </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu.managed</groupId>
-      <artifactId>gw-asm</artifactId>
-      <version>3.1-2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu.managed</groupId>
-      <artifactId>gw-asm-analysis</artifactId>
-      <version>3.1-2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu.managed</groupId>
-      <artifactId>gw-asm-commons</artifactId>
-      <version>3.1-2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu.managed</groupId>
-      <artifactId>gw-asm-tree</artifactId>
-      <version>3.1-2</version>
-    </dependency>
-    <dependency>
-      <groupId>org.gosu-lang.gosu.managed</groupId>
-      <artifactId>gw-asm-util</artifactId>
-      <version>3.1-2</version>
-    </dependency>
   </dependencies>
 
   <build>

@@ -16,7 +16,6 @@ import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeVariableType;
 import gw.lang.reflect.SimpleParameterInfo;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGenericTypeVariable;
@@ -31,9 +30,7 @@ import gw.lang.reflect.module.IModule;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class JavaSourceMethod implements IJavaClassMethod, ITypeInfoResolver {
@@ -85,8 +82,8 @@ public class JavaSourceMethod implements IJavaClassMethod, ITypeInfoResolver {
   @Override
   public String getReturnTypeName() {
     IJavaClassType type = getGenericReturnType();
-    if (type instanceof JavaSourceArrayClassInfo) {
-      return "[" + ((JavaSourceArrayClassInfo) type).getComponentType().getNameSignature();
+    if (type instanceof JavaArrayClassInfo ) {
+      return "[" + ((JavaArrayClassInfo) type).getComponentType().getNameSignature();
     } else {
       return type.getName();
     }

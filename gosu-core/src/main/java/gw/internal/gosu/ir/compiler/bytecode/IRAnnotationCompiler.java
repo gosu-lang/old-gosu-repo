@@ -73,8 +73,13 @@ public class IRAnnotationCompiler
       }
       else if( JavaTypes.CLASS().getBackingClassInfo().isAssignableFrom( returnClassInfo ) )
       {
-        value = TypeLord.getPureGenericType( (IType)value );
-        visitor.visit( fieldName, Type.getType( AbstractElementTransformer.getDescriptor( (IType)value ).getDescriptor() ) );
+        if( value instanceof Class ) {
+          visitor.visit( fieldName, Type.getType( AbstractElementTransformer.getDescriptor( (Class)value ).getDescriptor() ) );
+        }
+        else {
+          value = TypeLord.getPureGenericType( (IType)value );
+          visitor.visit( fieldName, Type.getType( AbstractElementTransformer.getDescriptor( (IType)value ).getDescriptor() ) );
+        }
       }
       else if( returnClassInfo.isArray() )
       {

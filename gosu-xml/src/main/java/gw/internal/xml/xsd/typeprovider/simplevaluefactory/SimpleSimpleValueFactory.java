@@ -8,27 +8,27 @@ import gw.internal.xml.XmlDeserializationContext;
 import gw.internal.xml.XmlSerializationContext;
 import gw.internal.xml.XmlSimpleValueBase;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.java.JavaTypes;
+import gw.lang.reflect.TypeSystem;
+import gw.util.GosuExceptionUtil;
 import gw.xml.XmlSimpleValue;
 
+import javax.xml.namespace.QName;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 
-import javax.xml.namespace.QName;
-
 public class SimpleSimpleValueFactory extends XmlSimpleValueFactory {
 
-  private IType _gosuValueType;
+  private Class<?> _gosuValueType;
 
-  public SimpleSimpleValueFactory( IType gosuValueType ) {
+  public SimpleSimpleValueFactory( Class gosuValueType ) {
     _gosuValueType = gosuValueType;
   }
 
   @Override
   public IType getGosuValueType() {
-    return _gosuValueType;
+    return TypeSystem.get( _gosuValueType );
   }
 
   @Override
@@ -38,7 +38,17 @@ public class SimpleSimpleValueFactory extends XmlSimpleValueFactory {
 
   @Override
   protected XmlSimpleValue _deserialize( XmlDeserializationContext context, String stringValue, boolean isDefault ) {
-    return new Value( getGosuValueType().getTypeInfo().getConstructor( JavaTypes.STRING() ).getConstructor().newInstance( stringValue ) );
+    try {
+      Constructor<?> declaredConstructor = _gosuValueType.getDeclaredConstructor( String.class );
+      declaredConstructor.setAccessible( true );
+      return new Value( declaredConstructor.newInstance( stringValue ) );
+    }
+    catch( Exception e ) {
+      while( e instanceof InvocationTargetException ) {
+        e = (Exception)((InvocationTargetException)e).getTargetException();
+      }
+      throw GosuExceptionUtil.forceThrow( e );
+    }
   }
 
   private class Value extends XmlSimpleValueBase {

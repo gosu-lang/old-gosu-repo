@@ -23,6 +23,7 @@ import gw.lang.reflect.ParameterInfoBuilder;
 import gw.lang.reflect.PropertyInfoBuilder;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuObject;
+import gw.lang.reflect.java.IAsmJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
@@ -31,6 +32,7 @@ import gw.xml.IXmlSchemaEnumValue;
 import gw.xml.XmlSimpleValue;
 import gw.xml.XmlSimpleValueException;
 
+import javax.xml.namespace.QName;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,8 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.xml.namespace.QName;
 
 /**
  * IType for enumerations defined in an XSD.
@@ -140,7 +140,7 @@ public class XmlSchemaEnumerationTypeData<T> extends XmlSchemaTypeData<T> implem
             final String code = makeUniqueCode( simpleValue.getStringValue( true ), usedEnumValues );
 
             IEnumValue value;
-            if (javaEnumType != null && clazz.getBackingClass() != null) {
+            if (javaEnumType != null && !(clazz instanceof IAsmJavaClassInfo) && clazz.getBackingClass() != null) {
               value = javaEnumType.getEnumValue( code );
             }
             else {
@@ -434,7 +434,7 @@ public class XmlSchemaEnumerationTypeData<T> extends XmlSchemaTypeData<T> implem
   @Override
   public Class getBackingClass() {
     IJavaClassInfo clazz = getSchemaIndex().getGeneratedClass(_typeName);
-    if (clazz != null && clazz.getBackingClass() != null) {
+    if (clazz != null && !(clazz instanceof IAsmJavaClassInfo) && clazz.getBackingClass() != null) {
       return clazz.getBackingClass();
     } else {
       return XmlSchemaEnumValue.class;

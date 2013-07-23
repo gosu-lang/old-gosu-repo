@@ -35,7 +35,7 @@ public class JavaSourceArrayType implements IJavaClassGenericArrayType {
 
   @Override
   public IJavaClassType getConcreteType() {
-    return new JavaSourceArrayClassInfo((IJavaClassInfo) _componentType.getConcreteType());
+    return new JavaArrayClassInfo((IJavaClassInfo) _componentType.getConcreteType());
   }
 
   @Override

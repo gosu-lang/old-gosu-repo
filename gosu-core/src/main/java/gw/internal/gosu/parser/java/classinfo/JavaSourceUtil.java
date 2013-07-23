@@ -10,13 +10,51 @@ import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.ITypeRefFactory;
 import gw.lang.reflect.ImplicitPropertyUtil;
 import gw.lang.reflect.Modifier;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassMethod;
 import gw.lang.reflect.java.IJavaClassType;
+import gw.lang.reflect.java.asm.AsmClass;
 import gw.lang.reflect.module.IModule;
 
 
 public class JavaSourceUtil {
+
+  public static IJavaClassInfo getClassInfo( AsmClass cls, IModule module ) {
+    if( isProxy( cls ) ) {
+      return getJavaClassInfo( cls, module );
+    } else {
+      if( !CommonServices.getPlatformHelper().isInIDE() ) {
+        // Don't try to load from source unless we have to, this saves a load of time esp. for case
+        // where we're loading an inner java class where replacing the '$' below with '.' we bascially
+        // put the type system through a load of unnecessary work.
+        IJavaClassInfo classInfo = getJavaClassInfo( cls, module );
+        if( classInfo != null ) {
+          return classInfo;
+        }
+      }
+      return getClassInfo( cls.getName().replace( '$', '.' ), module );
+    }
+  }
+
+  private static IJavaClassInfo getJavaClassInfo( AsmClass asmClass, IModule module ) {
+    for( IModule m : module.getModuleTraversalList() ) {
+      TypeSystem.pushModule( m );
+      try {
+        DefaultTypeLoader defaultTypeLoader = (DefaultTypeLoader)m.getModuleTypeLoader().getDefaultTypeLoader();
+        if( defaultTypeLoader != null ) {
+          IJavaClassInfo javaClassInfo = defaultTypeLoader.getJavaClassInfo( asmClass, module );
+          if( javaClassInfo != null ) {
+            return javaClassInfo;
+          }
+        }
+      }
+      finally {
+        TypeSystem.popModule( m );
+      }
+    }
+    return null;
+  }
 
   public static IJavaClassInfo getClassInfo(Class aClass, IModule gosuModule) {
     DefaultTypeLoader loader = (DefaultTypeLoader) gosuModule.getModuleTypeLoader().getDefaultTypeLoader();
@@ -38,6 +76,13 @@ public class JavaSourceUtil {
       }
       return getClassInfo(aClass.getName().replace('$', '.'), gosuModule);
     }
+  }
+
+  private static boolean isProxy(AsmClass aClass) {
+    String name = aClass.getName();
+    return
+        name.endsWith(ITypeRefFactory.USER_PROXY_SUFFIX) ||
+        name.endsWith(ITypeRefFactory.SYSTEM_PROXY_SUFFIX);
   }
 
   private static boolean isProxy(Class aClass) {

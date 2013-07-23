@@ -5,13 +5,26 @@
 package gw.internal.xml.xsd.typeprovider;
 
 import gw.config.CommonServices;
-import gw.fs.IFile;
 import gw.internal.xml.XmlElementInternals;
 import gw.internal.xml.XmlTypeInstanceInternals;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaElement;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaObject;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaType;
-import gw.lang.reflect.*;
+import gw.lang.reflect.ConstructorInfoBuilder;
+import gw.lang.reflect.IConstructorHandler;
+import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.ILocationAwareFeature;
+import gw.lang.reflect.IMethodCallHandler;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPropertyAccessor;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.LocationInfo;
+import gw.lang.reflect.MethodInfoBuilder;
+import gw.lang.reflect.ParameterInfoBuilder;
+import gw.lang.reflect.PropertyInfoBuilder;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.java.IAsmJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassConstructor;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.JavaTypes;
@@ -21,6 +34,7 @@ import gw.xml.XmlElement;
 import gw.xml.XmlParseOptions;
 import gw.xml.XmlTypeInstance;
 
+import javax.xml.namespace.QName;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,8 +45,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.xml.namespace.QName;
 
 /**
  * IType for statically typed XmlElement types.
@@ -509,7 +521,7 @@ public class XmlSchemaElementTypeData<T> extends XmlSchemaTypeData<T> implements
     @Override
     public Class getBackingClass() {
       IJavaClassInfo clazz = getSchemaIndex().getGeneratedClass( getType().getName() );
-      return clazz != null ? clazz.getBackingClass() : XmlElement.class;
+      return (clazz != null && !(clazz instanceof IAsmJavaClassInfo)) ? clazz.getBackingClass() : XmlElement.class;
     }
 
   @Override

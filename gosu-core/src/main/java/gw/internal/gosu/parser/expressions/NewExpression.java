@@ -273,7 +273,23 @@ public class NewExpression extends Expression implements INewExpression
     {
       throw new IllegalStateException( " Illegal type: " + type.getName() + "  A compile-time constant expression must be either primitive, String, Class, or Enum." );
     }
-    return ((IJavaType)type).getBackingClass();
+    Class<?> cls = ((IJavaType)type).getBackingClass();
+    cls = cls != null ? cls : getClassForRareCaseWhenRunningIJEditorProjectWhereGosuCoreJavaTypesAreSourceBased( type );
+    return cls;
+  }
+
+  private Class<?> getClassForRareCaseWhenRunningIJEditorProjectWhereGosuCoreJavaTypesAreSourceBased( IType type ) {
+    String fqn = type.getName();
+    Class<?> cls = Primitives.get( fqn );
+    if( cls == null ) {
+      try {
+        cls = Class.forName( fqn );
+      }
+      catch( ClassNotFoundException e ) {
+        throw new RuntimeException( e );
+      }
+    }
+    return cls;
   }
 
   @Override

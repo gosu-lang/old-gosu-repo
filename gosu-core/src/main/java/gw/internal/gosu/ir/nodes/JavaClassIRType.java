@@ -136,10 +136,20 @@ public class JavaClassIRType implements IRType, IJavaClassIRType {
           return getPrimitiveClass();
         } else {
 //            Class.forName(_class.getName())
-          return _class.getBackingClass();
+          try {
+            Class backingClass = _class.getBackingClass();
+            return backingClass == null ? thisShouldNeverHappenButDoes() : _class.getBackingClass();
+          }
+          catch( ClassNotFoundException e ) {
+            throw new RuntimeException( e );
+          }
         }
       }
     }
+  }
+
+  private Class<?> thisShouldNeverHappenButDoes() throws ClassNotFoundException {
+    return Class.forName( _class.getName() );
   }
 
   @Override

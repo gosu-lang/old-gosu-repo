@@ -786,6 +786,9 @@ public class TypeSystem
   }
 
   public static IJavaClassInfo getJavaClassInfo(String fullyQualifiedName, IModule module) {
+    if( module == null ) {
+      module = TypeSystem.getGlobalModule();
+    }
     for (IModule m : module.getModuleTraversalList()) {
       TypeSystem.pushModule(m);
       try {

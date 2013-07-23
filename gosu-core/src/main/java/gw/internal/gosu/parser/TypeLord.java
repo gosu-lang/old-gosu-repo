@@ -5,10 +5,18 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.gosu.parser.types.FunctionLiteralType;
-import gw.lang.parser.*;
+import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.GosuParserTypes;
+import gw.lang.parser.IGosuParser;
+import gw.lang.parser.IScriptPartId;
+import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.ScriptabilityModifiers;
+import gw.lang.parser.StandardSymbolTable;
+import gw.lang.parser.TypeSystemAwareCache;
+import gw.lang.parser.TypeVarToTypeMap;
+import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.parser.expressions.ITypeVariableDefinition;
-import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IFunctionType;
@@ -24,9 +32,11 @@ import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
+import gw.lang.reflect.java.asm.AsmClass;
+import gw.lang.reflect.java.asm.IAsmType;
 import gw.lang.reflect.module.IModule;
-import gw.util.Pair;
 import gw.util.GosuObjectUtil;
+import gw.util.Pair;
 import gw.util.concurrent.Cache;
 
 import java.lang.reflect.ParameterizedType;
@@ -117,6 +127,23 @@ public class TypeLord
       return actualParamByVarName.getByString( ((TypeVariable)type).getName() );
     }
     return parseType( normalizeJavaTypeName( type ), actualParamByVarName, bKeepTypeVars, null );
+  }
+
+  public static IType getActualType( IAsmType type, TypeVarToTypeMap actualParamByVarName )
+  {
+    return getActualType( type, actualParamByVarName, false );
+  }
+  public static IType getActualType( IAsmType type, TypeVarToTypeMap actualParamByVarName, boolean bKeepTypeVars )
+  {
+    if( type instanceof AsmClass )
+    {
+      return TypeSystem.getByFullNameIfValid( type.getName() );
+    }
+    if( !type.isArray() && type.isTypeVariable() )
+    {
+      return actualParamByVarName.getByString( type.getName() );
+    }
+    return parseType( type.getFqn(), actualParamByVarName, bKeepTypeVars, null );
   }
 
   private static String normalizeJavaTypeName( Type type )

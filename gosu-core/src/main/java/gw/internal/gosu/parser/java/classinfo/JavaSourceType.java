@@ -131,7 +131,7 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
     if (result != null && result.isValid()) {
       return result;
     } else {
-      return new JavaSourceEmptyClass(fileHandle, gosuModule);
+      return new JavaSourceUnresolvedClass(fileHandle, gosuModule);
     }
   }
 
@@ -208,12 +208,12 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
       if (isWildcardType(typeNode)) {
         IJavaASTNode childOfType = typeNode.getChildOfType(JavaASTConstants.type);
         if (childOfType == null) {
-          return new JavaSourceWildcardType(NULL_TYPE);
+          return new JavaWildcardType(NULL_TYPE);
         } else {
           if (isSuper(typeNode)) {
-            return new JavaSourceWildcardType(JavaTypes.OBJECT().getBackingClassInfo());
+            return new JavaWildcardType(JavaTypes.OBJECT().getBackingClassInfo());
           } else {
-            return new JavaSourceWildcardType(createType(typeResolver, childOfType));
+            return new JavaWildcardType(createType(typeResolver, childOfType));
           }
         }
       } else {
@@ -249,11 +249,11 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
     }
     for (int i = 0; i < typeParameters.length; i++) {
       typeParameters[i] = createType(typeResolver, typeArgumentNodes.get(i));
-      if (typeParameters[i] instanceof JavaSourceWildcardType && ((JavaSourceWildcardType)typeParameters[i]).getUpperBound() == NULL_TYPE) {
-        ((JavaSourceWildcardType)typeParameters[i]).setBound(parameters[i].getBounds()[0]);
+      if (typeParameters[i] instanceof JavaWildcardType && ((JavaWildcardType)typeParameters[i]).getUpperBound() == NULL_TYPE) {
+        ((JavaWildcardType)typeParameters[i]).setBound(parameters[i].getBounds()[0]);
       }
     }
-    return new JavaSourceParameterizedType(typeParameters, concreteType);
+    return new JavaParameterizedType(typeParameters, concreteType);
   }
 
   public static IJavaClassType createType(ITypeInfoResolver typeResolver, String typeName, int ignoreFlags) {
@@ -261,7 +261,7 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
       String typeNameNoArray = typeName.substring(0, typeName.length() - 2);
       IJavaClassType componentType = createType(typeResolver, typeNameNoArray, ignoreFlags);
       if (componentType instanceof IJavaClassInfo) {
-        return new JavaSourceArrayClassInfo((IJavaClassInfo) componentType);
+        return new JavaArrayClassInfo((IJavaClassInfo) componentType);
       } else {
         return new JavaSourceArrayType(componentType);
       }
@@ -694,7 +694,7 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
 
   @Override
   public IJavaClassInfo getArrayType() {
-    return new JavaSourceArrayClassInfo(this);
+    return new JavaArrayClassInfo(this);
   }
 
   @Override

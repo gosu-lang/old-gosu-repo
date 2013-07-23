@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.java.classinfo;
@@ -12,11 +12,11 @@ import gw.lang.reflect.java.IJavaClassParameterizedType;
 import gw.lang.reflect.java.IJavaClassType;
 import gw.lang.reflect.module.IModule;
 
-public class JavaSourceParameterizedType implements IJavaClassParameterizedType {
+public class JavaParameterizedType implements IJavaClassParameterizedType {
   private IJavaClassType[] _args;
   private IJavaClassType _rawType;
 
-  public JavaSourceParameterizedType(IJavaClassType[] args, IJavaClassType rawType) {
+  public JavaParameterizedType( IJavaClassType[] args, IJavaClassType rawType ) {
     if (rawType == null) {
       throw new RuntimeException("Raw type of a parameterized type cannot be null");
     }
@@ -105,11 +105,11 @@ public class JavaSourceParameterizedType implements IJavaClassParameterizedType 
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof JavaSourceParameterizedType)) {
+    if (!(obj instanceof JavaParameterizedType)) {
       return false;
     }
-    JavaSourceParameterizedType t1 = this;
-    JavaSourceParameterizedType t2 = (JavaSourceParameterizedType) obj;
+    JavaParameterizedType t1 = this;
+    JavaParameterizedType t2 = (JavaParameterizedType) obj;
     if (!t1._rawType.equals(t2._rawType)) {
       return false;
     }

@@ -9,9 +9,11 @@ import gw.lang.reflect.module.IModule;
 
 public class DefaultPlatformHelper extends AbstractPlatformHelper {
 
+  public static boolean IN_IDE = false;
+
   @Override
   public boolean isInIDE() {
-    return false;
+    return IN_IDE;
   }
 
   @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Guidewire Software, Inc.
+ * Copyright 2013. Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.java.classinfo;
@@ -27,13 +27,13 @@ import gw.lang.reflect.module.IModule;
 
 import java.lang.annotation.Annotation;
 
-public class JavaSourceEmptyClass extends AbstractJavaClassInfo implements IJavaClassType, ITypeInfoResolver {
+public class JavaSourceUnresolvedClass extends AbstractJavaClassInfo implements IJavaClassType, ITypeInfoResolver {
   private String _simpleName;
   private String _namespace;
   private IModule _gosuModule;
   private ISourceFileHandle _fileHandle;
 
-  public JavaSourceEmptyClass(ISourceFileHandle fileHandle, IModule gosuModule) {
+  public JavaSourceUnresolvedClass( ISourceFileHandle fileHandle, IModule gosuModule ) {
     _fileHandle = fileHandle;
     _simpleName = fileHandle.getRelativeName();
     _namespace = fileHandle.getNamespace();

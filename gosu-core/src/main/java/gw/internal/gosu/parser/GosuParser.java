@@ -6408,6 +6408,10 @@ public final class GosuParser extends ParserBase implements IGosuParser
 
   private IType[] parseFunctionParameterization( Expression e )
   {
+    int iOffset = _tokenizer.getTokenStart();
+    int iLineNum = _tokenizer.getLineNumber();
+    int iColumn = getTokenizer().getTokenColumn();
+
     if( match( null, "<", SourceCodeTokenizer.TT_OPERATOR ) )
     {
       List<TypeLiteral> paramTypes = parseTypeParameters( null );
@@ -6416,7 +6420,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
       {
         return null;
       }
-
+      makeTypeParameterListClause( iOffset, iLineNum, iColumn, paramTypes );
       IType[] types = new IType[paramTypes.size()];
       for( int i = 0; i < paramTypes.size(); i++ )
       {
@@ -8009,11 +8013,15 @@ public final class GosuParser extends ParserBase implements IGosuParser
 
     if( !T._strValue.endsWith( "[]" ) )
     {
+      int iOffset = _tokenizer.getTokenStart();
+      int iLineNum = _tokenizer.getLineNumber();
+      int iColumn = getTokenizer().getTokenColumn();
+
       if( match( null, "<", SourceCodeTokenizer.TT_OPERATOR ) )
       {
         TypeLiteral typeLiteral = (TypeLiteral)peekExpression();
         IType type = typeLiteral.getType().getType();
-        List paramTypes = Collections.emptyList();
+        List<TypeLiteral> paramTypes = Collections.emptyList();
         boolean bRecursiveGosuClass = type instanceof IGosuClassInternal &&
                                       ((IGosuClassInternal)type).isCompilingHeader();
         if( (type instanceof IJavaTypeInternal && ((IJavaTypeInternal)type).isDefiningGenericTypes()) ||
@@ -8027,6 +8035,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
           verify( e, type.isGenericType(), Res.MSG_PARAMETERIZATION_NOT_SUPPORTED_FOR_TYPE, type.getName() );
           paramTypes = parseTypeParameters( type );
           verify( e, match( null, ">", SourceCodeTokenizer.TT_OPERATOR ), Res.MSG_EXPECTING_CLOSING_ANGLE_BRACKET_FOR_TYPE );
+          makeTypeParameterListClause( iOffset, iLineNum, iColumn, paramTypes );
         }
         int numArrays = 0;
         while( !bIgnoreArrayBrackets && match( null, '[' ) )
@@ -8120,10 +8129,6 @@ public final class GosuParser extends ParserBase implements IGosuParser
   //
   List<TypeLiteral> parseTypeParameters( IType enclosingType )
   {
-    int iOffset = _tokenizer.getTokenStart();
-    int iLineNum = _tokenizer.getLineNumber();
-    int iColumn = getTokenizer().getTokenColumn();
-
     List<TypeLiteral> paramTypes = new ArrayList<TypeLiteral>();
     int i = 0;
     do
@@ -8142,6 +8147,11 @@ public final class GosuParser extends ParserBase implements IGosuParser
     }
     while( match( null, ',' ) && ++i > 0 );
 
+    return paramTypes;
+  }
+
+  private void makeTypeParameterListClause( int iOffset, int iLineNum, int iColumn, List<TypeLiteral> paramTypes )
+  {
     if( paramTypes.size() > 0 )
     {
       TypeParameterListClause e = new TypeParameterListClause( paramTypes.toArray( new ITypeLiteralExpression[paramTypes.size()] ) );
@@ -8157,7 +8167,6 @@ public final class GosuParser extends ParserBase implements IGosuParser
       setLocation( iOffset, iLineNum, iColumn, true );
       popExpression();
     }
-    return paramTypes;
   }
 
   //------------------------------------------------------------------------------

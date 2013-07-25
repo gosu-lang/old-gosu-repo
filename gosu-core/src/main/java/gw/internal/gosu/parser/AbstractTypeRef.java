@@ -146,6 +146,11 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
       return false;
     }
 
+    if( _componentType != null && !(_componentType instanceof INonLoadableType) )
+    {
+      return false;
+    }
+
     boolean bStale = false;
     if( _type == null || (_mdChecksum != TypeSystem.getRefreshChecksum() /*&& !isDefaultType()*/))
     {
@@ -183,6 +188,13 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
     // Fragments and any blocks or inner classes thereof, can't be re-resolved.
     // If this flag is set, _setStale() is therefor a no-op
     if (!isReloadable()) {
+      return;
+    }
+
+    if( _componentType != null &&
+        !(_componentType instanceof INonLoadableType) &&
+        refreshKind != RefreshKind.DELETION)
+    {
       return;
     }
 

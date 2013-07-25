@@ -21,7 +21,7 @@ public class AsmTypeVariableJavaClassTypeVariable extends AsmTypeJavaClassType i
 
   @Override
   public IJavaClassType getConcreteType() {
-    return null;
+    return getBounds()[0].getConcreteType();
   }
 
   @Override

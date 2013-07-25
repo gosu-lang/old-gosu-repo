@@ -83,7 +83,7 @@ class CreateMethodsFromSuperClassQuickfixTest extends GosuTestCase {
       "uses java.util.HashMap\n" +
       "\n]]]" +
       "class Class1 implements Super^^Class {\n" +
-      "[[[  override function myF(y: HashMap <String, String>) {\n" +
+      "[[[  override function myF(y: HashMap<String, String>) {\n" +
       "~~~  }\n]]]" +
       "}"
     })

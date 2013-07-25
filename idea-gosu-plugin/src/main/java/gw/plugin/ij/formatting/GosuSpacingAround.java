@@ -7,10 +7,10 @@ package gw.plugin.ij.formatting;
 import com.intellij.formatting.Spacing;
 import com.intellij.patterns.PsiElementPattern;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.codeStyle.CodeStyleSettings;
 import com.intellij.psi.codeStyle.CommonCodeStyleSettings;
 import com.intellij.psi.tree.TokenSet;
 import gw.plugin.ij.lang.GosuTokenSets;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeLiteralImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -77,7 +77,9 @@ public class GosuSpacingAround {
       return getSpacingAroundEqualityOperators(settings);
     }
 
-    if (checkBoth(psi1, psi2, GosuTokenSets.RELATIONAL_OPS)) {
+    if (checkBoth(psi1, psi2, GosuTokenSets.RELATIONAL_OPS) &&
+        !(psi1 instanceof GosuTypeLiteralImpl) &&
+        !(psi2 instanceof GosuTypeLiteralImpl)) {
       return getSpacingAroundRelationalOperators(settings);
     }
 

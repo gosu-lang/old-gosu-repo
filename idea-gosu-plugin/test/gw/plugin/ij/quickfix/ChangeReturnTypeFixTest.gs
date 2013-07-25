@@ -81,7 +81,7 @@ class ChangeReturnTypeFixTest extends AbstractQuickFixTest {
     var f = new GosuClassFile (
         "package some.pkg\n" +
             "class One {\n" +
-            "  function bar()[[[: java.util.List <String>]]] {\n" +
+            "  function bar()[[[: java.util.List<String>]]] {\n" +
             "    var x : java.util.List<String>\n" +
             "    return ^^!!x" +
             "  }\n" +

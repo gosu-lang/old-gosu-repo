@@ -234,7 +234,7 @@ public class GosuSdkUtils {
       if(version == null) {
         return false;
       }
-      return version.getMaxLanguageLevel().isAtLeast(LanguageLevel.JDK_1_5);
+      return version.getMaxLanguageLevel().isAtLeast(LanguageLevel.JDK_1_7);
     }
     return false;
   }

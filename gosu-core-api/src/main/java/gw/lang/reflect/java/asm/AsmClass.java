@@ -297,6 +297,14 @@ public class AsmClass implements IAsmType, IGeneric {
         // anonymous
         return;
       }
+
+      int iDollar = name.lastIndexOf( '$' );
+      if( iDollar >= 0 && iDollar < name.length() - 1 &&
+          Character.isDigit( name.charAt( iDollar + 1 ) ) ) {
+        // local inner class
+        return;
+      }
+
       if( _innerClasses.isEmpty() ) {
         _innerClasses = new HashMap<String, AsmInnerClassType>( 2 );
       }

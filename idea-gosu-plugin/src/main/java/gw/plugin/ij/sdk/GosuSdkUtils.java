@@ -88,10 +88,11 @@ public class GosuSdkUtils {
     if (sdk != null) {
       SdkAdditionalData data = sdk.getSdkAdditionalData();
       if (data instanceof GosuSdkAdditionalData) {
-        GosuVersion version = ((GosuSdkAdditionalData) data).getGosuVersion();
+        GosuSdkAdditionalData gData = (GosuSdkAdditionalData) data;
+        GosuVersion version = gData.getGosuVersion();
         if (version != null) {
           GosuVersion embeddedInPluginVersion = Gosu.getVersion();
-          if (embeddedInPluginVersion.compareTo(version) > 0) {
+          if (embeddedInPluginVersion.compareTo(version) > 0 || gData.getJavaSdk() == null) {
             // The existing Sdk is not compatible with the plugin, delete it then create a shiny new Default Gosu Sdk
             deleteDefaultGosuSDK(sdk);
             // TODO - blc - show a warning that we're replacing the SDK
@@ -162,7 +163,9 @@ public class GosuSdkUtils {
         if (name != null) {
           LOG.warn("Cannot find Java SDK '" + name + "', selecting '" + jdk.getName() + "'");
         }
-        return jdk;
+        if(GosuSdkUtils.isApplicableJdk(jdk)) {
+          return jdk;
+        }
       }
     }
     return null;

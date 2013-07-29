@@ -11,6 +11,7 @@ import gw.lang.ir.IRAnnotation;
 import gw.lang.ir.IRType;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassMethod;
 import gw.lang.reflect.java.IJavaType;
@@ -75,6 +76,10 @@ public class IRAnnotationCompiler
       {
         if( value instanceof Class ) {
           visitor.visit( fieldName, Type.getType( AbstractElementTransformer.getDescriptor( (Class)value ).getDescriptor() ) );
+        }
+        else if( value instanceof String ) {
+          value = TypeLord.getPureGenericType( TypeSystem.getByFullName( (String)value) );
+          visitor.visit( fieldName, Type.getType( AbstractElementTransformer.getDescriptor( (IType)value ).getDescriptor() ) );
         }
         else {
           value = TypeLord.getPureGenericType( (IType)value );

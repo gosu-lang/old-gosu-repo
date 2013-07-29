@@ -17,6 +17,7 @@ import gw.lang.parser.*;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INullExpression;
 import gw.lang.parser.template.ITemplateHost;
+import gw.lang.parser.template.ITemplateObserver;
 import gw.lang.parser.template.TemplateParseException;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IAnnotationInfoFactory;
@@ -442,5 +443,9 @@ public class GosuShop
 
   public static byte[] updateReloadClassesIndicator(List<String> changedTypes, String strScript ) {
     return CommonServices.getGosuIndustrialPark().updateReloadClassesIndicator(changedTypes, strScript);
+  }
+
+  public static ITemplateObserver.ITemplateObserverManager makeTemplateObserverManager() {
+    return CommonServices.getGosuIndustrialPark().makeTemplateObserverManager();
   }
 }

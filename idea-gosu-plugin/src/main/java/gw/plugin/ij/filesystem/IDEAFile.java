@@ -49,7 +49,7 @@ public class IDEAFile extends IDEAResource implements IFile {
     final VirtualFile virtualFile = file.getVirtualFile();
 
     // we're getting the cached documents since getDocument() forces PSI creating which will cause deadlock !!!
-    if (virtualFile != null) {
+    if (virtualFile != null && !virtualFile.getFileType().isBinary()) {
       final Document document = FileDocumentManager.getInstance().getCachedDocument(virtualFile);
       final String[] result = new String[1];
       if (document != null) {

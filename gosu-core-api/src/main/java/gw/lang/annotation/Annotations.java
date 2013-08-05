@@ -76,7 +76,7 @@ public class Annotations {
         Object arr = Array.newInstance(value.getClass(), 1);
         Array.set(arr, 0, value);
         value = arr;
-      } else if (value == null && elementMethod.getDefaultValue() == null) {
+      } else if (value == null && elementMethod.getDefaultValue() != null) {
         value = elementMethod.getDefaultValue();
       } else if (!elementMethod.getReturnType().isInstance(value)) {
         throw new IllegalArgumentException(

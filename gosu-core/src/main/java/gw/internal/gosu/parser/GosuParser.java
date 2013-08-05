@@ -1051,10 +1051,14 @@ public final class GosuParser extends ParserBase implements IGosuParser
 
   public IExpression parseExpOrProgram( IScriptPartId partId, boolean isolatedScope, boolean assignRuntime ) throws ParseResultsException
   {
+    return parseExpOrProgram( partId, null, isolatedScope, assignRuntime );
+  }
+  public IExpression parseExpOrProgram( IScriptPartId partId, IType typeExpected, boolean isolatedScope, boolean assignRuntime ) throws ParseResultsException
+  {
     IExpression exp;
     try
     {
-      exp = parseExp( partId, isolatedScope, null, assignRuntime );
+      exp = parseExp( partId, isolatedScope, typeExpected, assignRuntime );
     }
     catch( ParseResultsException expressionParseResultException )
     {
@@ -1065,7 +1069,7 @@ public final class GosuParser extends ParserBase implements IGosuParser
         Map<String, Set<IFunctionSymbol>> dfsDeclByName = new HashMap<String, Set<IFunctionSymbol>>(_dfsDeclByName);
         resetScript();
         _dfsDeclByName = dfsDeclByName;
-        exp = parseProgram( partId, isolatedScope, null );
+        exp = parseProgram( partId, isolatedScope, typeExpected );
       }
       catch( ParseResultsException programParseResultsException )
       {

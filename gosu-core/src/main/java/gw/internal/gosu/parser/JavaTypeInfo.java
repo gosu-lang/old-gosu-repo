@@ -5,11 +5,12 @@
 package gw.internal.gosu.parser;
 
 import gw.config.CommonServices;
-import gw.internal.gosu.parser.expressions.NullExpression;
+import gw.internal.gosu.parser.java.classinfo.CompileTimeExpressionParser;
 import gw.lang.GosuShop;
 import gw.lang.annotation.Annotations;
 import gw.lang.javadoc.IClassDocNode;
 import gw.lang.javadoc.IDocRef;
+import gw.lang.parser.IExpression;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.Keyword;
@@ -340,7 +341,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
     {
       ParameterInfoBuilder pib = new ParameterInfoBuilder().withName(method.getName()).withType(method.getReturnType());
       if (method.getDefaultValue() != null) {
-        pib.withDefValue(NullExpression.instance());
+        pib.withDefValue( makeDefaultValueExpression( method ) );
         paramsWDefaultValues.add(pib);
       } else {
         params.add(pib);
@@ -426,7 +427,15 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
     ArrayList<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
     for( IJavaClassMethod method : methods )
     {
-      params.add( new ParameterInfoBuilder().withName( method.getName() ).withType( method.getReturnType() ) );
+      if( method.getDefaultValue() != null ) {
+        params.add( new ParameterInfoBuilder()
+                      .withName( method.getName() )
+                      .withType( method.getReturnType() )
+                      .withDefValue( makeDefaultValueExpression( method ) ) );
+      }
+      else {
+        params.add( new ParameterInfoBuilder().withName( method.getName() ).withType( method.getReturnType() ) );
+      }
     }
 
     return new ConstructorInfoBuilder()
@@ -446,6 +455,11 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
           return builder.create();
         }
       } ).build( this );
+  }
+
+  private IExpression makeDefaultValueExpression( IJavaClassMethod method ) {
+    String exprString = GosuClassProxyFactory.makeValueString( method.getDefaultValue(), method.getReturnType() );
+    return CompileTimeExpressionParser.parse( exprString, ((IJavaType)getOwnersType()).getBackingClassInfo(), method.getReturnType() );
   }
 
   private IConstructorInfo makeDefaultArrayAnnotationConstructor( final IJavaClassMethod[] methods )

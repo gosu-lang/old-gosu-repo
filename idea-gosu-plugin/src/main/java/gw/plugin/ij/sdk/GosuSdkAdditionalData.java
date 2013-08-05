@@ -4,39 +4,32 @@
 
 package gw.plugin.ij.sdk;
 
-import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.projectRoots.ProjectJdkTable;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.projectRoots.SdkAdditionalData;
-import com.intellij.openapi.projectRoots.SdkModel;
 import gw.lang.GosuVersion;
 import org.jdom.Element;
-import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class GosuSdkAdditionalData implements SdkAdditionalData {
-  @NonNls
   private static final String JDK = "jdk";
 
-  @NonNls
   private static final String GOSU_VERSION = "gosuVersion";
 
-  @Nullable
   private String _javaSdkName;
-  @Nullable
   private Sdk _javaSdk;
   private final GosuVersion _gosuVersion;
 
-  public GosuSdkAdditionalData(@NotNull Sdk gosuSdk, Sdk javaSdk, @NotNull GosuVersion gosuVersion) {
-    this._javaSdk = javaSdk;
-    this._gosuVersion = gosuVersion;
+  public GosuSdkAdditionalData(Sdk javaSdk, GosuVersion gosuVersion) {
+    _javaSdk = javaSdk;
+    _gosuVersion = gosuVersion;
   }
 
-  public GosuSdkAdditionalData(@NotNull Sdk gosuSdk, @NotNull Element element) {
-    this._javaSdkName = element.getAttributeValue(JDK);
+  public GosuSdkAdditionalData(@NotNull Element element) {
+    _javaSdkName = element.getAttributeValue(JDK);
     String versionAttr = element.getAttributeValue(GOSU_VERSION);
-    this._gosuVersion = versionAttr != null && versionAttr.length() > 0 ? GosuVersion.parse(versionAttr) : null;
+    _gosuVersion = versionAttr != null && versionAttr.length() > 0 ? GosuVersion.parse(versionAttr) : null;
   }
 
   @NotNull
@@ -82,8 +75,7 @@ public class GosuSdkAdditionalData implements SdkAdditionalData {
     return _gosuVersion;
   }
 
-  @NotNull
   public String getVersion() {
-    return _gosuVersion.toString() + " (" + (_javaSdk == null ? "" : _javaSdk.getVersionString()) + ")";
+    return _gosuVersion == null ? null : _gosuVersion.toString() + " (" + (_javaSdk == null ? "" : _javaSdk.getVersionString()) + ")";
   }
 }

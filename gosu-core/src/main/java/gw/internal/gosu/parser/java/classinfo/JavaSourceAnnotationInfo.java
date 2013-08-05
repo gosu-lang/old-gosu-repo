@@ -4,11 +4,11 @@
 
 package gw.internal.gosu.parser.java.classinfo;
 
+import gw.internal.gosu.parser.AsmMethodJavaClassMethod;
 import gw.internal.gosu.parser.MethodJavaClassMethod;
 import gw.internal.gosu.parser.java.IJavaASTNode;
 import gw.internal.gosu.parser.java.JavaASTConstants;
 import gw.lang.parser.IExpression;
-import gw.lang.parser.IParseResult;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
@@ -19,7 +19,6 @@ import gw.lang.reflect.java.IJavaClassMethod;
 import gw.lang.reflect.module.IModule;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.List;
 
 public class JavaSourceAnnotationInfo implements IAnnotationInfo {
@@ -73,7 +72,7 @@ public class JavaSourceAnnotationInfo implements IAnnotationInfo {
 
     if( valueNode == null ) {
       Object defaultValue = method.getDefaultValue();
-      if (method instanceof MethodJavaClassMethod) {
+      if (method instanceof MethodJavaClassMethod || method instanceof AsmMethodJavaClassMethod) {
         if (defaultValue.getClass().isArray()) {
           String[] value = new String[Array.getLength(defaultValue)];
           for (int i = 0; i < value.length; i++) {
@@ -81,7 +80,7 @@ public class JavaSourceAnnotationInfo implements IAnnotationInfo {
           }
           return value;
         } else {
-          throw new IllegalStateException( "Could not find value for annotation method: " + method.getName() );
+          return defaultValue;
         }
       } else {
         return ((JavaSourceDefaultValue) defaultValue).evaluate();
@@ -118,7 +117,7 @@ public class JavaSourceAnnotationInfo implements IAnnotationInfo {
       return parseEnum(text, type);
     } else {
       JavaSourceType enclosingType = getEnclosingType( _owner );
-      IExpression pr = CompileTimeExpressionParser.parse( text, enclosingType, type.getJavaType() );
+      IExpression pr = CompileTimeExpressionParser.parse( text, enclosingType, handleSingleElementArrayType( text, type ) );
       try {
         return pr.evaluate();
       } catch (Exception e) {
@@ -126,6 +125,17 @@ public class JavaSourceAnnotationInfo implements IAnnotationInfo {
         return null;
       }
     }
+  }
+
+  private IType handleSingleElementArrayType( String text, IJavaClassInfo type ) {
+    IType javaType = type.getJavaType();
+    if( !javaType.isArray() ) {
+      return javaType;
+    }
+    if( text.startsWith( "{" ) ) {
+      return javaType;
+    }
+    return javaType.getComponentType();
   }
 
   private JavaSourceType getEnclosingType( IJavaAnnotatedElement owner ) {

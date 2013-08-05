@@ -8,6 +8,8 @@ import gw.config.CommonServices;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ISource;
 import gw.lang.parser.Keyword;
+import gw.lang.reflect.IAnnotatedFeatureInfo;
+import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IAttributedFeatureInfo;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IMethodInfo;
@@ -30,6 +32,8 @@ import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.IModule;
 
+import java.lang.reflect.Array;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
@@ -229,6 +233,8 @@ public class GosuClassProxyFactory
 
   private void genClassImpl( IJavaType type, StringBuilder sb )
   {
+    addAnnotations( type.getTypeInfo(), sb );
+
     if( type.isAbstract() )
     {
       sb.append( "abstract " );
@@ -289,6 +295,100 @@ public class GosuClassProxyFactory
       }
     }
     sb.append( "}\n" );
+  }
+
+  private void addAnnotations( IAnnotatedFeatureInfo featureInfo, StringBuilder sb ) {
+    for( IAnnotationInfo annotation : featureInfo.getDeclaredAnnotations() ) {
+      sb.append( makeAnnotationSource( annotation ) ).append( "\n" );
+    }
+  }
+
+  private static String makeAnnotationSource( IAnnotationInfo annotation ) {
+    StringBuilder sb = new StringBuilder( "@" + annotation.getName() + "(" );
+    boolean bFirst = true;
+    for( IMethodInfo mi : annotation.getType().getTypeInfo().getMethods() ) {
+      if( isObjectMethod( mi ) ) {
+        continue;
+      }
+      String name = mi.getDisplayName();
+      if( name.equals( "annotationType" ) ) {
+        continue;
+      }
+      String value = makeValueString( annotation.getFieldValue( name ), mi.getReturnType() );
+      if( !bFirst ) {
+        sb.append( ", " );
+      }
+      sb.append( ":" ).append( name ).append( "=" ).append( value );
+      bFirst = false;
+    }
+    sb.append( ")" );
+    return sb.toString();
+  }
+
+  public static String makeValueString( Object value, IType returnType ) {
+    if( value == null ) {
+      return "null";
+    }
+    if( returnType == JavaTypes.STRING() ) {
+       return "\"" + value + "\"";
+    }
+    if( returnType.isEnum() ) {
+       return value.toString();
+    }
+    if( returnType.isPrimitive() ) {
+      return String.valueOf( value );
+    }
+    if( JavaTypes.CLASS().isAssignableFrom( returnType ) ) {
+      return ((Class)value).getName();
+    }
+    if( value instanceof IAnnotationInfo ) {
+      return makeAnnotationSource( (IAnnotationInfo)value );
+    }
+    if( value.getClass().isArray() ) {
+      assert returnType.isArray();
+      StringBuilder arrayValue = new StringBuilder( "{" );
+      for( int i = 0; i < Array.getLength( value ); i++ ) {
+        if( i > 0 ) {
+          arrayValue.append( ", " );
+        }
+        arrayValue.append( makeValueString( Array.get( value, i ), returnType.getComponentType() ) );
+      }
+      arrayValue.append( "}" );
+      return arrayValue.toString();
+    }
+    if( List.class.isAssignableFrom( value.getClass() ) ) {
+      assert returnType.isArray();
+      List list = (List)value;
+      StringBuilder arrayValue = new StringBuilder( "{" );
+      for( int i = 0; i < list.size(); i++ ) {
+        if( i > 0 ) {
+          arrayValue.append( ", " );
+        }
+        arrayValue.append( makeValueString( list.get( i ), returnType.getComponentType() ) );
+      }
+      arrayValue.append( "}" );
+      return arrayValue.toString();
+    }
+    if( returnType.isArray() ) {
+      StringBuilder arrayValue = new StringBuilder( "{" );
+      arrayValue.append( makeValueString( value, returnType.getComponentType() ) );
+      arrayValue.append( "}" );
+      return arrayValue.toString();
+    }
+    throw new IllegalStateException();
+  }
+
+  private static boolean isObjectMethod( IMethodInfo mi )
+  {
+    IParameterInfo[] params = mi.getParameters();
+    IType[] paramTypes = new IType[params.length];
+    for( int i = 0; i < params.length; i++ )
+    {
+      paramTypes[i] = params[i].getFeatureType();
+    }
+    IRelativeTypeInfo ti = (IRelativeTypeInfo)JavaTypes.OBJECT().getTypeInfo();
+    IMethodInfo objMethod = ti.getMethod( JavaTypes.OBJECT(), mi.getDisplayName(), paramTypes );
+    return objMethod != null;
   }
 
   private String getRelativeName( IJavaType type )
@@ -787,6 +887,9 @@ public class GosuClassProxyFactory
   private StringBuilder buildModifiers( IAttributedFeatureInfo fi )
   {
     StringBuilder sbModifiers = new StringBuilder();
+
+    addAnnotations( fi, sbModifiers );
+
     if( fi.isAbstract() )
     {
       sbModifiers.append( Keyword.KW_abstract ).append( " " );

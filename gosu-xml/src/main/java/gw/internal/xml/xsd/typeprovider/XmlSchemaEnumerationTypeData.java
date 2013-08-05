@@ -10,23 +10,9 @@ import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaEnumerationFacet;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaObject;
 import gw.internal.xml.xsd.typeprovider.schema.XmlSchemaType;
 import gw.internal.xml.xsd.typeprovider.simplevaluefactory.XmlSimpleValueFactory;
-import gw.lang.reflect.IConstructorInfo;
-import gw.lang.reflect.IEnumType;
-import gw.lang.reflect.IEnumValue;
-import gw.lang.reflect.IMethodCallHandler;
-import gw.lang.reflect.IMethodInfo;
-import gw.lang.reflect.IPropertyAccessor;
-import gw.lang.reflect.IPropertyInfo;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.MethodInfoBuilder;
-import gw.lang.reflect.ParameterInfoBuilder;
-import gw.lang.reflect.PropertyInfoBuilder;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.*;
 import gw.lang.reflect.gs.IGosuObject;
-import gw.lang.reflect.java.IAsmJavaClassInfo;
-import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
+import gw.lang.reflect.java.*;
 import gw.util.concurrent.LockingLazyVar;
 import gw.xml.IXmlSchemaEnumValue;
 import gw.xml.XmlSimpleValue;
@@ -140,14 +126,23 @@ public class XmlSchemaEnumerationTypeData<T> extends XmlSchemaTypeData<T> implem
             final String code = makeUniqueCode( simpleValue.getStringValue( true ), usedEnumValues );
 
             IEnumValue value;
-            if (javaEnumType != null && !(clazz instanceof IAsmJavaClassInfo) && clazz.getBackingClass() != null) {
+            if ( javaEnumType != null && clazz.getBackingClass() != null ) {
               value = javaEnumType.getEnumValue( code );
+              if ( value instanceof EnumValuePlaceholder ) {
+                try {
+                  Class enumClass = Class.forName( javaEnumType.getName() );
+                  value = new EnumAdapter( Enum.valueOf( enumClass, code ), javaEnumType );
+                } catch ( Exception e ) {
+                  value = new XmlSchemaEnumValue( this, simpleValue, code, ordinal++ );
+                  e.printStackTrace();
+                }
+              }
             }
             else {
               value = new XmlSchemaEnumValue( this, simpleValue, code, ordinal++ );
             }
 
-            _enumMapByGosuName.put( code, value );
+            _enumMapByGosuName.put(code, value);
             _enumMapByXmlSchemaName.put( simpleValue.getGosuValue(), value );
             enumerationSimpleValues.put( (IEnumValue) value.getValue(), simpleValue );
 
@@ -453,6 +448,44 @@ public class XmlSchemaEnumerationTypeData<T> extends XmlSchemaTypeData<T> implem
 
   public XmlSimpleValueFactory getSimpleValueFactory() {
     return _simpleValueFactory.get();
-  }  
+  }
+
+  private class EnumAdapter implements IEnumValue, IGosuObject
+  {
+    private final Enum _enum;
+    private final IEnumType javaEnumType;
+
+    public EnumAdapter(Enum e, IEnumType javaEnumType)
+    {
+      _enum = e;
+      this.javaEnumType = javaEnumType;
+    }
+
+    public String getCode()
+    {
+      return _enum.name();
+    }
+
+    public Object getValue()
+    {
+      return _enum;
+    }
+
+    public int getOrdinal()
+    {
+      return _enum.ordinal();
+    }
+
+    public String getDisplayName()
+    {
+      return getCode();
+    }
+
+    public IType getIntrinsicType()
+    {
+      return TypeSystem.getOrCreateTypeReference( javaEnumType );
+    }
+  }
+
 
 }

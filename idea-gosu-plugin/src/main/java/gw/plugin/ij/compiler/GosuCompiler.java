@@ -185,12 +185,12 @@ public class GosuCompiler implements TranslatingCompiler {
     context.getProgressIndicator().setText(String.format("Compiling '%s' [%s]", sourceFile.getName(), context.getModuleByFile(sourceFile).getName()));
   }
 
-  private void notifyTargetProcessOfChanges(@NotNull CompileContext context, @NotNull final VirtualFile... files) {
+  public static void notifyTargetProcessOfChanges(@NotNull CompileContext context, @NotNull final VirtualFile... files) {
     final Project project = context.getProject();
     final DebuggerSession session = DebuggerManagerEx.getInstanceEx(project).getContext().getDebuggerSession();
     if (session != null) {
       if (session.isPaused()) {
-        invokeDirectly(session, context, files);
+        invokeDirectly(session, files);
       } else {
         final DebugProcessImpl process = session.getProcess();
         process.getManagerThread().invokeCommand(new DebuggerCommand() {
@@ -209,7 +209,7 @@ public class GosuCompiler implements TranslatingCompiler {
     }
   }
 
-  private void invokeDirectly(final DebuggerSession session, final CompileContext context, final VirtualFile[] files) {
+  private static void invokeDirectly(final DebuggerSession session, final VirtualFile[] files) {
     final DebuggerContextImpl debuggerContext = DebuggerManagerEx.getInstanceEx(session.getProject()).getContext();
     final DebugProcessImpl process = session.getProcess();
     process.getManagerThread().schedule(new DebuggerContextCommandImpl(debuggerContext) {

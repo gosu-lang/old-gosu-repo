@@ -32,6 +32,12 @@ public class DefaultArgLiteral extends Expression implements ILiteralExpression
   }
 
   @Override
+  public boolean isCompileTimeConstant()
+  {
+    return _expr.isCompileTimeConstant();
+  }
+
+  @Override
   public String toString()
   {
     return "Named Arg Value: " + _expr.toString();

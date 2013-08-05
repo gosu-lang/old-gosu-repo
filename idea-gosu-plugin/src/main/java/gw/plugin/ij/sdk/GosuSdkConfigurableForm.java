@@ -14,10 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileFilter;
 import java.awt.*;
-import java.awt.event.*;
-import java.io.File;
 
 public class GosuSdkConfigurableForm {
   @NotNull
@@ -99,6 +96,10 @@ public class GosuSdkConfigurableForm {
   public Sdk getSelectedSdk() {
 //    return (Sdk) myInternalJdkComboBox.getSelectedItem();
     return _sdk;
+  }
+
+  public GosuVersion getGosuVersion() {
+    return GosuVersion.parse( _fieldGosuVersion.getText() );
   }
 
   public void init(@NotNull Sdk jdk, @Nullable Sdk androidSdk) {

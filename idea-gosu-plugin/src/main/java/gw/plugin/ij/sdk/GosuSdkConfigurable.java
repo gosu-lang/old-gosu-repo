@@ -52,7 +52,7 @@ public class GosuSdkConfigurable implements AdditionalDataConfigurable {
   @Override
   public void apply() throws ConfigurationException {
     GosuSdkAdditionalData oldData = (GosuSdkAdditionalData) mySdk.getSdkAdditionalData();
-    GosuSdkAdditionalData newData = new GosuSdkAdditionalData(mySdk, myForm.getSelectedSdk(), oldData.getGosuVersion());
+    GosuSdkAdditionalData newData = new GosuSdkAdditionalData(myForm.getSelectedSdk(), myForm.getGosuVersion());
     final SdkModificator modificator = mySdk.getSdkModificator();
     modificator.setSdkAdditionalData(newData);
     ApplicationManager.getApplication().runWriteAction(new Runnable() {

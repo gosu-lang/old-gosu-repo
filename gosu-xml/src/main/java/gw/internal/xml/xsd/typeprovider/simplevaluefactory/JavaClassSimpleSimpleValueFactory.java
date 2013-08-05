@@ -9,15 +9,12 @@ import gw.internal.xml.XmlSerializationContext;
 import gw.internal.xml.XmlSimpleValueBase;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.java.JavaTypes;
 import gw.xml.XmlSimpleValue;
 
+import javax.xml.namespace.QName;
+import java.lang.reflect.Constructor;
 import java.util.Collections;
 import java.util.List;
-
-import javax.xml.namespace.QName;
 
 public class JavaClassSimpleSimpleValueFactory extends XmlSimpleValueFactory {
 
@@ -39,7 +36,15 @@ public class JavaClassSimpleSimpleValueFactory extends XmlSimpleValueFactory {
 
   @Override
   protected XmlSimpleValue _deserialize( XmlDeserializationContext context, String stringValue, boolean isDefault ) {
-    return new Value( getGosuValueType().getTypeInfo().getConstructor( JavaTypes.STRING() ).getConstructor().newInstance( stringValue ) );
+    try {
+      Class<?> type = Class.forName( getGosuValueType().getName() );
+      Constructor<?> constructor = type.getConstructor( String.class );
+      return new Value( constructor.newInstance( stringValue ) );
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException( e );
+    }
   }
 
   private class Value extends XmlSimpleValueBase {

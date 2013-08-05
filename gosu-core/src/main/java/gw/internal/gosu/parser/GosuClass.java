@@ -21,6 +21,8 @@ import gw.lang.parser.IBlockClass;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IGosuParser;
+import gw.lang.parser.ILanguageLevel;
+import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.ISource;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
@@ -37,6 +39,7 @@ import gw.lang.parser.statements.IFunctionStatement;
 import gw.lang.parser.statements.IUsesStatement;
 import gw.lang.reflect.AbstractType;
 import gw.lang.reflect.FunctionType;
+import gw.lang.reflect.IAttributedFeatureInfo;
 import gw.lang.reflect.IEnumValue;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IMethodInfo;
@@ -2155,7 +2158,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     for( DynamicFunctionSymbol dfs : getMemberFunctions() )
     {
-      if( !bSuperClass || isAccessible( gsContextClass, dfs ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, dfs ) && !isHidden( dfs )) )
       {
         if( isParameterizedType() )
         {
@@ -2170,11 +2173,48 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
   }
 
+  private boolean isHidden( DynamicFunctionSymbol dfs )
+  {
+    if( ILanguageLevel.Util.STANDARD_GOSU() ) {
+      // essentially isHidden() checks for @InternalAPI, which is evil and not part of standard Gosu
+      return false;
+    }
+
+    if( isCompilingDeclarationsFor( dfs.getScriptPart() ) ) {
+      return false;
+    }
+    IAttributedFeatureInfo mi = dfs.getMethodOrConstructorInfo( true );
+    return mi != null && mi.isHidden();
+  }
+
+  private boolean isHidden( DynamicPropertySymbol dps )
+  {
+    if( ILanguageLevel.Util.STANDARD_GOSU() ) {
+      // essentially isHidden() checks for @InternalAPI, which is evil and not part of standard Gosu
+      return false;
+    }
+
+    DynamicFunctionSymbol getterDfs = dps.getGetterDfs();
+    if( isCompilingDeclarationsFor( dps.getScriptPart() ) ) {
+      return false;
+    }
+    IAttributedFeatureInfo miGetter = getterDfs == null ? null : getterDfs.getMethodOrConstructorInfo( true );
+    return miGetter != null && miGetter.isHidden();
+  }
+
+  private boolean isCompilingDeclarationsFor( IScriptPartId scriptPart ) {
+    if( scriptPart != null ) {
+      IGosuClass type = (IGosuClass)scriptPart.getContainingType();
+      return type != null && type.isCompilingDeclarations();
+    }
+    return false;
+  }
+
   private void putProperties( ISymbolTable table, IGosuClassInternal gsContextClass, boolean bSuperClass )
   {
     for( DynamicPropertySymbol dps : getMemberProperties() )
     {
-      if( !bSuperClass || isAccessible( gsContextClass, dps ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, dps ) && !isHidden( dps )) )
       {
         if( isParameterizedType() )
         {
@@ -2209,7 +2249,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     List<DynamicFunctionSymbol> staticFunctions = getStaticFunctions();
     for (int i = 0; i < staticFunctions.size(); i++) {
       DynamicFunctionSymbol dfs = staticFunctions.get(i);
-      if( !bSuperClass || isAccessible( gsContextClass, dfs ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, dfs ) && !isHidden( dfs )) )
       {
         if( isParameterizedType() )
         {
@@ -2229,7 +2269,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     List<DynamicPropertySymbol> staticProperties = getStaticProperties();
     for (int i = 0; i < staticProperties.size(); i++) {
       DynamicPropertySymbol dps = staticProperties.get(i);
-      if( !bSuperClass || isAccessible( gsContextClass, dps ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, dps ) && !isHidden( dps )) )
       {
         if( isParameterizedType() )
         {

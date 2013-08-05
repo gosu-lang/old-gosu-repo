@@ -4,7 +4,6 @@
 
 package gw.plugin.ij.sdk;
 
-import com.google.common.collect.Lists;
 import com.intellij.openapi.projectRoots.AdditionalDataConfigurable;
 import com.intellij.openapi.projectRoots.JavaSdk;
 import com.intellij.openapi.projectRoots.JavaSdkType;
@@ -14,8 +13,6 @@ import com.intellij.openapi.projectRoots.SdkAdditionalData;
 import com.intellij.openapi.projectRoots.SdkModel;
 import com.intellij.openapi.projectRoots.SdkModificator;
 import com.intellij.openapi.projectRoots.SdkType;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.util.ArrayUtil;
 import gw.plugin.ij.icons.GosuIcons;
 import org.jdom.Element;
 import org.jetbrains.annotations.NonNls;
@@ -24,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.io.File;
-import java.util.List;
 
 public class GosuSdkType extends SdkType implements JavaSdkType {
   @NonNls
@@ -117,7 +113,7 @@ public class GosuSdkType extends SdkType implements JavaSdkType {
 
   @Override
   public SdkAdditionalData loadAdditionalData(@NotNull Sdk currentSdk, @NotNull Element additional) {
-    return new GosuSdkAdditionalData(currentSdk, additional);
+    return new GosuSdkAdditionalData(additional);
   }
 
   @Override

@@ -399,10 +399,19 @@ public class XmlSchemaElementTypeData<T> extends XmlSchemaTypeData<T> implements
     final XmlSchemaTypeInstanceTypeData xmlTypeInstanceTypeData = getXmlTypeInstanceTypeData();
     final IType xmlTypeInstanceType = xmlTypeInstanceTypeData.getType();
     final IConstructorHandler constructorHandler;
-    final IJavaClassInfo clazz = getSchemaIndex().getGeneratedClass( getType().getName() );
-    final IJavaClassInfo typeInstanceClass = XmlSchemaIndex.getSchemaIndexByType( xmlTypeInstanceType ).getGeneratedClass( xmlTypeInstanceType.getName() );
+    final Class clazz;
+    final Class typeInstanceClass;
+    try {
+      IJavaClassInfo generatedClass = getSchemaIndex().getGeneratedClass( getType().getName() );
+      clazz = generatedClass == null ? null : Class.forName( generatedClass.getName());
+      IJavaClassInfo generatedClassTypeInst = XmlSchemaIndex.getSchemaIndexByType( xmlTypeInstanceType ).getGeneratedClass( xmlTypeInstanceType.getName() );
+      typeInstanceClass = generatedClassTypeInst == null ? null : Class.forName( generatedClassTypeInst.getName() );
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException( e );
+    }
     if ( clazz != null && typeInstanceClass == null ) {
-      throw new RuntimeException( "Partial codegen schema graph detected." );
+      throw new RuntimeException( "Partial codegen schema graph detected\n" +
+                                  "Missing Generated Class: " + xmlTypeInstanceType.getName() );
     }
     if ( clazz != null ) {
       constructorHandler = new IConstructorHandler() {
@@ -410,7 +419,7 @@ public class XmlSchemaElementTypeData<T> extends XmlSchemaTypeData<T> implements
         public Object newInstance( Object... args ) {
           try {
             if ( args.length > 0 ) {
-              return getDeclaredConstructor(clazz, typeInstanceClass ).newInstance( args[0] );
+              return clazz.getConstructor( typeInstanceClass ).newInstance( args[0] );
             }
             else {
               return clazz.newInstance();

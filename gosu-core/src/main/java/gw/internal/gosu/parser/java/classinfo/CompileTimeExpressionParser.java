@@ -9,12 +9,13 @@ import gw.internal.ext.org.antlr.runtime.CharStream;
 import gw.internal.ext.org.antlr.runtime.Token;
 import gw.internal.gosu.parser.AnnotationInfoFactoryImpl;
 import gw.internal.gosu.parser.FieldJavaClassField;
+import gw.internal.gosu.parser.GosuParser;
 import gw.internal.gosu.parser.Symbol;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.TypeUsesMap;
 import gw.internal.gosu.parser.java.JavaLexer;
 import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.IExpression;
-import gw.lang.parser.IGosuParser;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
@@ -32,6 +33,7 @@ import gw.util.GosuExceptionUtil;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Modifier;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,25 +48,26 @@ public class CompileTimeExpressionParser
     List<String> staticImports = null;
     IJavaClassInfo outerMostEnclosingType = TypeLord.getOuterMostEnclosingClass(enclosingType);
     if (outerMostEnclosingType instanceof JavaSourceType) {
-      usesMap = ((JavaSourceType) outerMostEnclosingType).getTypeUsesMap();
+      usesMap = ((JavaSourceType) outerMostEnclosingType).getTypeUsesMap().copy();
       staticImports = ((JavaSourceType)outerMostEnclosingType).getStaticImports();
     }
-    if (usesMap == null) {
-      throw new RuntimeException("Should never happen");
+    else {
+      usesMap = new TypeUsesMap();
+      staticImports = Collections.emptyList();
     }
-    usesMap = usesMap.copy();
+
     usesMap.addToDefaultTypeUses("gw.lang.");
 
     TypeSystem.pushIncludeAll();
     addEnclosingPackages(usesMap, enclosingType );
     try {
       text = Java7ToGosuLexicalConversion(text);
-      IGosuParser scriptParser = GosuParserFactory.createParser( text );
+      GosuParser scriptParser = (GosuParser)GosuParserFactory.createParser( text );
       maybePushEnumTypes( scriptParser.getSymbolTable(), resultType );
       pushLocalConstants( scriptParser.getSymbolTable(), enclosingType );
       pushStaticImports( scriptParser.getSymbolTable(), staticImports, enclosingType );
       scriptParser.setTypeUsesMap( usesMap );
-      IExpression expr = scriptParser.parseExpOrProgram( new TypelessScriptPartId("compile-time annotation eval" ), false, false );
+      IExpression expr = scriptParser.parseExpOrProgram( new TypelessScriptPartId("compile-time annotation eval" ), resultType, false, false );
       return expr;
     }
     catch (ParseResultsException e) {

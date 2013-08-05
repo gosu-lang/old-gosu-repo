@@ -257,7 +257,7 @@ public class GosuSdkUtils {
     } // else pluginHome is a jar in the TH environment
 
     addExtlibFolderToClasspath(modificator);
-    modificator.setSdkAdditionalData(new GosuSdkAdditionalData(sdk, jdk, findGosuVersion(homePath)));
+    modificator.setSdkAdditionalData(new GosuSdkAdditionalData(jdk, findGosuVersion(homePath)));
     modificator.commitChanges();
   }
 

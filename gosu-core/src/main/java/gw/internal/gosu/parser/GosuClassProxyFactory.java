@@ -343,6 +343,9 @@ public class GosuClassProxyFactory
       return String.valueOf( value );
     }
     if( JavaTypes.CLASS().isAssignableFrom( returnType ) ) {
+      if( value instanceof String ) {
+        return (String)value;
+      }
       return ((Class)value).getName();
     }
     if( value instanceof IAnnotationInfo ) {

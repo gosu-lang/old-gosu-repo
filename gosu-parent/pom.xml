@@ -195,7 +195,7 @@
         <plugin>
           <groupId>com.guidewire.build</groupId>
           <artifactId>idea-maven-plugin</artifactId>
-          <version>0.11.3</version>
+          <version>0.11.11</version>
           <configuration>
             <localOutput>${idea.local.output}</localOutput>
             <languageLevel>JDK_1_6</languageLevel>

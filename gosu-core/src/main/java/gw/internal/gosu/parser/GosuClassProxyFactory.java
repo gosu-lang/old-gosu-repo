@@ -5,6 +5,7 @@
 package gw.internal.gosu.parser;
 
 import gw.config.CommonServices;
+import gw.internal.gosu.parser.java.classinfo.JavaSourceDefaultValue;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ISource;
 import gw.lang.parser.Keyword;
@@ -328,6 +329,9 @@ public class GosuClassProxyFactory
   public static String makeValueString( Object value, IType returnType ) {
     if( value == null ) {
       return "null";
+    }
+    if( value instanceof JavaSourceDefaultValue ) {
+      return ((JavaSourceDefaultValue)value).getValue();
     }
     if( returnType == JavaTypes.STRING() ) {
        return "\"" + value + "\"";

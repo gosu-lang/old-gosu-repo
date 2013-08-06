@@ -23,10 +23,7 @@ public class JavaSourceAnnotationMethod extends JavaSourceMethod {
         if (arrayNode != null) {
           _defaultValue = new JavaSourceDefaultValue(this, "new " + getReturnClassInfo().getName() +  " {" + arrayNode.getSource() + "}");
         } else {
-          String text = "";
-          for (IJavaASTNode child : node.getChildren()) {
-            text += child.getText();
-          }
+          String text = node.getSource();
           _defaultValue = new JavaSourceDefaultValue(this, text);
         }
       } else {

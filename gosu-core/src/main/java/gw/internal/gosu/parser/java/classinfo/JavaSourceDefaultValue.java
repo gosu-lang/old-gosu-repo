@@ -21,7 +21,7 @@ public class JavaSourceDefaultValue {
     return _text;
   }
 
-  public Object getValue() {
+  public String getValue() {
     return _text;
   }
 

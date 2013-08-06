@@ -50,6 +50,7 @@ public class CompileTimeExpressionParser
     if (outerMostEnclosingType instanceof JavaSourceType) {
       usesMap = ((JavaSourceType) outerMostEnclosingType).getTypeUsesMap().copy();
       staticImports = ((JavaSourceType)outerMostEnclosingType).getStaticImports();
+      addInnerClassNames( enclosingType, usesMap );
     }
     else {
       usesMap = new TypeUsesMap();
@@ -76,6 +77,17 @@ public class CompileTimeExpressionParser
     finally {
       TypeSystem.popIncludeAll();
     }
+  }
+
+  private static void addInnerClassNames( IJavaClassInfo enclosingType, ITypeUsesMap usesMap ) {
+    if( enclosingType == null ) {
+      return;
+    }
+    usesMap.addToTypeUses( enclosingType.getName() );
+    for( IJavaClassInfo jci : enclosingType.getDeclaredClasses() ) {
+      usesMap.addToTypeUses( jci.getName() );
+    }
+    addInnerClassNames( enclosingType.getEnclosingClass(), usesMap );
   }
 
   private static String Java7ToGosuLexicalConversion(String src) {
@@ -114,8 +126,10 @@ public class CompileTimeExpressionParser
           if(number.charAt(e-1) == 'l') {
             e--;
           }
-          number = number.substring(s, e);
-          text = Long.valueOf(number, 8).toString();
+          if( s < e ) {
+            number = number.substring(s, e);
+            text = Long.valueOf(number, 8).toString();
+          }
         }
       }
       sb.append(" ");

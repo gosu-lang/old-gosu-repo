@@ -1,16 +1,15 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
     <relativePath>../gosu-parent/pom.xml</relativePath>
-    <version>0.10.2-SNAPSHOT</version>
+    <version>0.10.2</version>
   </parent>
 
   <groupId>com.guidewire.studio</groupId>
   <artifactId>idea-gosu-plugin</artifactId>
-  <version>3.2-SNAPSHOT</version>
+  <version>3.2</version>
 
   <name>Gosu :: IntelliJ IDEA Plugin </name>
 
@@ -92,24 +91,24 @@
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-core</artifactId>
-      <version>0.10.2-SNAPSHOT</version>
+      <version>0.10.2</version>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-test-api</artifactId>
-      <version>0.10.2-SNAPSHOT</version>
+      <version>0.10.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-itcase-utils</artifactId>
-      <version>0.10.2-SNAPSHOT</version>
+      <version>0.10.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>ij-compiler-api</artifactId>
-      <version>0.10.2-SNAPSHOT</version>
+      <version>0.10.2</version>
     </dependency>
   </dependencies>
 
@@ -151,7 +150,7 @@
     <connection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</connection>
     <url>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</url>
     <developerConnection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>gosu-proj-0.10.2</tag>
   </scm>
 
 </project>

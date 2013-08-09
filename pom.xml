@@ -5,7 +5,7 @@
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
     <version>0.10.3-SNAPSHOT</version>
-    <relativePath>gosu-parent</relativePath>
+    <relativePath>gosu-parent/pom.xml</relativePath>
   </parent>
   <artifactId>gosu-proj</artifactId>
   <packaging>pom</packaging>

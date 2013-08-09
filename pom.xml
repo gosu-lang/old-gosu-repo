@@ -49,8 +49,8 @@
   </build>
 
   <scm>
-    <connection>scm:git:git@github.com:gosu-lang/gosu.git</connection>
-    <url>scm:git:git@github.com:gosu-lang/gosu.git</url>
+    <connection>scm:git:https://github.com/gosu-lang/gosu.git</connection>
+    <url>https://github.com/gosu-lang/gosu</url>
     <developerConnection>scm:git:git@github.com:gosu-lang/gosu.git</developerConnection>
     <tag>HEAD</tag>
   </scm>

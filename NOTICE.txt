@@ -130,5 +130,20 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-This product includes software developed by The Apache Software
-Foundation (http://www.apache.org/).
+Apache Commons CLI provided Copyright (c) 2001-2009 The Apache Software Foundation
+All rights reserved.
+
+
+
+Apache Commons Collections provided Copyright (c) 2001-2008 The Apache Software Foundation
+All rights reserved.
+
+
+
+Apache Commons Logging provided Copyright (c) 2001-2007 The Apache Software Foundation
+All rights reserved.
+
+
+
+Apache Xerces Java provided Copyright (c) 1999-2010 The Apache Software Foundation
+All rights reserved.

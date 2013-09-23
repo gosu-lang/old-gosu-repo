@@ -45,8 +45,8 @@ for arg in "$@"; do
   _CMD_LINE_ARGS="$_CMD_LINE_ARGS \"$arg\""
 done
 
-CMD="exec \"$_JAVACMD\" $_DEBUG $GOSU_OPTS -classpath \"$launcherApiJar:$launcherImplJar:$launcherAetherJar\" gw.lang.launch.impl.GosuLauncher -Dlauncher.properties.file=\"$_G_ROOT_DIR/bin/gosulaunch.properties\""
+CMD="exec $_JAVACMD $_DEBUG $GOSU_OPTS -classpath \"$launcherApiJar:$launcherImplJar:$launcherAetherJar\" gw.lang.launch.impl.GosuLauncher -Dlauncher.properties.file=\"$_G_ROOT_DIR/bin/gosulaunch.properties\""
 if [ -n "$_DEBUG" ]; then
   echo $CMD $_CMD_LINE_ARGS
 fi
-eval "$CMD" $_CMD_LINE_ARGS
+eval $CMD $_CMD_LINE_ARGS

@@ -812,10 +812,8 @@ public class XmlSchemaIndex<T> {
   private static void inlineIncludeOrRedefine( URL blueprintUrl, String targetNamespace, Map<String, Map<String, XmlElement>> resultingComponents, Set<String> resultingImportedNamespaces, Set<Pair<URL, String>> newSchemaIndexesToProcess, XmlElement includeOrRedefine, Set<URL> alreadyIncluded ) throws MalformedURLException {
     String schemaLocation = includeOrRedefine.getAttributeValue( "schemaLocation" );
     URL includedUrl = makeLocal( blueprintUrl, schemaLocation, null, TypeSystem.getExecutionEnvironment().getModule( blueprintUrl ) );
-    if ( includeOrRedefine.getQName().equals( Include.$QNAME ) ) {
-      if ( ! alreadyIncluded.add( includedUrl ) ) {
-        return; // already included
-      }
+    if ( ! alreadyIncluded.add( includedUrl ) ) {
+      return; // already included
     }
     XmlElement includedSchema = XmlElement.parse( includedUrl );
     String includedTargetNamespace = includedSchema.getAttributeValue( "targetNamespace" );
@@ -1214,6 +1212,10 @@ public class XmlSchemaIndex<T> {
       typeName = originalTypeName + suffix++;
     }
     _allTypeNames.add( typeName );
+
+    // FIXME-isd: too hacky?
+    // Need to record newly created type since there will be no refresh on them!
+    getTypeLoader().createdType( typeName );
     return typeName;
   }
 

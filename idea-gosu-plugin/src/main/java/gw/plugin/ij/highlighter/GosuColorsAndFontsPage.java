@@ -31,8 +31,7 @@ public class GosuColorsAndFontsPage implements ColorSettingsPage {
       new AttributesDescriptor("String", GosuHighlighterColors.STRING),
       new AttributesDescriptor("Braces", GosuHighlighterColors.BRACES),
       new AttributesDescriptor("Operator", GosuHighlighterColors.OPERATOR),
-      new AttributesDescriptor("Character", GosuHighlighterColors.BAD_CHARACTER),
-      new AttributesDescriptor("Unresolved Reference", GosuHighlighterColors.UNRESOLVED_ACCESS)};
+      new AttributesDescriptor("Character", GosuHighlighterColors.BAD_CHARACTER)};
 
   @NotNull
   public String getDisplayName() {
@@ -84,7 +83,6 @@ public class GosuColorsAndFontsPage implements ColorSettingsPage {
   public Map<String, TextAttributesKey> getAdditionalHighlightingTagToDescriptorMap() {
     return ImmutableMap.of(
         "gosudoc", GosuHighlighterColors.DOC_COMMENT_CONTENT,
-        "doctag", GosuHighlighterColors.DOC_COMMENT_TAG,
-        "unresolved", GosuHighlighterColors.UNRESOLVED_ACCESS);
+        "doctag", GosuHighlighterColors.DOC_COMMENT_TAG);
   }
 }

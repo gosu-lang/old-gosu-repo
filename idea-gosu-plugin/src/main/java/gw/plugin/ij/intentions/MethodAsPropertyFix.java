@@ -42,7 +42,7 @@ public class MethodAsPropertyFix extends LocalQuickFixAndIntentionActionOnPsiEle
     String property = isGetter ? "property get" : "property set";
     String newMethodName = methodName.substring(3);
     src = src.replace("function", property);
-    src = src.replace(methodName, newMethodName);
+    src = src.replaceFirst(methodName, newMethodName);
     PsiElement stub = GosuPsiParseUtil.parseProgramm(src, startElement, file.getManager(), null);
 
     PsiElement newMethod = new PsiMatcherImpl(stub)

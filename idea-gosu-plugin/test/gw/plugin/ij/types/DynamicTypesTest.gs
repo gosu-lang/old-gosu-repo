@@ -11,9 +11,10 @@ uses gw.plugin.ij.core.FileModificationManager
 uses gw.plugin.ij.framework.GosuTestCase
 uses gw.plugin.ij.framework.SmartTextRange
 uses gw.plugin.ij.framework.generator.ResourceFactory
-uses gw.plugin.ij.util.IDEAUtil
+uses gw.plugin.ij.util.ExecutionUtil
 
 uses java.lang.Runnable
+uses gw.plugin.ij.util.UIUtil
 
 abstract class DynamicTypesTest extends GosuTestCase {
   var oldDelay: int
@@ -60,7 +61,7 @@ abstract class DynamicTypesTest extends GosuTestCase {
   }
 
   function type(range: SmartTextRange, text: String) {
-    IDEAUtil.runWriteActionInDispatchThread(new Runnable() {
+    runWriteActionInDispatchThread(new Runnable() {
       function run() {
         TypeSystem.pushModule(GosuModule);
         try {
@@ -72,6 +73,6 @@ abstract class DynamicTypesTest extends GosuTestCase {
         }
       }
     }, true);
-    IDEAUtil.settleModalEventQueue();
+    UIUtil.settleModalEventQueue();
   }
 }

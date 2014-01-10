@@ -132,15 +132,6 @@ public abstract class XmlSchemaFacetValidator<T extends XmlSchemaFacet> {
         }
       }
     } );
-    _validators.put( XmlSchemaPatternFacet.class, new XmlSchemaFacetValidator<XmlSchemaPatternFacet>() {
-      @Override
-      protected void validateInternal(XmlSchemaPatternFacet facet, String value, XmlSimpleValueValidationContext validationContext, XmlSchemaPrimitiveType primitiveType) throws XmlSimpleValueException {
-        RegularExpression regex = new RegularExpression( facet.getValue(), "X" );
-        if ( ! regex.matches( value ) ) {
-          throw new XmlSimpleValueException( "value does not match pattern " + facet.getValue() );
-        }
-      }
-    } );
     _validators.put( XmlSchemaTotalDigitsFacet.class, new XmlSchemaFacetValidator<XmlSchemaTotalDigitsFacet>() {
       @Override
       protected void validateInternal(XmlSchemaTotalDigitsFacet facet, String value, XmlSimpleValueValidationContext validationContext, XmlSchemaPrimitiveType primitiveType) throws XmlSimpleValueException {
@@ -207,7 +198,6 @@ public abstract class XmlSchemaFacetValidator<T extends XmlSchemaFacet> {
   }
 
   public static void validate(XmlSchemaFacet facet, String value, XmlSimpleValueValidationContext validationContext, XmlSchemaPrimitiveType primitiveType) throws XmlSimpleValueException {
-    primitiveType.validate( value );
     //noinspection unchecked
     getValidator( facet.getClass() ).validateInternal( facet, value, validationContext, primitiveType );
   }

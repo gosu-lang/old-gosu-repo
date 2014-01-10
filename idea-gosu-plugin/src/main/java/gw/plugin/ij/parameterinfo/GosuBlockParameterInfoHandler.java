@@ -17,8 +17,8 @@ import gw.lang.reflect.IBlockType;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.lang.parser.GosuBlockInvocationImpl;
 import gw.plugin.ij.lang.psi.impl.GosuBaseElementImpl;
 import gw.plugin.ij.util.GosuModuleUtil;
@@ -68,7 +68,7 @@ public class GosuBlockParameterInfoHandler implements ParameterInfoHandler<PsiEl
   public void showParameterInfo(@NotNull PsiElement element, @NotNull CreateParameterInfoContext context) {
     String error = ParameterInfoUtil.verify(context);
     if (error != null) {
-      IDEAUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
+      ExceptionUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
     } else {
       context.showHint(element, element.getTextRange().getStartOffset(), this);
     }

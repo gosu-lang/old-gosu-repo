@@ -5,12 +5,16 @@
 package gw.internal.gosu.compiler.protocols.gosuclass;
 
 import gw.internal.gosu.compiler.GosuClassLoader;
+import gw.internal.gosu.compiler.SingleServingGosuClassLoader;
 import gw.internal.gosu.ir.TransformingCompiler;
 import gw.internal.gosu.parser.GosuClass;
 import gw.internal.gosu.parser.IGosuClassInternal;
+import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ICompilableType;
+import gw.lang.reflect.gs.IGosuProgram;
+import gw.lang.reflect.java.IJavaBackedType;
 import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.TypeSystemLockHelper;
 import gw.util.GosuExceptionUtil;
@@ -23,7 +27,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  */
@@ -87,6 +90,10 @@ public class GosuClassesUrlConnection extends URLConnection {
   }
 
   private void maybeAssignGosuType( String strType ) {
+    if( strType.contains( IGosuProgram.NAME_PREFIX + "eval_" ) ) {
+      // Never load an eval class here, they should always load in a single-serving loader
+      return;
+    }
     ClassLoader loader = TypeSystem.getGosuClassLoader().getActualLoader();
     TypeSystemLockHelper.getTypeSystemLockWithMonitor( loader );
     try {
@@ -100,12 +107,24 @@ public class GosuClassesUrlConnection extends URLConnection {
         TypeSystem.popModule(global);
       }
       if( type instanceof ICompilableType ) {
-        _type = (ICompilableType)type;
+        if( !isInSingleServingLoader( type.getEnclosingType() ) ) {
+          _type = (ICompilableType)type;
+        }
       }
     }
     finally {
       TypeSystem.unlock();
     }
+  }
+
+  private boolean isInSingleServingLoader( IType type ) {
+    if( type instanceof IJavaBackedType ) {
+      return ((IJavaBackedType)type).getBackingClass().getClassLoader() instanceof SingleServingGosuClassLoader;
+    }
+    if( type instanceof IHasJavaClass ) {
+      return ((IHasJavaClass)type).getBackingClass().getClassLoader() instanceof SingleServingGosuClassLoader;
+    }
+    return false;
   }
 
   public static boolean isInitiatedByHandler(String strName) {

@@ -13,7 +13,6 @@ import com.intellij.psi.impl.source.tree.TreeElement;
 import com.intellij.psi.tree.IElementType;
 import com.intellij.util.ArrayUtil;
 import com.intellij.util.IncorrectOperationException;
-import gw.internal.gosu.parser.TypeResolveException;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IParsedElement;
 import gw.lang.reflect.IBlockType;
@@ -31,12 +30,11 @@ import gw.plugin.ij.lang.psi.impl.GosuPsiElementImpl;
 import gw.plugin.ij.lang.psi.impl.GosuResolveResultImpl;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiTypeResolver;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 public abstract class GosuReferenceExpressionImpl<T extends IExpression> extends GosuPsiElementImpl<T> implements IGosuReferenceExpression {
   public GosuReferenceExpressionImpl(GosuCompositeElement node) {
@@ -71,45 +69,44 @@ public abstract class GosuReferenceExpressionImpl<T extends IExpression> extends
 
   @Override
   public PsiType getType() {
-    return IDEAUtil.runInModule(
-      new Callable<PsiType>() {
-        public PsiType call() throws Exception {
-          IType type = getTypeReferenced();
-          if( type instanceof ITypeVariableType ) {
-            PsiElement typeVariable = null;
-            if( type.getEnclosingType() instanceof IFunctionType ) {
-              for( PsiElement parent = getParent(); typeVariable == null && parent != null; parent = parent.getParent() ) {
-                if( parent instanceof PsiTypeParameterListOwner ) {
-                  typeVariable = PsiTypeResolver.findTypeVariable( (ITypeVariableType)type, (PsiTypeParameterListOwner)parent );
-                }
+    return ExecutionUtil.execute(new SafeCallable<PsiType>(this) {
+      public PsiType execute() throws Exception {
+        IType type = getTypeReferenced();
+        if (type instanceof ITypeVariableType) {
+          PsiElement typeVariable = null;
+          if (type.getEnclosingType() instanceof IFunctionType) {
+            for (PsiElement parent = getParent(); typeVariable == null && parent != null; parent = parent.getParent()) {
+              if (parent instanceof PsiTypeParameterListOwner) {
+                typeVariable = PsiTypeResolver.findTypeVariable((ITypeVariableType) type, (PsiTypeParameterListOwner) parent);
               }
             }
-            else {
-              PsiElement enclosingType = PsiTypeResolver.resolveType( type.getEnclosingType(), GosuReferenceExpressionImpl.this );
-              typeVariable = PsiTypeResolver.findTypeVariable( (ITypeVariableType)type, (PsiTypeParameterListOwner)enclosingType );
-            }
-            return JavaPsiFacadeUtil.getElementFactory( getProject() ).createType( (PsiClass)typeVariable );
           } else {
-            if (type instanceof ICompilableType && ((ICompilableType) type).isAnonymous()) {
-              IType superType = type.getSupertype();
-              if (superType == null) {
-                superType = type.getInterfaces()[0];
-              }
-              type = superType;
+            PsiElement enclosingType = PsiTypeResolver.resolveType(type.getEnclosingType(), GosuReferenceExpressionImpl.this);
+            if( enclosingType != null ) {
+              typeVariable = PsiTypeResolver.findTypeVariable((ITypeVariableType) type, (PsiTypeParameterListOwner) enclosingType);
             }
-
-            PsiType psiType = null;
-            if( type instanceof IBlockType && !getNode().getText().contains(":")) {
-              // handle case where the block type has a default void return type: block(...) vs block(...) : void
-              psiType = createType(type, getNode().getPsi());
-            }
-            else {
-              psiType = createType(type, getNameIdentifierImpl());
-            }
-            return psiType;
           }
+          return typeVariable == null ? null : JavaPsiFacadeUtil.getElementFactory(getProject()).createType((PsiClass) typeVariable);
+        } else {
+          if (type instanceof ICompilableType && ((ICompilableType) type).isAnonymous()) {
+            IType superType = type.getSupertype();
+            if (superType == null) {
+              superType = type.getInterfaces()[0];
+            }
+            type = superType;
+          }
+
+          PsiType psiType = null;
+          if (type instanceof IBlockType && !getNode().getText().contains(":")) {
+            // handle case where the block type has a default void return type: block(...) vs block(...) : void
+            psiType = createType(type, getNode().getPsi());
+          } else {
+            psiType = createType(type, getNameIdentifierImpl());
+          }
+          return psiType;
         }
-    }, this );
+      }
+    });
   }
 
   @Nullable
@@ -158,18 +155,9 @@ public abstract class GosuReferenceExpressionImpl<T extends IExpression> extends
   public boolean isReferenceTo(final PsiElement element) {
     ProgressManager.checkCanceled();
 
-    return IDEAUtil.runInModule(new Callable<Boolean>() {
-      public Boolean call() throws Exception {
-        PsiElement resolveResult = null;
-        try {
-          resolveResult = resolve();
-        }
-        catch (RuntimeException e) {
-          if(e.getCause() instanceof TypeResolveException) {
-            return false;
-          }
-          throw e;
-        }
+    return ExecutionUtil.execute(new SafeCallable<Boolean>(this) {
+      public Boolean execute() throws Exception {
+        PsiElement resolveResult = resolve();
         PsiElement referenceTo = GosuTargetElementEvaluator.correctSearchTargets(resolveResult);
         if (getManager().areElementsEquivalent(element, referenceTo)) {
           return true;
@@ -194,7 +182,7 @@ public abstract class GosuReferenceExpressionImpl<T extends IExpression> extends
         }
         return false;
       }
-    }, this);
+    });
   }
 
   @NotNull

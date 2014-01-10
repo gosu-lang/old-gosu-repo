@@ -164,7 +164,7 @@ public class GosuClassParseInfo {
       //noinspection unchecked
       _mapMemberFunctions = new LinkedHashMap( 2 );
     }
-    _mapMemberFunctions.put( (String)function.getName(), function );
+    _mapMemberFunctions.put( function.getName(), function );
   }
 
   public Map<String, DynamicFunctionSymbol> getConstructorFunctions() {
@@ -178,7 +178,7 @@ public class GosuClassParseInfo {
       //noinspection unchecked
       _mapConstructorFunctions = new LinkedHashMap(2);
     }
-    _mapConstructorFunctions.put( (String)function.getName(), function);
+    _mapConstructorFunctions.put( function.getName(), function);
   }
 
   protected boolean addDefaultConstructor( ISymbolTable symbolTable )
@@ -195,14 +195,14 @@ public class GosuClassParseInfo {
       DynamicFunctionSymbol defCtorFromSuper;
       if( _gosuClass.getSupertype().getGenericType() == JavaTypes.ENUM() )
       {
-        defCtorFromSuper = _gosuClass.getSuperClass().getConstructorFunction( (String)"Enum(java.lang.String, int)" );
+        defCtorFromSuper = _gosuClass.getSuperClass().getConstructorFunction( "Enum(java.lang.String, int)" );
       }
       else
       {
         defCtorFromSuper = _gosuClass.getSuperClass().getDefaultConstructor();
       }
 
-      if( defCtorFromSuper == null )
+      if( defCtorFromSuper == null || !_gosuClass.getSuperClass().isAccessible( _gosuClass, defCtorFromSuper ) )
       {
         return false;
       }
@@ -233,11 +233,11 @@ public class GosuClassParseInfo {
     {
       dfsCtor.setPrivate( true );
     }
-    _mapConstructorFunctions.put( (String)dfsCtor.getName(), dfsCtor );
+    _mapConstructorFunctions.put( dfsCtor.getName(), dfsCtor );
     return true;
   }
 
-  public void addAnonymousConstructor( ISymbolTable symTable, GosuConstructorInfo superCtor )
+  boolean addAnonymousConstructor( ISymbolTable symTable, GosuConstructorInfo superCtor )
   {
     symTable.pushIsolatedScope(new GosuClassTransparentActivationContext(_gosuClass, true));
     try
@@ -256,10 +256,12 @@ public class GosuClassParseInfo {
         ctorFromSuper = ctorFromSuper.getBackingConstructorInfo();
       }
       MethodCallExpression e = new MethodCallExpression();
-      if (ctorFromSuper == null) {
-        throw new NullPointerException("Super constructor cannot be null for anonymous constructor.");
+      DynamicFunctionSymbol dfsCtorFromSuper;
+      if( ctorFromSuper == null || !_gosuClass.getSuperClass().isAccessible( _gosuClass, dfsCtorFromSuper = getSuperDfsFromSuperCtor( ctorFromSuper ) ) )
+      {
+        return false;
       }
-      e.setFunctionSymbol( new SuperConstructorFunctionSymbol( getSuperDfsFromSuperCtor( ctorFromSuper ) ) );
+      e.setFunctionSymbol( new SuperConstructorFunctionSymbol( dfsCtorFromSuper ) );
       e.setArgs( makeArgs( argSymbols, symTable ) );
       e.setType( GosuParserTypes.NULL_TYPE() );
       MethodCallStatement initializer = new MethodCallStatement();
@@ -271,7 +273,8 @@ public class GosuClassParseInfo {
         //noinspection unchecked
         _mapConstructorFunctions = new LinkedHashMap(2);
       }
-      _mapConstructorFunctions.put( (String)dfsCtor.getName(), dfsCtor );
+      _mapConstructorFunctions.put( dfsCtor.getName(), dfsCtor );
+      return true;
     }
     finally
     {
@@ -379,7 +382,7 @@ public class GosuClassParseInfo {
       //noinspection unchecked
       _mapMemberProperties = new LinkedHashMap(2);
     }
-    _mapMemberProperties.put( (String)property.getName(), property );
+    _mapMemberProperties.put( property.getName(), property );
   }
 
   private void addStaticField( VarStatement varStmt )
@@ -468,7 +471,7 @@ public class GosuClassParseInfo {
     {
       _capturedSymbols = new HashMap<String, ICapturedSymbol>( 2 );
     }
-    _capturedSymbols.put( (String)sym.getName(), sym );
+    _capturedSymbols.put( sym.getName(), sym );
   }
 
   public static void clear() {

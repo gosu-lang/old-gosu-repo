@@ -22,12 +22,14 @@ import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IMetaType;
 import gw.lang.reflect.INonLoadableType;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeLoader;
 import gw.lang.reflect.ITypeVariableArrayType;
 import gw.lang.reflect.ITypeVariableType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGenericTypeVariable;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaType;
@@ -570,15 +572,15 @@ public class TypeLord
     return genericParamByVarName;
   }
 
-  public static String getNameWithQualifiedTypeVariables( IType type )
+  public static String getNameWithQualifiedTypeVariables( IType type, boolean includeModules )
   {
     if( type.isArray() )
     {
-      return getNameWithQualifiedTypeVariables( type.getComponentType() ) + "[]";
+      return getNameWithQualifiedTypeVariables( type.getComponentType(), includeModules ) + "[]";
     }
     else if( type.isParameterizedType() )
     {
-      String strParams = getNameOfParams( type.getTypeParameters(), false, true );
+      String strParams = getNameOfParams( type.getTypeParameters(), false, true, includeModules );
       return getPureGenericType( type ).getName() + strParams;
     }
     else if( type instanceof TypeVariableType )
@@ -774,9 +776,13 @@ public class TypeLord
       return;
     }
 
+    boolean bFromStructure = type instanceof IGosuClass && ((IGosuClass)type).isStructure();
     for( IType iface : type.getInterfaces() )
     {
-      addAllClassesInClassHierarchy( iface, set );
+      if( !bFromStructure || !(iface instanceof IGosuClass) || ((IGosuClass)iface).isStructure() )
+      {
+        addAllClassesInClassHierarchy( iface, set );
+      }
     }
 
     if( type.getSupertype() != null )
@@ -849,14 +855,23 @@ public class TypeLord
 
   public static IType replaceTypeVariableTypeParametersWithBoundingTypes( IType type )
   {
+    return replaceTypeVariableTypeParametersWithBoundingTypes( type, null );
+  }
+  public static IType replaceTypeVariableTypeParametersWithBoundingTypes( IType type, IType enclType )
+  {
     if( type instanceof ITypeVariableType )
     {
-      return replaceTypeVariableTypeParametersWithBoundingTypes( ((ITypeVariableType)type).getBoundingType() );
+      if( enclType != null && enclType.isParameterizedType() )
+      {
+        TypeVarToTypeMap map = mapTypeByVarName( enclType, enclType );
+        return replaceTypeVariableTypeParametersWithBoundingTypes( getActualType( ((ITypeVariableType)type).getBoundingType(), map, true ) );
+      }
+      return replaceTypeVariableTypeParametersWithBoundingTypes( ((ITypeVariableType)type).getBoundingType(), enclType );
     }
 
     if( type.isArray() )
     {
-      return replaceTypeVariableTypeParametersWithBoundingTypes( type.getComponentType() ).getArrayType();
+      return replaceTypeVariableTypeParametersWithBoundingTypes( type.getComponentType(), enclType ).getArrayType();
     }
 
     if( type.isParameterizedType() )
@@ -869,7 +884,7 @@ public class TypeLord
       IType[] concreteParams = new IType[typeParams.length];
       for( int i = 0; i < typeParams.length; i++ )
       {
-        concreteParams[i] = replaceTypeVariableTypeParametersWithBoundingTypes( typeParams[i] );
+        concreteParams[i] = replaceTypeVariableTypeParametersWithBoundingTypes( typeParams[i], enclType );
       }
       type = type.getParameterizedType( concreteParams );
     }
@@ -888,7 +903,7 @@ public class TypeLord
         }
         for( int i = 0; i < boundingTypes.length; i++ )
         {
-          boundingTypes[i] = replaceTypeVariableTypeParametersWithBoundingTypes( boundingTypes[i] );
+          boundingTypes[i] = replaceTypeVariableTypeParametersWithBoundingTypes( boundingTypes[i], enclType );
         }
         type = type.getParameterizedType( boundingTypes );
       }
@@ -1590,6 +1605,10 @@ public class TypeLord
     {
       retType = JavaTypes.pLONG();
     }
+    else if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() )
+    {
+      retType = type.getComponentType();
+    }
     else
     {
       IType parameterized = TypeLord.findParameterizedType( type, JavaTypes.ITERABLE() );
@@ -1859,6 +1878,25 @@ public class TypeLord
       }
     }
     return match;
+  }
+
+  public static boolean isInstanceOfPossible( IType lhsType, IType rhsType )
+  {
+    if( (!(rhsType instanceof IGosuClass) && !(rhsType instanceof IJavaType)) ||
+        (!(lhsType instanceof IGosuClass) && !(lhsType instanceof IJavaType)) )
+    {
+      return true;
+    }
+
+    if( rhsType.isFinal() )
+    {
+      return lhsType.isAssignableFrom( rhsType );
+    }
+    else if( !rhsType.isInterface() && !lhsType.isInterface() )
+    {
+      return rhsType.isAssignableFrom( lhsType ) || lhsType.isAssignableFrom( rhsType );
+    }
+    return true;
   }
 
   public static IType getTopLevelType(IType type) {

@@ -17,7 +17,12 @@ import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.testFramework.LightVirtualFile;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.StringBuilderSpinAllocator;
+import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.IGosuParser;
+import gw.lang.parser.ParserOptions;
+import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
 import gw.plugin.ij.lang.psi.IGosuFileBase;
@@ -26,6 +31,7 @@ import gw.plugin.ij.lang.psi.api.statements.IGosuUsesStatementList;
 import gw.plugin.ij.lang.psi.api.statements.IGosuVariable;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.lang.psi.impl.GosuProgramFileImpl;
+import gw.plugin.ij.lang.psi.impl.ModuleFileContext;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuIdentifierExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuReferenceExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeLiteralImpl;
@@ -364,4 +370,14 @@ public class GosuPsiParseUtil {
     return exprList;
   }
 
+  public static IGosuProgram parseProgram(@NotNull IGosuParser parser, @NotNull ParserOptions options, ModuleFileContext context, String contents) throws ParseResultsException {
+    final ParserOptions parserOptions = options
+        .withParser(parser)
+        .withTypeUsesMap(parser.getTypeUsesMap())
+        .withFileContext(context);
+
+    return GosuParserFactory.createProgramParser()
+        .parseExpressionOrProgram(contents, parser.getSymbolTable(), parserOptions)
+        .getProgram();
+  }
 }

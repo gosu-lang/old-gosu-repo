@@ -44,9 +44,11 @@ public class PropertiesPropertySet implements PropertySet {
         Map<String,IFile> result = new HashMap<String, IFile>( initialCapacity );
         for (Pair<String,IFile> pair : propertiesFiles) {
           String fileName = pair.getFirst();
-          String typeName = fileName.substring(0, fileName.length() - EXTENSION.length()).replace('/', '.');
-          if (isValidTypeName(typeName)) {
-            result.put(typeName, pair.getSecond());
+          if( !PropertiesTypeLoader.isDisplayPropertiesFile( pair.getSecond().getName() ) ) {
+            String typeName = fileName.substring(0, fileName.length() - EXTENSION.length()).replace('/', '.');
+            if (isValidTypeName(typeName)) {
+              result.put(typeName, pair.getSecond());
+            }
           }
         }
         return result;

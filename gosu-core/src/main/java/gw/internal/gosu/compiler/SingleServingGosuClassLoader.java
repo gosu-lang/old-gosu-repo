@@ -4,25 +4,63 @@
 
 package gw.internal.gosu.compiler;
 
-import gw.internal.gosu.parser.IGosuClassInternal;
-import gw.lang.reflect.java.IJavaType;
+import gw.config.CommonServices;
 import gw.internal.gosu.ir.TransformingCompiler;
-import gw.lang.reflect.gs.IGosuClassLoader;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ICompilableType;
+import gw.lang.reflect.gs.IGosuClassLoader;
+import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.module.TypeSystemLockHelper;
+import gw.util.concurrent.ConcurrentWeakValueHashMap;
+
+import java.util.Map;
 
 public class SingleServingGosuClassLoader extends ClassLoader implements IGosuClassLoader
 {
+  private static final Map<String, Class> CACHE = new ConcurrentWeakValueHashMap<String, Class>();
+
   private GosuClassLoader _parent;
+
+  public static Class getCached( ICompilableType gsClass ) {
+    return CACHE.get( gsClass.getName() );
+  }
+
+  public static void clearCache() {
+    CACHE.clear();
+  }
 
   SingleServingGosuClassLoader( GosuClassLoader parent )
   {
     super( parent.getActualLoader() );
     _parent = parent;
+    if( CommonServices.getPlatformHelper().isInIDE() ) {
+      //## todo: uncomment
+      //throw new IllegalStateException( "Class loading with single-serving loader is probably wrong in the IDE" );
+    }
   }
 
   public Class<?> findClass( String strName ) throws ClassNotFoundException
   {
+    Class cls = CACHE.get( strName.replace( '$', '.' ) );
+    if( cls != null ) {
+      return cls;
+    }
     return _parent.findClass( strName );
+  }
+
+  @Override
+  protected Class<?> loadClass( String name, boolean resolve ) throws ClassNotFoundException {
+    // Acquire the type system lock and this loader's lock in a consistent order to prevent deadlock.
+    // Note this is only important here for the case where the parent loader of this loader
+    // loads a gosu class that is turn needs to load
+
+    TypeSystemLockHelper.getTypeSystemLockWithMonitor( this );
+    try {
+      return super.loadClass( name, resolve );
+    }
+    finally {
+      TypeSystem.unlock();
+    }
   }
 
   @Override
@@ -32,6 +70,12 @@ public class SingleServingGosuClassLoader extends ClassLoader implements IGosuCl
 
   Class _defineClass( ICompilableType gsClass )
   {
+    Class cls = getCached( gsClass );
+    if( cls != null )
+    {
+      return cls;
+    }
+
     byte[] classBytes = compileClass( gsClass, _parent.shouldDebugClass( gsClass ) );
     CompilationStatistics.instance().collectStats( gsClass, classBytes, true );
 
@@ -45,7 +89,9 @@ public class SingleServingGosuClassLoader extends ClassLoader implements IGosuCl
       definePackage( strPackage, null, null, null, null, null, null, null );
     }
 
-    return defineClass( GosuClassLoader.getJavaName( gsClass ), classBytes, 0, classBytes.length );
+    cls = defineClass( GosuClassLoader.getJavaName( gsClass ), classBytes, 0, classBytes.length );
+    CACHE.put( gsClass.getName(), cls );
+    return cls;
   }
 
   private byte[] compileClass( ICompilableType type, boolean debug )

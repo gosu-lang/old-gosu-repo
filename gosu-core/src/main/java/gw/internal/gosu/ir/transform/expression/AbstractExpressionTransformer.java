@@ -14,6 +14,7 @@ import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRType;
 import gw.lang.parser.IExpression;
 import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuConstructorInfo;
 import gw.lang.reflect.java.IJavaConstructorInfo;
@@ -120,14 +121,22 @@ public abstract class AbstractExpressionTransformer<T extends IExpression> exten
   {
     if( args != null )
     {
-      List<IRType> paramClasses = irMethod.getExplicitParameterTypes();
+      List<IRType> paramClasses = bCast ? irMethod.getExplicitParameterTypes() : Collections.<IRType>emptyList();
       for( int i = 0; i < args.length; i++ )
       {
         IExpression arg = args[i];
         IRExpression irArg = ExpressionTransformer.compile( arg, _cc() );
         if( bCast )
         {
-          irArg = maybeCast( paramClasses, i, irArg );
+          IRType type = paramClasses.get( i );
+          if( type.isPrimitive() && arg.getType() instanceof IPlaceholder && ((IPlaceholder)arg.getType()).isPlaceholder() )
+          {
+            irArg = unboxValueToType( type, irArg );
+          }
+          else
+          {
+            irArg = maybeCast( paramClasses, i, irArg );
+          }
         }
         irArgs.add( irArg );
       }

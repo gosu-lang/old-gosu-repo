@@ -5,11 +5,13 @@
 package gw.plugin.ij.lang.psi.impl.statements;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiExpression;
 import com.intellij.psi.PsiIdentifier;
 import com.intellij.psi.PsiModifier;
 import com.intellij.psi.PsiModifierList;
+import com.intellij.psi.PsiRecursiveElementWalkingVisitor;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.PsiTypeElement;
 import com.intellij.psi.impl.ElementPresentationUtil;
@@ -24,6 +26,7 @@ import gw.lang.parser.IHasType;
 import gw.lang.parser.IParsedElementWithAtLeastOneDeclaration;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.ICompilableType;
+import gw.lang.reflect.java.JavaTypes;
 import gw.plugin.ij.icons.GosuIcons;
 import gw.plugin.ij.lang.parser.GosuCompositeElement;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
@@ -33,13 +36,13 @@ import gw.plugin.ij.lang.psi.api.statements.IGosuVariable;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeElement;
 import gw.plugin.ij.lang.psi.impl.GosuDeclaredElementImpl;
 import gw.plugin.ij.lang.psi.impl.GosuPsiImplUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.util.concurrent.Callable;
 
 public abstract class GosuVariableBaseImpl<E extends IParsedElementWithAtLeastOneDeclaration, T extends StubElement>
     extends GosuDeclaredElementImpl<E, T> implements IGosuVariable {
@@ -82,13 +85,25 @@ public abstract class GosuVariableBaseImpl<E extends IParsedElementWithAtLeastOn
 
   @NotNull
   public PsiType getType() {
-    return IDEAUtil.runInModule(new Callable<PsiType>() {
-          @NotNull
-          public PsiType call() throws Exception {
-            PsiType type = getDeclaredType();
-            return type != null ? type : PsiType.getJavaLangObject(getManager(), getResolveScope());
+    return ExecutionUtil.execute( new SafeCallable<PsiType>(this) {
+      public PsiType execute() throws Exception {
+        PsiType type = getDeclaredType();
+        if( type == null ) {
+          type = PsiType.getJavaLangObject(getManager(), getResolveScope());
+        }
+        return type;
+      }
+
+      @Override
+      public PsiType handleNull( Throwable exception ) {
+        // Can't return a null type :/
+        return ExecutionUtil.execute( new SafeCallable<PsiType>(GosuVariableBaseImpl.this) {
+          public PsiType execute() throws Exception {
+            return createType( JavaTypes.OBJECT() );
           }
-        }, this);
+        });
+      }
+    });
   }
 
   @Nullable
@@ -161,7 +176,22 @@ public abstract class GosuVariableBaseImpl<E extends IParsedElementWithAtLeastOn
   @Nullable
   public PsiIdentifier getNameIdentifier() {
     //return (PsiIdentifier)findElement( this, GosuElementTypes.ELEM_TYPE_NameInDeclaration );
-    PsiIdentifier id = findElement(this, PsiIdentifier.class);
+    class FindIdSkippingAnnotations extends PsiRecursiveElementWalkingVisitor {
+      PsiIdentifier id;
+      public void visitElement(PsiElement element) {
+        if (element instanceof PsiAnnotation) {
+          return;
+        } else if (element instanceof PsiIdentifier) {
+          id = (PsiIdentifier) element;
+          stopWalking();
+          return;
+        }
+        super.visitElement(element);
+      }
+    }
+    FindIdSkippingAnnotations finder = new FindIdSkippingAnnotations();
+    this.accept(finder);
+    PsiIdentifier id = finder.id;
     if (id != null && id.getFirstChild() != null && id.getFirstChild() instanceof PsiIdentifier) {
       // Always return the leaf token node; we always want to patch in just the name and not mess with upper-level tree nodes
       id = (PsiIdentifier) id.getFirstChild();

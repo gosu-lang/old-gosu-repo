@@ -97,19 +97,19 @@ class DynamicJavaTypesTest extends DynamicTypesTest {
     var superClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass { \n" +
+      "public class SuperClass { \n" +
       "  [[ ]]\n" +
       "} \n"
     )
     var subClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SubClass extends SuperClass { \n" +
+      "public class SubClass extends SuperClass { \n" +
       "} \n"
     )
     var subGosuClass = ResourceFactory.createFile(this,
       "package some.pkg; \n" +
-      "class SubGosuClass extends SubClass { \n" +
+      "public class SubGosuClass extends SubClass { \n" +
       "} \n"
     )
     var range = getMarkers(superClass).Ranges[0]

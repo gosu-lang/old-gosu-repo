@@ -8,7 +8,6 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>gosu-core-api-precompiled</artifactId>
-  <packaging>bundle</packaging>
 
   <name>Gosu :: Core API (Precompiled Classes)</name>
 

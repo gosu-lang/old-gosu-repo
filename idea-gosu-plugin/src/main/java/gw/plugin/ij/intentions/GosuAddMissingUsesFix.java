@@ -18,16 +18,15 @@ import gw.lang.reflect.ITypeLoader;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.completion.handlers.filter.CompletionFilter;
+import gw.plugin.ij.completion.handlers.filter.CompletionFilterExtensionPointBean;
 import gw.plugin.ij.lang.psi.api.types.IGosuCodeReferenceElement;
 import gw.plugin.ij.lang.psi.impl.CustomPsiClassCache;
 import gw.plugin.ij.util.GosuModuleUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class GosuAddMissingUsesFix extends ImportClassFixBase<IGosuCodeReferenceElement, IGosuCodeReferenceElement> {
 
@@ -118,11 +117,12 @@ public class GosuAddMissingUsesFix extends ImportClassFixBase<IGosuCodeReference
               String simpleName = ClassUtil.extractClassName(fqn);
               if (simpleName.equals(referenceName)) {
                 IType type = TypeSystem.getByFullNameIfValid(fqn, loader.getModule());
-                PsiClass psiClass = CustomPsiClassCache.instance().getPsiClass(type);
-                if (psiClass != null) {
-                  classes.add(psiClass);
+                if (type != null) {
+                  PsiClass psiClass = CustomPsiClassCache.instance().getPsiClass(type);
+                  if (psiClass != null) {
+                    classes.add(psiClass);
+                  }
                 }
-
               }
             }
           } finally {
@@ -131,8 +131,19 @@ public class GosuAddMissingUsesFix extends ImportClassFixBase<IGosuCodeReference
         }
       }
     }
+    filter(classes);
     return classes;
   }
 
-
+  private void filter(List<PsiClass> classes) {
+    for (Iterator<PsiClass> it = classes.iterator(); it.hasNext();) {
+      PsiClass cl = it.next();
+      List<CompletionFilter> filters = CompletionFilterExtensionPointBean.getFilters();
+      for (CompletionFilter filter : filters) {
+        if (!filter.allowsImportInsertion(cl.getQualifiedName())) {
+          it.remove();
+        }
+      }
+    }
+  }
 }

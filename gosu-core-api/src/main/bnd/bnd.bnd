@@ -1,8 +1,0 @@
-Export-Package=!gw.internal.ext.*,gw.*
-Import-Package=sun.*;resolution:=optional,\
- com.sun.*;resolution:=optional,\
- *
-Service-Component=OSGI-INF/*.xml
-Bundle-ActivationPolicy=lazy
-Gosu-Host=false
-Contains-Sources=gs,gsx

@@ -15,7 +15,6 @@ import gw.lang.reflect.module.IModule;
 import gw.util.GosuExceptionUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -124,6 +123,11 @@ public class FeatureManager<T extends CharSequence> {
     return TypeSystem.getPureGenericType( type ).getName();
   }
 
+  public static boolean areInvocableTypesAssignable(IInvocableType iT0, IInvocableType iT1)
+  {
+    return iT0.isAssignableFrom(iT1) || iT1.isAssignableFrom(iT0);
+  }
+
   public static boolean isFeatureAccessible(IAttributedFeatureInfo property, IRelativeTypeInfo.Accessibility accessibility) {
     boolean isAccessible = false;
     switch (accessibility) {
@@ -223,7 +227,7 @@ public class FeatureManager<T extends CharSequence> {
   }
 
   private T convertCharSequenceToCorrectSensitivity(CharSequence propName) {
-    return (T) (_caseSensitive ? propName.toString() : CICS.get( propName ));
+    return (T) (_caseSensitive ? propName == null ?  "": propName.toString() : CICS.get( propName ));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -276,6 +280,15 @@ public class FeatureManager<T extends CharSequence> {
               MethodList privateMethods = new MethodList();
               if( _addObjectMethods ) {
                 mergeMethods( privateMethods, convertType( JavaTypes.OBJECT() ), false );
+              }
+              if( _typeInfo == null ) {
+                throw new IllegalStateException( "Null TypeInfo" );
+              }
+              if( _typeInfo.getOwnersType() == null ) {
+                throw new IllegalStateException( "null owner" );
+              }
+              if( _typeInfo.getOwnersType().getInterfaces() == null ) {
+                throw new IllegalStateException( "null interfaces for " + _typeInfo.getOwnersType().getName() );
               }
               for (IType type : _typeInfo.getOwnersType().getInterfaces()) {
                 mergeMethods(privateMethods, convertType(type), false);

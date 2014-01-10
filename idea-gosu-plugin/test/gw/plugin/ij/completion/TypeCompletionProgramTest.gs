@@ -396,6 +396,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testNonThrowablesTypesInLibArentShownInNewExpressionAfterThrow() {
     testNoItems({
       "//PROGRAM, pkg/MyProgram\n" +
@@ -408,6 +409,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testThrowablesTypeInLibIsShownInNewExpressionAfterThrow() {
     testNoItems({
       "//PROGRAM, pkg/MyProgram\n" +
@@ -420,6 +422,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testNonThrowablesTypesInSamePackageArentShownInNewExpressionAfterThrow(){
     testNoItems({
       "package apkg\n" +
@@ -472,6 +475,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testInnerTypeIsShownInNewExpression() {
     test({
       "package pkg\n" +
@@ -493,6 +497,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testJavaInnerTypeIsShownInNewExpression() {
     test({
       "//JAVA \n" +
@@ -511,6 +516,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testAnnotationTypesIsShownInAnnotationUsage() {
     test({
       "//PROGRAM, pkg/MyProgram\n" +
@@ -524,6 +530,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testNonAnnotationTypesArentShownInAnnotationUsage() {
     testNoItems({
       "//PROGRAM, pkg/MyProgram\n" +
@@ -559,6 +566,7 @@ class TypeCompletionProgramTest extends AbstractCodeCompletionTest {
     )
   }
 
+  @Disabled( "smckinney", "Requires parsing on proposal types, which we don't do for performance reasons" )
   function testTypeThatContainsStaticInnerAnnotationIsShownInAnnotation() {
     test({
       "package apkg\n" +

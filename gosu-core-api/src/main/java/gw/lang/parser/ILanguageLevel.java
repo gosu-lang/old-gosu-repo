@@ -12,6 +12,7 @@ public interface ILanguageLevel
 
   static class Util {
     private static Boolean g_standardGosu = null;
+    private static Boolean g_dynamicType = null;
     public static void reset() {
       g_standardGosu = null;
     }
@@ -22,6 +23,14 @@ public interface ILanguageLevel
              ? g_standardGosu = CommonServices.getEntityAccess().getLanguageLevel().isStandard()
              : g_standardGosu;
     }
+
+    public static boolean DYNAMICE_TYPE()
+    {
+      return true;
+//             g_dynamicType == null
+//             ? g_dynamicType = STANDARD_GOSU() || System.getProperty( "gosu.dynamic", null ) != null
+//             : g_standardGosu;
+    }
   }
 
 
@@ -29,17 +38,9 @@ public interface ILanguageLevel
 
   boolean allowNonLiteralArgsForJavaAnnotations();
 
-  boolean allowNumericIteration();
-
-  boolean allowGlobalNowSymbol();
-
   boolean allowAllImplicitCoercions();
 
   boolean supportsNakedCatchStatements();
-
-  boolean shouldVerifyPackageRelativeImport( String parsedNameSpace, String actualNameSpace );
-
-  boolean allowPackageRelativeImports();
 
   boolean supportHistoricalJavaAnnotationConstructors();
 }

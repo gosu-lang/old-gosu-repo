@@ -15,15 +15,27 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.psi.PsiFile;
 import com.intellij.ui.LayeredIcon;
 import com.intellij.ui.RowIcon;
+import gw.internal.gosu.parser.IGosuTemplateInternal;
+import gw.internal.gosu.parser.TypeLord;
+import gw.lang.reflect.IBlockType;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuEnhancement;
+import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.IGosuVarPropertyInfo;
 import gw.lang.reflect.java.IJavaFieldPropertyInfo;
+import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.icons.GosuIcons;
+import gw.plugin.ij.lang.psi.custom.CustomGosuClass;
+import gw.plugin.ij.lang.psi.impl.CustomPsiClassCache;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -47,41 +59,95 @@ public class GosuFeatureCallLookupElement extends LookupElement {
 
   @NotNull
   private RowIcon getIcon() {
-    Icon icon;
+    Icon icon = null;
     IFeatureInfo fi = _featureInfo;
-    if (fi instanceof IPropertyInfo) {
-      if (fi instanceof IJavaFieldPropertyInfo || fi instanceof IGosuVarPropertyInfo) {
-        icon = GosuIcons.FIELD;
-      } else {
-        icon = GosuIcons.PROPERTY;
+    IModule mod = TypeSystem.getCurrentModule();
+    IType ownersType;
+    if( mod == null ) {
+      TypeSystem.pushGlobalModule();
+    }
+    try {
+      ownersType = fi.getOwnersType();
+      if( fi instanceof IPropertyInfo ) {
+        if( fi instanceof IJavaFieldPropertyInfo || fi instanceof IGosuVarPropertyInfo ) {
+          icon = GosuIcons.FIELD;
+        }
+        else {
+          icon = GosuIcons.PROPERTY;
+        }
       }
-    } else {
-      icon = GosuIcons.METHOD;
+      else if( fi instanceof ITypeInfo ) {
+  //## Warning: following call to getPsiClass() is SSSSSSSSSSSSSSLLLLLLLLLLLLLLLOOOOOOOOOOOOWWWWWWWWWWWWWWWW
+        if( !(ownersType instanceof IGosuClass || ownersType instanceof IJavaType || ownersType instanceof IBlockType) ) {
+          CustomGosuClass psiClass = CustomPsiClassCache.instance().getPsiClass( ownersType );
+          if( psiClass != null ) {
+            icon = psiClass.getIcon( 0 );
+          }
+        }
+        if( icon == null ) {
+          icon = ownersType.isInterface()
+                 ? GosuIcons.INTERFACE
+                 : ownersType instanceof IGosuTemplateInternal
+                   ? GosuIcons.TEMPLATE
+                   : ownersType instanceof IGosuProgram
+                     ? GosuIcons.PROGRAM
+                     : ownersType instanceof IGosuEnhancement
+                       ? GosuIcons.ENHANCEMENT
+                       : GosuIcons.CLASS;
+        }
+      }
+      else {
+        icon = GosuIcons.METHOD;
+      }
+      RowIcon rowIcon = new RowIcon(2);
+      LayeredIcon icon2 = new LayeredIcon(2);
+      icon2.setIcon(icon, 0);
+      if ( ownersType instanceof IGosuEnhancement) {
+        icon2.setIcon(GosuIcons.ENH, 1);
+      }
+      rowIcon.setIcon(icon2, 0);
+      return rowIcon;
     }
-    RowIcon rowIcon = new RowIcon(2);
-    LayeredIcon icon2 = new LayeredIcon(2);
-    icon2.setIcon(icon, 0);
-    if (fi.getOwnersType() instanceof IGosuEnhancement) {
-      icon2.setIcon(GosuIcons.ENH, 1);
+    finally {
+      if( mod == null ) {
+        TypeSystem.popGlobalModule();
+      }
     }
-    rowIcon.setIcon(icon2, 0);
-    return rowIcon;
   }
 
   @Override
   public void renderElement(@NotNull LookupElementPresentation presentation) {
     String typeText = null;
-    if (_featureInfo instanceof IMethodInfo) {
-      typeText = ((IMethodInfo) _featureInfo).getReturnType().getRelativeName();
-    } else if (_featureInfo instanceof IPropertyInfo) {
-      typeText = ((IPropertyInfo) _featureInfo).getFeatureType().getRelativeName();
-    } else if (_featureInfo instanceof IConstructorInfo) {
+    if( _featureInfo instanceof IMethodInfo ) {
+      typeText = ((IMethodInfo)_featureInfo).getReturnType().getRelativeName();
+    }
+    else if( _featureInfo instanceof IPropertyInfo ) {
+      typeText = ((IPropertyInfo)_featureInfo).getFeatureType().getRelativeName();
+    }
+    else if( _featureInfo instanceof IConstructorInfo ) {
       typeText = _featureInfo.getOwnersType().getRelativeName();
     }
-
+    else if( _featureInfo instanceof ITypeInfo ) {
+      typeText = getFqn( (ITypeInfo)_featureInfo );
+    }
     presentation.setTypeText(typeText);
     presentation.setItemText(getDisplayString());
     presentation.setIcon(getIcon());
+  }
+
+  private String getFqn( ITypeInfo ti ) {
+    IModule mod = TypeSystem.getCurrentModule();
+    if( mod == null ) {
+      TypeSystem.pushGlobalModule();
+    }
+    try {
+      return TypeLord.getPureGenericType( ti.getOwnersType() ).getName();
+    }
+    finally {
+      if( mod == null ) {
+        TypeSystem.popGlobalModule();
+      }
+    }
   }
 
   public String getDisplayString() {

@@ -16,11 +16,13 @@ import com.intellij.psi.codeStyle.CodeStyleSettingsManager;
 import com.intellij.psi.codeStyle.PackageEntry;
 import com.intellij.psi.search.SearchScope;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
+import gw.lang.init.ModuleFileUtil;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.expressions.ITemplateStringLiteral;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.psi.IGosuPsiElement;
 import gw.plugin.ij.lang.psi.api.IGosuPackageDefinition;
 import gw.plugin.ij.lang.psi.api.IGosuResolveResult;
@@ -30,6 +32,7 @@ import gw.plugin.ij.lang.psi.api.types.IGosuCodeReferenceElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeVariable;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeLiteralImpl;
 import gw.plugin.ij.util.ClassLord;
+import gw.plugin.ij.util.GosuModuleUtil;
 import gw.util.cache.FqnCache;
 import gw.util.cache.FqnCacheNode;
 import org.jetbrains.annotations.NotNull;
@@ -181,11 +184,20 @@ public class GosuImportReferenceAnalyzer {
   private final Set<String> implicitImport = new java.util.HashSet<>();
 
   private boolean isImplicitImport(String fqn) {
-    if (hasImplicitImport(fqn, usesMap)) {
-      implicitImport.add(fqn);
-      return true;
-    } else {
-      return false;
+    IModule module = GosuModuleUtil.findModuleForPsiElement(file);
+    if (module == null) {
+      module = TypeSystem.getGlobalModule();
+    }
+    TypeSystem.pushModule(module);
+    try {
+      if (hasImplicitImport(fqn, usesMap)) {
+        implicitImport.add(fqn);
+        return true;
+      } else {
+        return false;
+      }
+    } finally {
+      TypeSystem.popModule(module);
     }
   }
 

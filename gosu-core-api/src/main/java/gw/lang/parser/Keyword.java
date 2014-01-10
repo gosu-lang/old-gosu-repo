@@ -38,6 +38,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_statictypeof = addReservedWord( "statictypeof" );
   public static final Keyword KW_typeis = addReservedWord( "typeis" );
   public static final Keyword KW_typeas = addReservedWord( "typeas" );
+  public static final Keyword KW_print = addReservedWord( "print", true );
   public static final Keyword KW_package = addReservedWord( "package" );
   public static final Keyword KW_uses = addReservedWord( "uses" );
   public static final Keyword KW_if = addReservedWord( "if" );
@@ -63,7 +64,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_finally = addReservedWord( "finally" );
   public static final Keyword KW_this = addReservedWord( "this", true );
   public static final Keyword KW_throw = addReservedWord( "throw" );
-  public static final Keyword KW_assert = addReservedWord( "assert", true );
+  public static final Keyword KW_assert = addReservedWord( "assert" );
   public static final Keyword KW_new = addReservedWord( "new" );
   public static final Keyword KW_switch = addReservedWord( "switch" );
   public static final Keyword KW_case = addReservedWord( "case" );
@@ -84,8 +85,9 @@ public class Keyword implements CharSequence
   public static final Keyword KW_readonly = addReservedWord( "readonly", true );
   public static final Keyword KW_class = addReservedWord( "class", false );
   public static final Keyword KW_interface = addReservedWord( "interface", false );
+  public static final Keyword KW_structure = addReservedWord( "structure", false );
   public static final Keyword KW_enum = addReservedWord( "enum", false );
-  public static final Keyword KW_super = addReservedWord( "super", true );
+  public static final Keyword KW_super = addReservedWord( "super", false );
   public static final Keyword KW_outer = addReservedWord( "outer", true );
   public static final Keyword KW_execution = addReservedWord( "execution", true );
   public static final Keyword KW_request = addReservedWord( "request", true );
@@ -124,15 +126,21 @@ public class Keyword implements CharSequence
     return keyword;
   }
 
-  public static boolean isReserved( String strWord )
+  public static boolean isKeyword( String strWord )
   {
     return strWord != null && RESERVED_WORDS.containsKey( strWord );
   }
 
-  public static boolean isReservedValue( String strWord )
+  public static boolean isValueKeyword( String strWord )
   {
     Keyword keyword = RESERVED_WORDS.get( strWord );
     return keyword != null && keyword.isValue();
+  }
+
+  public static boolean isReservedKeyword( String strWord )
+  {
+    Keyword keyword = RESERVED_WORDS.get( strWord );
+    return keyword != null && !keyword.isValue();
   }
 
   public static Set<String> getAll()

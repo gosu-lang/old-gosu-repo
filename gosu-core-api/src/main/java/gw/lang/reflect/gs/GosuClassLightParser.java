@@ -42,7 +42,7 @@ public class GosuClassLightParser {
           if (braketLevel == 0) {
             return;
           }
-        } else if (braketLevel == 1 && (isKeyword("class") || isKeyword("interface") || isKeyword("enum"))) {
+        } else if (braketLevel == 1 && (isKeyword("class") || isKeyword("interface") || isKeyword("structure") || isKeyword("enum"))) {
           String innerClassDeclaration = findInnerClassDeclaration(lexer);
           if (innerClassDeclaration != null) {
             ClassScope classScope = new ClassScope(innerClassDeclaration);
@@ -88,8 +88,6 @@ public class GosuClassLightParser {
 
   public GosuClassLightParser(String text) {
     lexer = GosuShop.createSourceCodeTokenizer(text);
-    lexer.slashSlashComments(true);
-    lexer.slashStarComments(true);
     lexer.setCommentsSignificant(false);
     lexer.setWhitespaceSignificant(false);
   }

@@ -5,12 +5,14 @@
 package gw.internal.gosu.parser;
 
 import gw.lang.parser.IReducedSymbol;
-import gw.lang.reflect.*;
+import gw.lang.reflect.IAnnotatedFeatureInfo;
+import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IFeatureInfo;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuMethodParamInfo;
 import gw.lang.reflect.java.JavaTypes;
 import gw.util.concurrent.LockingLazyVar;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -59,12 +61,7 @@ public class GosuMethodParamInfo extends GosuBaseAttributedFeatureInfo implement
 
   protected List<IGosuAnnotation> getGosuAnnotations()
   {
-    return Collections.emptyList();
-  }
-
-  public List<IAnnotationInfo> getDeclaredAnnotations()
-  {
-    return Collections.emptyList();
+    return _arg.getAnnotations();
   }
 
   public String getDisplayName()

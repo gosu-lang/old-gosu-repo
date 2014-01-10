@@ -39,7 +39,9 @@ public abstract class GosuTokenSets extends GosuTokenTypes {
       TT_OP_assign_divide,
       TT_OP_assign_modulo,
       TT_OP_assign_and,
+      TT_OP_assign_logical_and,
       TT_OP_assing_or,
+      TT_OP_assing_logical_or,
       TT_OP_assign_xor);
 
   public static final TokenSet LOGICAL_OPS = TokenSet.create(

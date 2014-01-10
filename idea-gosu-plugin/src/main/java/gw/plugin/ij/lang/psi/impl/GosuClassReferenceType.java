@@ -21,6 +21,8 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+
 public class GosuClassReferenceType extends PsiClassType {
   private final IGosuReferenceExpression myReferenceElement;
 
@@ -122,6 +124,9 @@ public class GosuClassReferenceType extends PsiClassType {
   }
 
   public String getPresentableText() {
+    if( Arrays.asList( myReferenceElement.getTypeArguments() ).contains( null ) ) {
+      return myReferenceElement.getReferenceName();
+    }
     return PsiNameHelper.getPresentableText(myReferenceElement.getReferenceName(), myReferenceElement.getTypeArguments());
   }
 

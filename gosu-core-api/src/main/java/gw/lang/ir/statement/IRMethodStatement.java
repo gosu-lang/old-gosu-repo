@@ -4,15 +4,15 @@
 
 package gw.lang.ir.statement;
 
-import gw.util.GosuStringUtil;
+import gw.lang.UnstableAPI;
+import gw.lang.ir.IRAnnotation;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
-import gw.lang.ir.IRAnnotation;
-import gw.lang.UnstableAPI;
+import gw.util.GosuStringUtil;
 
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 @UnstableAPI
 public class IRMethodStatement extends IRStatement {
@@ -28,7 +28,7 @@ public class IRMethodStatement extends IRStatement {
     _name = name;
     _modifiers = modifiers;
     _returnType = returnType;
-    _parameters = parameters;
+    _parameters = maybeEraseStructuralSymbolTypes( parameters );
     _annotations = Collections.emptyList();
     setParentToThis( methodBody );
   }

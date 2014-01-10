@@ -18,13 +18,13 @@ public interface IGosuObject
   // Methods cooresponding with java.lang.Object
   //
 
-  @gw.lang.InternalAPI
+  @gw.lang.InternalAPI @java.lang.Deprecated/* for @InternalAPI */
   public String toString();
 
-  @gw.lang.InternalAPI
+  @gw.lang.InternalAPI @java.lang.Deprecated/* for @InternalAPI */
   public int hashCode();
 
-  @gw.lang.InternalAPI
+  @gw.lang.InternalAPI @java.lang.Deprecated/* for @InternalAPI */
   public boolean equals( Object o );
 
 }

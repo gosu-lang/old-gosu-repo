@@ -105,4 +105,16 @@ public abstract class ConditionalExpression extends BinaryExpression implements 
     }
     return CommonServices.getCoercionManager().makeDoubleFrom( lhsValue ).compareTo( CommonServices.getCoercionManager().makeDoubleFrom( rhsValue ) );
   }
+
+  @Override
+  public IType getType()
+  {
+    return JavaTypes.pBOOLEAN();
+  }
+
+  @Override
+  protected IType getTypeImpl()
+  {
+    return JavaTypes.pBOOLEAN();
+  }
 }

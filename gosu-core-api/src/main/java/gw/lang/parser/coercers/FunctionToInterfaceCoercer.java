@@ -4,22 +4,24 @@
 
 package gw.lang.parser.coercers;
 
-import gw.lang.reflect.IFunctionType;
-import gw.lang.reflect.MethodList;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.java.IJavaMethodInfo;
-import gw.lang.reflect.IMethodInfo;
-import gw.lang.reflect.IParameterInfo;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeVariableType;
-import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.reflect.gs.IGosuEnhancement;
+import gw.config.CommonServices;
 import gw.lang.GosuShop;
 import gw.lang.function.IBlock;
 import gw.lang.parser.ICoercer;
 import gw.lang.parser.IResolvingCoercer;
-import gw.config.CommonServices;
+import gw.lang.reflect.IFunctionType;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IParameterInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
+import gw.lang.reflect.ITypeVariableType;
+import gw.lang.reflect.gs.IGenericTypeVariable;
+import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.gs.IGosuEnhancement;
+import gw.lang.reflect.gs.IGosuMethodInfo;
+import gw.lang.reflect.gs.IGosuObject;
+import gw.lang.reflect.java.IJavaMethodInfo;
+import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.lang.reflect.Field;
@@ -42,14 +44,12 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
 
   public Object coerceValue( IType typeToCoerceTo, Object value )
   {
-    IJavaType javaType = (IJavaType)typeToCoerceTo;
     if( value instanceof IBlock )
     {
-      Class proxyClass = GosuShop.getBlockToInterfaceConversionClass( javaType );
+      Class proxyClass = GosuShop.getBlockToInterfaceConversionClass( typeToCoerceTo );
 
-      final IBlock blk = (IBlock)value;
-      IJavaMethodInfo javaMethodInfo = getSingleMethod( javaType );
-      final IType methodReturnType = javaMethodInfo.getReturnType();
+      IBlock blk = (IBlock)value;
+      IType methodReturnType  = getSingleMethod( typeToCoerceTo ).getReturnType();
       try {
         Field field = blk.getClass().getField( "_returnType" );
         ICoercer coercer = getCoercer( (IType)field.get( blk ), methodReturnType );
@@ -84,7 +84,7 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
 
   public static IFunctionType getRepresentativeFunctionType( IType interfaceType )
   {
-    IJavaMethodInfo javaMethodInfo = getSingleMethod( interfaceType );
+    IMethodInfo javaMethodInfo = getSingleMethod( interfaceType );
     if( javaMethodInfo != null )
     {
       return GosuShop.createFunctionType( javaMethodInfo );
@@ -95,14 +95,14 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
     }
   }
 
-  public static IJavaMethodInfo getSingleMethod( IType interfaceType )
+  public static IMethodInfo getSingleMethod( IType interfaceType )
   {
-    if( interfaceType.isInterface() && interfaceType instanceof IJavaType )
+    if( interfaceType.isInterface() && (interfaceType instanceof IJavaType || interfaceType instanceof IGosuClass) )
     {
-      IJavaType javaIntrinsicType = (IJavaType)interfaceType;
-      List<IMethodInfo> list = new ArrayList<IMethodInfo>( javaIntrinsicType.getTypeInfo().getMethods() );
+      List<IMethodInfo> list = new ArrayList<IMethodInfo>( interfaceType.getTypeInfo().getMethods() );
 
       //extract all object methods since they are guaranteed to be implemented
+      ITypeInfo objTypeInfo = JavaTypes.OBJECT().getTypeInfo();
       for( Iterator<? extends IMethodInfo> it = list.iterator(); it.hasNext(); )
       {
         IMethodInfo methodInfo = it.next();
@@ -112,16 +112,24 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
         {
           paramTypes[i] = parameterInfos[i].getFeatureType();
         }
-        if( JavaTypes.OBJECT().getTypeInfo().getMethod( methodInfo.getDisplayName(), paramTypes ) != null ||
+        if( objTypeInfo.getMethod( methodInfo.getDisplayName(), paramTypes ) != null ||
             methodInfo.getOwnersType() instanceof IGosuEnhancement )
+        {
+          it.remove();
+        }
+        else if( methodInfo.getOwnersType().getName().contains( IGosuObject.class.getName() ) )
         {
           it.remove();
         }
       }
 
-      if( list.size() == 1 && list.get( 0 ) instanceof IJavaMethodInfo )
+      if( list.size() == 1 )
       {
-        return (IJavaMethodInfo)list.get( 0 );
+        IMethodInfo mi = list.get( 0 );
+        if( mi instanceof IJavaMethodInfo || mi instanceof IGosuMethodInfo )
+        {
+          return mi;
+        }
       }
     }
     return null;

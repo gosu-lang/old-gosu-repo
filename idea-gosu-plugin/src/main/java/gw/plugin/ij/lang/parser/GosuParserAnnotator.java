@@ -5,6 +5,7 @@
 package gw.plugin.ij.lang.parser;
 
 import com.google.common.base.Objects;
+import com.intellij.codeInspection.ProblemHighlightType;
 import com.intellij.lang.annotation.Annotation;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.AnnotationSession;
@@ -15,24 +16,74 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.psi.*;
+import com.intellij.psi.ElementManipulators;
+import com.intellij.psi.LiteralTextEscaper;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiExpression;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiLanguageInjectionHost;
+import com.intellij.psi.PsiNewExpression;
+import com.intellij.psi.PsiType;
+import com.intellij.psi.PsiWhiteSpace;
 import com.intellij.psi.impl.source.tree.PsiCommentImpl;
 import com.intellij.psi.util.PsiTreeUtil;
-import gw.internal.gosu.parser.expressions.*;
+import gw.internal.gosu.parser.expressions.ArgumentListClause;
+import gw.internal.gosu.parser.expressions.BeanMethodCallExpression;
+import gw.internal.gosu.parser.expressions.CompoundTypeLiteral;
+import gw.internal.gosu.parser.expressions.MethodCallExpression;
+import gw.internal.gosu.parser.expressions.TypeAsExpression;
 import gw.internal.gosu.parser.statements.FunctionStatement;
-import gw.lang.parser.*;
+import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IHasType;
+import gw.lang.parser.IParseIssue;
+import gw.lang.parser.IParseTree;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.TypelessScriptPartId;
 import gw.lang.parser.exceptions.ICoercionIssue;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.parser.resources.Res;
 import gw.lang.parser.resources.ResourceKey;
-import gw.lang.parser.statements.*;
+import gw.lang.parser.statements.IArrayAssignmentStatement;
+import gw.lang.parser.statements.IAssignmentStatement;
+import gw.lang.parser.statements.IBeanMethodCallStatement;
+import gw.lang.parser.statements.IClassFileStatement;
+import gw.lang.parser.statements.IMapAssignmentStatement;
+import gw.lang.parser.statements.IMemberAssignmentStatement;
+import gw.lang.parser.statements.IMethodCallStatement;
+import gw.lang.parser.statements.INoOpStatement;
+import gw.lang.parser.statements.INotAStatement;
+import gw.lang.parser.statements.IReturnStatement;
+import gw.lang.parser.statements.IStatementList;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.plugin.ij.filetypes.GosuFileTypes;
-import gw.plugin.ij.intentions.*;
+import gw.plugin.ij.intentions.ChangeMethodTypeFix;
+import gw.plugin.ij.intentions.CreateClassFix;
+import gw.plugin.ij.intentions.CreateGosuClassFromNewFix;
+import gw.plugin.ij.intentions.CreateJavaClassFromNewFix;
+import gw.plugin.ij.intentions.CreateMethodFix;
+import gw.plugin.ij.intentions.GosuAddMissingOverrideFix;
+import gw.plugin.ij.intentions.GosuAddMissingUsesFix;
+import gw.plugin.ij.intentions.GosuAddTypeCastFix;
+import gw.plugin.ij.intentions.GosuChangeTypeCastFix;
+import gw.plugin.ij.intentions.GosuCreateClassKind;
+import gw.plugin.ij.intentions.GosuImplementMethodsFix;
+import gw.plugin.ij.intentions.GosuImportReferenceAnalyzer;
+import gw.plugin.ij.intentions.HandleInterfaceRedundantFix;
+import gw.plugin.ij.intentions.HandleUnnecessaryCoercionFix;
+import gw.plugin.ij.intentions.HandleVarArgFix;
+import gw.plugin.ij.intentions.IQuickFixProvider;
+import gw.plugin.ij.intentions.ObsoleteConstructorFix;
+import gw.plugin.ij.intentions.OrganizeImports;
+import gw.plugin.ij.intentions.QuickFixProviderExtensionBean;
+import gw.plugin.ij.intentions.RemoveUnnecessaryImports;
 import gw.plugin.ij.lang.psi.IGosuPsiElement;
 import gw.plugin.ij.lang.psi.api.statements.IGosuUsesStatement;
 import gw.plugin.ij.lang.psi.api.statements.IGosuUsesStatementList;
@@ -41,7 +92,11 @@ import gw.plugin.ij.lang.psi.api.statements.typedef.IGosuImplementsClause;
 import gw.plugin.ij.lang.psi.api.types.IGosuCodeReferenceElement;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.lang.psi.impl.GosuBaseElementImpl;
-import gw.plugin.ij.lang.psi.impl.expressions.*;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuMethodCallExpressionImpl;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuNewExpressionImpl;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuParenthesizedExpressionImpl;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeAsExpressionImpl;
+import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeLiteralImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.GosuAnonymousClassDefinitionImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.members.GosuMethodBaseImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.members.GosuMethodImpl;
@@ -49,7 +104,11 @@ import gw.plugin.ij.util.InjectedElementEditor;
 import gw.util.GosuStringUtil;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
 
 import static com.intellij.codeInspection.ProblemHighlightType.LIKE_UNUSED_SYMBOL;
 import static com.intellij.patterns.PlatformPatterns.psiElement;
@@ -81,30 +140,39 @@ public class GosuParserAnnotator implements Annotator, Condition<VirtualFile> {
   }
 
   private void annotateFile(AbstractGosuClassFileImpl psiFile, AnnotationHolder holder) {
-    // annotateUnusedImports(psiFile, holder);
-    final IClassFileStatement classFileStatement = psiFile.getParseData().getClassFileStatement();
-    if (classFileStatement != null) {
-      final IGosuClass gsClass = classFileStatement.getGosuClass();
-      @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
-      final ParseResultsException exception = gsClass.getParseResultsException();
-      if (exception != null) {
-        // Errors
-        for (IParseIssue error : exception.getParseExceptions()) {
-          final Annotation annotation = holder.createErrorAnnotation(getAnnotationRange(psiFile, error), error.getUIMessage());
-          maybeRegisterFix(error, annotation, psiFile);
-        }
+    TypeSystem.pushModule( psiFile.getModule() );
+    try {
+      // annotateUnusedImports(psiFile, holder);
+      final IClassFileStatement classFileStatement = psiFile.getParseData().getClassFileStatement();
+      if (classFileStatement != null) {
+        final IGosuClass gsClass = classFileStatement.getGosuClass();
+        @SuppressWarnings({"ThrowableResultOfMethodCallIgnored"})
+        final ParseResultsException exception = gsClass.getParseResultsException();
+        if (exception != null) {
+          // Errors
+          for (IParseIssue error : exception.getParseExceptions()) {
+            final Annotation annotation = holder.createErrorAnnotation(getAnnotationRange(psiFile, error), error.getUIMessage());
+            maybeRegisterFix(error, annotation, psiFile);
+          }
 
-        // Warnings
-        for (IParseIssue warning : exception.getParseWarnings()) {
-          final Annotation annotation = holder.createWarningAnnotation(getAnnotationRange(psiFile, warning), warning.getUIMessage());
-          maybeRegisterFix(warning, annotation, psiFile);
+          // Warnings
+          for (IParseIssue warning : exception.getParseWarnings()) {
+            final Annotation annotation = holder.createWarningAnnotation(getAnnotationRange(psiFile, warning), warning.getUIMessage());
+            if (warning.getMessageKey() == Res.MSG_DEPRECATED_MEMBER) {
+              annotation.setHighlightType(ProblemHighlightType.LIKE_DEPRECATED);
+            }
+            maybeRegisterFix(warning, annotation, psiFile);
+          }
         }
       }
+      for (IQuickFixProvider qp : QuickFixProviderExtensionBean.getProviders()) {
+        qp.collectQuickFixes(psiFile, holder);
+      }
+      findUnusedImports(psiFile, holder);
     }
-    for (IQuickFixProvider qp : QuickFixProviderExtensionBean.getProviders()) {
-      qp.collectQuickFixes(psiFile, holder);
+    finally {
+      TypeSystem.popModule( psiFile.getModule() );
     }
-    findUnusedImports(psiFile, holder);
   }
 
   private void findUnusedImports(PsiFile file,  AnnotationHolder holder) {

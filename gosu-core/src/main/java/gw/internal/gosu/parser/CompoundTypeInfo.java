@@ -4,8 +4,8 @@
 
 package gw.internal.gosu.parser;
 
+import gw.lang.reflect.FeatureManager;
 import gw.lang.reflect.MethodList;
-import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.BaseTypeInfo;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IAttributedFeatureInfo;
@@ -206,41 +206,25 @@ public class CompoundTypeInfo extends BaseTypeInfo implements IRelativeTypeInfo
   {
     IRelativeTypeInfo.Accessibility accessibility = IRelativeTypeInfo.Accessibility.PRIVATE;
 
+    whosAskin =  whosAskin == null ? JavaTypeInfo.getCompilingClass( getOwnersType() ) : whosAskin;
+
+    if( whosAskin == getOwnersType() ) {
+      return accessibility;
+    }
+
     for( IType type : getOwnersType().getTypes() )
     {
       if( type == null || whosAskin == null )
       {
         accessibility = IRelativeTypeInfo.Accessibility.PUBLIC;
       }
-      else if( type == whosAskin )
+      else
       {
-        // Implies private members, which means everything.
-        accessibility = IRelativeTypeInfo.Accessibility.PRIVATE.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.PRIVATE : accessibility;
-      }
-      else if( whosAskin.getNamespace() != null && whosAskin.getNamespace().equals( type.getNamespace() ) )
-      {
-        accessibility = IRelativeTypeInfo.Accessibility.INTERNAL.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.INTERNAL : accessibility;
-      }
-      else if( whosAskin.getNamespace() != null && IGosuClass.ProxyUtil.isProxyStart( whosAskin.getNamespace() ) )
-      {
-        IType genOwnerType = TypeLord.getPureGenericType( type );
-        String strGenericOwnerClass = genOwnerType.getName();
-        if( IGosuClass.ProxyUtil.getNameSansProxy( whosAskin ).equals( strGenericOwnerClass ) )
+        IRelativeTypeInfo.Accessibility csr = FeatureManager.getAccessibilityForClass( type, whosAskin );
+        if( csr.ordinal() < accessibility.ordinal() )
         {
-          accessibility = IRelativeTypeInfo.Accessibility.INTERNAL.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.INTERNAL : accessibility;
+          accessibility = csr;
         }
-        else if( genOwnerType.getRelativeName().startsWith( IGosuClass.SUPER_PROXY_CLASS_PREFIX ) )
-        {
-          accessibility = IRelativeTypeInfo.Accessibility.INTERNAL.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.INTERNAL : accessibility;
-        }
-      }
-      else if( TypeLord.isSubtype( whosAskin, type ) )
-      {
-        accessibility = IRelativeTypeInfo.Accessibility.PROTECTED.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.PROTECTED : accessibility;
-      }
-      else if( whosAskin instanceof IGosuEnhancementInternal && ((IGosuEnhancementInternal)whosAskin).getEnhancedType().isAssignableFrom( type ) )
-      {
-        accessibility = IRelativeTypeInfo.Accessibility.PROTECTED.compareTo( accessibility ) < 0 ? IRelativeTypeInfo.Accessibility.PROTECTED : accessibility;
       }
     }
     return accessibility;

@@ -29,7 +29,7 @@ import gw.plugin.ij.lang.psi.impl.GosuResolveResultImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.*;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiTypeResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -314,7 +314,9 @@ public class ParameterInfoUtil {
       if (methodCallExpression.getFunctionSymbol() instanceof IConstructorFunctionSymbol) {
         IConstructorFunctionSymbol constructorFunctionSymbol = (IConstructorFunctionSymbol) methodCallExpression.getFunctionSymbol();
         IConstructorInfo constructorInfo = constructorFunctionSymbol.getConstructorInfo();
-        return new ConstructorParamInfoContext(constructorInfo, constructorInfo.getType());
+        if( constructorInfo != null ) {
+          return new ConstructorParamInfoContext(constructorInfo, constructorInfo.getType());
+        }
       } else {
         IType invokingType = getInvokingType(owner);
         if (invokingType != null) {
@@ -367,7 +369,7 @@ public class ParameterInfoUtil {
     final VirtualFile virtualFile = containingPsiClass.getContainingFile().getVirtualFile();
     if (virtualFile instanceof VirtualFileWindow) {
       final VirtualFile delegate = ((VirtualFileWindow) virtualFile).getDelegate();
-      final String[] typesForFile = TypeSystem.getTypesForFile(TypeSystem.getGlobalModule(), IDEAUtil.toIFile(delegate));
+      final String[] typesForFile = TypeSystem.getTypesForFile(TypeSystem.getGlobalModule(), FileUtil.toIFile(delegate));
       final IType type = TypeSystem.getByFullNameIfValid(typesForFile[0]);
       return type;
     } else {

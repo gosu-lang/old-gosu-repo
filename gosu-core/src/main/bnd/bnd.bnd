@@ -1,9 +1,0 @@
-Fragment-Host=org.gosu-lang.gosu.core-api
-Export-Package=!gw.internal.ext.*,gw.*
-Private-Package=gw.internal.gosu.compiler.protocols.gosuclass.osgi
-DynamicImport-Package=*
-Import-Package=org.eclipse.core.runtime.*;resolution:=optional,\
- org.osgi.service.url.*;resolution:=optional,\
- sun.reflect.annotation;resolution:=optional,\
- *
-Service-Component=*

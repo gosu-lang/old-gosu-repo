@@ -36,10 +36,11 @@ import gw.lang.Gosu;
 import gw.lang.GosuVersion;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.core.GosuAppComponent;
 import gw.plugin.ij.core.IDEAExtensionFolderLocator;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.util.StreamUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -113,7 +114,7 @@ public class GosuSdkUtils {
         jdk = createJavaSdk();
       }
       if (jdk == null) {
-        IDEAUtil.showInfo(GosuBundle.message("gosu.initialization"),
+        ExceptionUtil.showInfo(GosuBundle.message("gosu.initialization"),
             GosuBundle.message("error.cannot.create.sdk", DEFAULT_GOSU_SDK_NAME));
         return null;
       }
@@ -136,7 +137,7 @@ public class GosuSdkUtils {
       }
     });
 
-//    IDEAUtil.runInDispatchThread(new Runnable() {
+//    ExecutionUtil.runInDispatchThread(new Runnable() {
 //      @Override
 //      public void run() {
 //        SdkConfigurationUtil.addSdk(gosuSdk);
@@ -199,6 +200,14 @@ public class GosuSdkUtils {
     UIUtil.invokeAndWaitIfNeeded(new Runnable() {
       public void run() {
         result[0] = SdkConfigurationUtil.createAndAddSDK(javaHome, JavaSdk.getInstance());
+        final VirtualFile toolsFile = LocalFileSystem.getInstance().findFileByIoFile(new File(javaHome, "lib/tools.jar"));
+        if (toolsFile != null) {
+          final VirtualFile toolsfileJar = JarFileSystemImpl.getInstance().getJarRootForLocalFile(toolsFile);
+
+          SdkModificator modificator = result[0].getSdkModificator();
+          modificator.addRoot(toolsfileJar, OrderRootType.CLASSES);
+          modificator.commitChanges();
+        }
       }
     });
 
@@ -339,7 +348,7 @@ public class GosuSdkUtils {
   }
 
   public static String getPluginRootFolder() {
-    return IDEAUtil.getEditorPlugin().getPath().getAbsolutePath();
+    return GosuAppComponent.getEditorPlugin().getPath().getAbsolutePath();
   }
 
   public static boolean isGosuSdkSet(Project project) {

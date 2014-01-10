@@ -4,6 +4,7 @@
 
 package gw.plugin.ij.lang.psi.impl;
 
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IExpression;
@@ -17,6 +18,8 @@ import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 public class InjectedSymbol implements ISymbol, IInjectedSymbol {
   private final ISymbol symbol;
@@ -139,6 +142,11 @@ public class InjectedSymbol implements ISymbol, IInjectedSymbol {
   @Override
   public int getModifiers() {
     return symbol.getModifiers();
+  }
+
+  @Override
+  public List<IGosuAnnotation> getAnnotations() {
+    return symbol.getAnnotations();
   }
 
   @Override

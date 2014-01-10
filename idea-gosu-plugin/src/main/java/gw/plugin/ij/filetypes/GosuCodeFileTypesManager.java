@@ -15,7 +15,7 @@ import com.intellij.openapi.fileTypes.FileNameMatcher;
 import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.impl.FileTypeManagerImpl;
 import com.intellij.testFramework.PlatformTestUtil;
-import gw.plugin.ij.util.IDEAUtil;
+
 
 import java.util.List;
 import java.util.Map;

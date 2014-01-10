@@ -6,15 +6,10 @@ package gw.plugin.ij.core;
 
 import com.intellij.openapi.compiler.CompilerPaths;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.roots.impl.CompilerModuleExtensionImpl;
 import com.intellij.openapi.vfs.VirtualFile;
-import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.lang.reflect.module.INativeModule;
-import gw.plugin.ij.util.IDEAUtil;
-
-import java.net.MalformedURLException;
-import java.net.URL;
+import gw.plugin.ij.util.FileUtil;
 
 public class IJNativeModule implements INativeModule {
   private final Module _nativeModule;
@@ -31,6 +26,6 @@ public class IJNativeModule implements INativeModule {
   @Override
   public IDirectory getOutputPath() {
     final VirtualFile file = CompilerPaths.getModuleOutputDirectory(getNativeModule(), false);
-    return file != null ? IDEAUtil.toIDirectory(file) : null;
+    return file != null ? FileUtil.toIDirectory(file) : null;
   }
 }

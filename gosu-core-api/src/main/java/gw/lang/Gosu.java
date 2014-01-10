@@ -769,7 +769,7 @@ public class Gosu implements IGosuLaunch
       IType expressionType = result.getType();
       if( expressionType != null && !JavaTypes.pVOID().equals(expressionType) )
       {
-        StandardSymbolTable.print( ret );
+        GosuShop.print( ret );
       }
       return 0;
     }

@@ -6,20 +6,13 @@ package gw.internal.gosu.module;
 
 import gw.config.CommonServices;
 import gw.fs.IDirectory;
+import gw.internal.gosu.dynamic.DynamicTypeLoader;
 import gw.internal.gosu.parser.ExecutionEnvironment;
-import gw.internal.gosu.parser.FileSystemGosuClassRepository;
 import gw.internal.gosu.properties.PropertiesTypeLoader;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.parser.ILanguageLevel;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.module.IExecutionEnvironment;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class DefaultSingleModule extends GlobalModule
@@ -37,6 +30,9 @@ public class DefaultSingleModule extends GlobalModule
   protected void createStandardTypeLoaders() {
     CommonServices.getTypeSystem().pushTypeLoader( this, new GosuClassTypeLoader( this, getFileRepository( ) ) );
     CommonServices.getTypeSystem().pushTypeLoader( this, new PropertiesTypeLoader( this ) );
+    if( ILanguageLevel.Util.DYNAMICE_TYPE() ) {
+      CommonServices.getTypeSystem().pushTypeLoader( this, new DynamicTypeLoader( this ) );
+    }
     createGlobalTypeloaders( );
   }
 

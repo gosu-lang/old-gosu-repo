@@ -19,7 +19,7 @@ public class SymbolTable {
                               "try", "catch", "finally", "this", "throw", "new", "switch", "case", "default",
                               "eval", "private", "internal", "protected", "public", "abstract", "override",
                               "hide", "final", "static", "extends", "transient", "implements", "readonly",
-                              "class", "interface", "enum", "super", "outer", "execution", "request", "session",
+                              "class", "interface", "structure", "enum", "super", "outer", "execution", "request", "session",
                               "application", "void", "block", "enhancement", "classpath", "typeloader", "using", "now"};
 
   private class Scope {

@@ -4,11 +4,14 @@
 
 package gw.internal.gosu.parser.expressions;
 
-import gw.lang.reflect.IType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.parser.expressions.IMultiplicativeExpression;
-import gw.lang.IDimension;
 import gw.config.CommonServices;
+import gw.internal.gosu.parser.ParserBase;
+import gw.lang.IDimension;
+import gw.lang.parser.expressions.IMultiplicativeExpression;
+import gw.lang.reflect.IPlaceholder;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.java.JavaTypes;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -53,6 +56,17 @@ public final class MultiplicativeExpression extends ArithmeticExpression impleme
   @SuppressWarnings({"ConstantConditions"})
   public static Object evaluate( IType type, Object lhsValue, Object rhsValue, IType lhsType, IType rhsType, int iOperator, boolean bNullSafe )
   {
+    if( lhsType instanceof IPlaceholder && ((IPlaceholder)lhsType).isPlaceholder() )
+    {
+      lhsType = TypeSystem.getFromObject( lhsValue );
+      type = ParserBase.resolveRuntimeType( lhsType, iOperator, rhsType );
+    }
+    if( rhsType instanceof IPlaceholder && ((IPlaceholder)rhsType).isPlaceholder() )
+    {
+      rhsType = TypeSystem.getFromObject( rhsValue );
+      type = ParserBase.resolveRuntimeType( lhsType, iOperator, rhsType );
+    }
+
     if( lhsValue == null )
     {
       if( bNullSafe )

@@ -5,7 +5,8 @@
 package gw.plugin.ij.lang.psi.impl.statements.typedef;
 
 import com.intellij.lang.ASTNode;
-import com.intellij.navigation.ItemPresentation;
+import com.intellij.navigation.ColoredItemPresentation;
+import com.intellij.openapi.editor.colors.CodeInsightColors;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.HierarchicalMethodSignature;
@@ -80,7 +81,7 @@ import gw.plugin.ij.lang.psi.util.GosuDocUtil;
 import gw.plugin.ij.lang.psi.util.PsiUtil;
 import gw.plugin.ij.util.GosuIconsUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.TypeUtil;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -156,8 +157,8 @@ public abstract class GosuTypeDefinitionImpl extends GosuDeclaredElementImpl<ICl
     return findChildrenByClass(IGosuMembersDeclaration.class);
   }
 
-  public ItemPresentation getPresentation() {
-    return new ItemPresentation() {
+  public ColoredItemPresentation getPresentation() {
+    return new ColoredItemPresentation() {
       @Nullable
       public String getPresentableText() {
         return getName();
@@ -181,6 +182,9 @@ public abstract class GosuTypeDefinitionImpl extends GosuDeclaredElementImpl<ICl
 
       @Nullable
       public TextAttributesKey getTextAttributesKey() {
+        if (isDeprecated()) {
+          return CodeInsightColors.DEPRECATED_ATTRIBUTES;
+        }
         return null;
       }
     };
@@ -482,7 +486,7 @@ public abstract class GosuTypeDefinitionImpl extends GosuDeclaredElementImpl<ICl
       return false;
     }
     IType baseType = findBaseType( baseClass );
-    IType thisType = IDEAUtil.getType(this);
+    IType thisType = TypeUtil.getType(this);
     if (baseType == null || thisType == null) {
       return InheritanceImplUtil.isInheritor(this, baseClass, checkDeep);
     }
@@ -520,27 +524,27 @@ public abstract class GosuTypeDefinitionImpl extends GosuDeclaredElementImpl<ICl
     IType baseType = null;
     IModule module = GosuModuleUtil.findModuleForPsiElement(this);
     if( !(baseClass instanceof IGosuTypeDefinition) ) {
-      baseType = IDEAUtil.getType( baseClass, module);
+      baseType = TypeUtil.getType(baseClass, module);
       if( baseType != null ) {
         PsiElement resolvedBase = PsiTypeResolver.resolveType( baseType, this );
         if( resolvedBase != baseClass ) {
-          baseType = IDEAUtil.getType( baseClass, module );
+          baseType = TypeUtil.getType(baseClass, module);
         }
       }
     }
     if( baseType == null ) {
-      baseType = IDEAUtil.getType( baseClass, module );
+      baseType = TypeUtil.getType(baseClass, module);
     }
     return baseType;
   }
 
   private boolean isDirectInheritor(IType thisType, IType baseType) {
     IType supertype = thisType.getSupertype();
-    if (supertype != null && baseType.equals(IDEAUtil.getConcreteType(supertype))) {
+    if (supertype != null && baseType.equals(TypeUtil.getConcreteType(supertype))) {
       return true;
     }
     for (IType iface : thisType.getInterfaces()) {
-      if (!TypeSystem.isDeleted(iface) && baseType.equals(IDEAUtil.getConcreteType(iface))) {
+      if (!TypeSystem.isDeleted(iface) && baseType.equals(TypeUtil.getConcreteType(iface))) {
         return true;
       }
     }
@@ -869,7 +873,7 @@ public abstract class GosuTypeDefinitionImpl extends GosuDeclaredElementImpl<ICl
   }
 
   public boolean hasExplicitModifier(@NotNull @NonNls String name) {
-    IType type = IDEAUtil.getType(this);
+    IType type = TypeUtil.getType(this);
     int modifiers = type != null ? type.getModifiers() : 0;
 
     if (name.equals(IGosuModifier.PUBLIC)) {

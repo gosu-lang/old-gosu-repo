@@ -4,30 +4,25 @@
 
 package gw.lang.parser;
 
-import gw.util.GosuObjectUtil;
-import gw.config.CommonServices;
-import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.IType;
 import gw.lang.GosuShop;
+import gw.util.GosuObjectUtil;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
 public class StandardSymbolTable implements ISymbolTable
 {
-  public static final Method PRINT, NOW;
+  public static final Method PRINT;
 
   static
   {
     try
     {
-      PRINT = StandardSymbolTable.class.getMethod( "print", Object.class );
-      NOW = StandardSymbolTable.class.getMethod( "now" );
+      PRINT = GosuShop.class.getMethod( "print", Object.class );
     }
     catch( Exception e )
     {
@@ -549,61 +544,6 @@ public class StandardSymbolTable implements ISymbolTable
     _scopeSizes = new int[iNewSize];
     System.arraycopy( oldStack, 0, _scopeSizes, 0, oldStack.length );
   }
-
-  //----------------------------------------------------------------------------
-  // -- Test Functions --
-
-  public static String now()
-  {
-    Date now = new Date();
-    return CommonServices.getCoercionManager().formatDate( now, "medium" ) + " " +
-           CommonServices.getCoercionManager().formatTime( now, "short" );
-  }
-
-  public static void print( Object obj )
-  {
-    System.out.println( toString( obj ) );
-  }
-
-  public static String toString( Object obj ) {
-    if ( obj == null )
-    {
-      return "null";
-    }
-    if ( obj instanceof Byte )
-    {
-      int value = (Byte) obj;
-      if ( value < 0 ) {
-        value = 256 + value;
-      }
-      return "0x" + Integer.toHexString( value );
-    }
-    IType type = TypeSystem.getFromObject( obj );
-    if ( type.isArray() )
-    {
-      StringBuilder sb = new StringBuilder();
-      sb.append( '[' );
-      int arrayLength = type.getArrayLength(obj);
-      for ( int idx = 0; idx < arrayLength; idx++ )
-      {
-        if ( idx > 0 )
-        {
-          sb.append( ", " );
-        }
-        sb.append( toString( type.getArrayComponent( obj, idx ) ) );
-      }
-      sb.append( ']' );
-      return sb.toString();
-    }
-    return obj.toString();
-  }
-
-  public static void error( Object strError )
-  {
-    System.out.println( strError );
-    throw new Error( String.valueOf( strError ) );
-  }
-
 
   @Override
   public String toString() {

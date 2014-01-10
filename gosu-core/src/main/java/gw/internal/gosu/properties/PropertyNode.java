@@ -7,14 +7,14 @@ package gw.internal.gosu.properties;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuObject;
-import gw.util.CaseInsensitiveSet;
 import gw.util.GosuClassUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * A node in a tree representation of an underlying {@link PropertySet}. Any compound names, such
@@ -24,19 +24,38 @@ import java.util.Set;
  */
 public class PropertyNode implements IGosuObject {
 
-  private final PropertySet _propertySet;
-  private PropertyNode _parent;
-  private final List<PropertyNode> _children;
+  private final PropertyNode _parent;
+  private final String _name;
   private final String _path;
-  
+  private final PropertySet _propertySet;
+  private final Map<String, PropertyNode> _children = new TreeMap<String, PropertyNode>();
+
   public static PropertyNode buildTree(PropertySet propertySet) {
-    return new PropertyNode(propertySet, "");
+    final PropertyNode root = new PropertyNode(null, "", propertySet);
+    for (String propertyPath : propertySet.getKeys()) {
+      PropertyNode currentNode = root;
+      for (String pathPart : propertyPath.split("\\.")) {
+        PropertyNode childNode = currentNode.getChild(pathPart);
+        if (childNode == null) {
+          if (!isGosuIdentifier(pathPart)) {
+            break; // don't consider the whole property
+          }
+          childNode = new PropertyNode(currentNode, pathPart, propertySet);
+          currentNode.addChild(childNode);
+        }
+        currentNode = childNode;
+      }
+    }
+
+    root.removeUseless();
+    return root;
   }
 
-  private PropertyNode(PropertySet propertySet, String propertyPath) {
+  private PropertyNode(PropertyNode parent, String name, PropertySet propertySet) {
+    _name = name;
+    _parent = parent;
+    _path = parent != null ? join(parent.getPath(), name) : name;
     _propertySet = propertySet;
-    _children = findChildren(propertySet, propertyPath);
-    _path = propertyPath;
   }
 
   /**
@@ -54,7 +73,7 @@ public class PropertyNode implements IGosuObject {
   public String getRelativeName() {
     return GosuClassUtil.getShortClassName(getFullName());
   }
-  
+
   /**
    * Return the name that should be used for the type based on this property node
    * @return a non null type name
@@ -65,6 +84,7 @@ public class PropertyNode implements IGosuObject {
 
   /**
    * Return the intrinsic type based on this property node
+   * @return intrinsic type
    */
   @Override
   public IType getIntrinsicType() {
@@ -92,15 +112,15 @@ public class PropertyNode implements IGosuObject {
    * @return true if this node has no children, false otherwise
    */
   public boolean isLeaf() {
-    return getChildren().isEmpty();
+    return _children.isEmpty();
   }
-  
+
   /**
    * Is this the root of a property node tree?
    * @return true if this is the root, false otherwise
    */
   public boolean isRoot() {
-    return _path.isEmpty();
+    return _parent == null;
   }
 
   /**
@@ -108,7 +128,7 @@ public class PropertyNode implements IGosuObject {
    * @return a non null, though possibly empty, list of children
    */
   public List<PropertyNode> getChildren() {
-    return _children;
+    return new ArrayList<PropertyNode>(_children.values()); // for API backward compatibility returns list
   }
 
   /**
@@ -132,34 +152,30 @@ public class PropertyNode implements IGosuObject {
     return hasValue() ? getValue() : String.format("Property <%s>", _path);
   }
 
-  private List<PropertyNode> findChildren(PropertySet propertySet, String path) {
-    List<PropertyNode> result = new ArrayList<PropertyNode>();
-    String prefix = path.isEmpty() ? "" : path + ".";
-    Set<String> alreadyAdded = new CaseInsensitiveSet<String>();
-    for (String name : propertySet.getKeys()) {
-      if (name.startsWith(prefix)) {
-        String namePart = getFirstNamePart(prefix, name);
-        if (isGosuIdentifier(namePart) && !alreadyAdded.contains(namePart)) {
-          PropertyNode child = new PropertyNode(propertySet, join(path, namePart));
-          if (!child.isUseless()) {
-            result.add(child);
-            child._parent = this;
-          }
-          alreadyAdded.add(namePart);
-        }
-      }
-    }
-    return Collections.unmodifiableList(result);
+  // returns child node if such one with the specified name exists, otherwise <code>null</code>
+  private PropertyNode getChild(String name) {
+    return _children.get(name);
   }
 
-  private String getFirstNamePart(String prefix, String fullName) {
-    String relativeName = fullName.substring(prefix.length());
-    int separatorIndex = relativeName.indexOf('.');
-    return separatorIndex >= 0 ? relativeName.substring(0, separatorIndex) : relativeName;
+  private void addChild(PropertyNode node) {
+    _children.put(node.getName(), node);
   }
 
   private boolean isUseless() {
-    return getChildren().size() == 0 && !hasValue();
+    return _children.isEmpty() && !hasValue();
+  }
+
+  // removes all useless nodes in the tree represented by this node as a root
+  private void removeUseless() {
+    Set<Map.Entry<String, PropertyNode>> entries = _children.entrySet();
+    for (Iterator<Map.Entry<String, PropertyNode>> it = entries.iterator(); it.hasNext(); ) {
+      Map.Entry<String, PropertyNode> entry = it.next();
+      PropertyNode child = entry.getValue();
+      child.removeUseless();
+      if (child.isUseless()) {
+        it.remove();
+      }
+    }
   }
 
   static boolean isGosuIdentifier(String name) {
@@ -175,11 +191,11 @@ public class PropertyNode implements IGosuObject {
   private static boolean isGosuIdentifierStart(char ch) {
     return Character.isJavaIdentifierStart(ch) && ch != '$';
   }
-  
+
   private static boolean isGosuIdentifierPart(char ch) {
     return Character.isJavaIdentifierPart(ch) && ch != '$';
   }
-  
+
   private static String join(String head, String tail) {
     if (head.isEmpty()) {
       return tail;
@@ -190,12 +206,15 @@ public class PropertyNode implements IGosuObject {
     }
   }
 
+  private String getName() {
+    return _name;
+  }
+
   public String getPath() {
     return _path;
   }
 
-  public PropertyNode getParent()
-  {
+  public PropertyNode getParent() {
     return _parent;
   }
 }

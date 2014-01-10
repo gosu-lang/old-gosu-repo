@@ -5,16 +5,12 @@
 package gw.plugin.ij.lang.psi.impl;
 
 import com.intellij.lang.ASTNode;
-import com.intellij.openapi.util.Iconable;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.FileViewProvider;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiFile;
 import com.intellij.util.IncorrectOperationException;
 import gw.internal.gosu.parser.AbstractTypeRef;
 import gw.lang.parser.IGosuParser;
 import gw.lang.parser.IGosuValidator;
-import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.ParserOptions;
@@ -30,15 +26,12 @@ import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.icons.GosuIcons;
 import gw.plugin.ij.lang.GosuLanguage;
 import gw.plugin.ij.lang.parser.GosuAstTransformer;
-import gw.plugin.ij.lang.psi.IGosuPsiElement;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.InjectedElementEditor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-
-import static com.google.common.collect.Iterables.filter;
 
 public class GosuProgramFileImpl extends AbstractGosuClassFileImpl {
   public GosuProgramFileImpl(@NotNull FileViewProvider viewProvider) {
@@ -59,7 +52,7 @@ public class GosuProgramFileImpl extends AbstractGosuClassFileImpl {
     final IGosuParser parser = super.createParser(contents);
 
     final ITypeUsesMap typeUsesMap = GosuParserConfigurer.getTypeUsesMap(this);
-    if (typeUsesMap != null) {
+    if (typeUsesMap != null && parser.getTypeUsesMap() != typeUsesMap) {
       parser.setTypeUsesMap(typeUsesMap);
     }
 
@@ -96,7 +89,7 @@ public class GosuProgramFileImpl extends AbstractGosuClassFileImpl {
         if (completionMarkerOffset >= 0) {
           parser.setSnapshotSymbols();
         }
-        program = IDEAUtil.parseProgram(parser, createParserOptions(), new ModuleFileContext(module, strClassName), contents);
+        program = GosuPsiParseUtil.parseProgram(parser, createParserOptions(), new ModuleFileContext(module, strClassName), contents);
         classFileStmt = program.getClassStatement().getClassFileStatement();
       } catch (ParseResultsException ex) {
         classFileStmt = (IClassFileStatement) ex.getParsedElement();
@@ -121,7 +114,7 @@ public class GosuProgramFileImpl extends AbstractGosuClassFileImpl {
         }
       }
 
-      if (strClassName.contains(IDEAUtil.MAGIC_INJECTED_SUFFIX)) {
+      if (strClassName.contains(FileUtil.MAGIC_INJECTED_SUFFIX)) {
         ((AbstractTypeRef) program).setReloadable(false);
       }
 

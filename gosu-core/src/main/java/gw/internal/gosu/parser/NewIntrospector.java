@@ -19,7 +19,6 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.EventListener;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,15 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class NewIntrospector
 {
   // Static Caches to speed up introspection.
-  private static Map declaredMethodCache = new WeakHashMap( 100 );
+  private static final Map DECLARED_METHOD_CACHE = new WeakHashMap( 100 );
   private static final Object DECLARED_METHODS_LOCK = new Object();
+  private static final ConcurrentHashMap<Class, GenericBeanInfo> BEAN_INFO_CACHE = new ConcurrentHashMap<Class, GenericBeanInfo>();
 
   private static final String GET_PREFIX = "get";
   private static final String SET_PREFIX = "set";
   private static final String IS_PREFIX = "is";
-
-  private static Class<EventListener> eventListenerType = EventListener.class;
-
 
   private Class beanClass;
 
@@ -54,8 +51,6 @@ public class NewIntrospector
   private Map<String, PropertyDescriptor> properties = new TreeMap<String, PropertyDescriptor>();
 
   private HashMap<String, List<PropertyDescriptor>> pdStore;
-
-  private static ConcurrentHashMap<Class, GenericBeanInfo> _beanInfoCache = new ConcurrentHashMap<Class, GenericBeanInfo>();
 
   private static LockingLazyVar<DeclaredMethodsAccessor> _declaredMethodsAccessor = new LockingLazyVar<DeclaredMethodsAccessor>() {
     @Override
@@ -100,11 +95,11 @@ public class NewIntrospector
    */
   public static GenericBeanInfo getBeanInfo(Class beanClass)
   {
-    GenericBeanInfo bi = _beanInfoCache.get(beanClass);
+    GenericBeanInfo bi = BEAN_INFO_CACHE.get(beanClass);
     if (bi == null) {
       try {
         bi = (new NewIntrospector( beanClass )).getBeanInfo();
-        _beanInfoCache.put(beanClass, bi);
+        BEAN_INFO_CACHE.put(beanClass, bi);
       } catch (IntrospectionException e) {
         throw new RuntimeException(e);
       }
@@ -142,7 +137,8 @@ public class NewIntrospector
 
   public static void flushCaches()
   {
-    declaredMethodCache.clear();
+    DECLARED_METHOD_CACHE.clear();
+    BEAN_INFO_CACHE.clear();
   }
 
   //======================================================================
@@ -618,7 +614,7 @@ public class NewIntrospector
     Method[] result;
     final Class fclz = clz;
     synchronized (DECLARED_METHODS_LOCK) {     
-      result = (Method[])declaredMethodCache.get( fclz );
+      result = (Method[])DECLARED_METHOD_CACHE.get( fclz );
       if( result != null )
       {
         return result;
@@ -644,7 +640,7 @@ public class NewIntrospector
 
     // Add it to the cache.
     synchronized (DECLARED_METHODS_LOCK) {
-      declaredMethodCache.put( fclz, result );
+      DECLARED_METHOD_CACHE.put( fclz, result );
     }
     return result;
   }

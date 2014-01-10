@@ -4,10 +4,10 @@
 
 package gw.lang.ir.statement;
 
-import gw.lang.ir.IRStatement;
-import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRType;
 import gw.lang.UnstableAPI;
+import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRStatement;
+import gw.lang.ir.IRType;
 
 @UnstableAPI
 public class IRFieldSetStatement extends IRStatement {
@@ -21,7 +21,7 @@ public class IRFieldSetStatement extends IRStatement {
     _lhs = lhs;
     _rhs = rhs;
     _name = name;
-    _fieldType = fieldType;
+    _fieldType = maybeEraseStructuralType( ownersType, fieldType );
     _ownersType = ownersType;
 
     if (lhs != null) {

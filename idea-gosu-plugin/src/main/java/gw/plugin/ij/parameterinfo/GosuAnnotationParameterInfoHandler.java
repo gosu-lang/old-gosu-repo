@@ -23,9 +23,9 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.psi.impl.GosuBaseElementImpl;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiTypeResolver;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,7 +80,7 @@ public class GosuAnnotationParameterInfoHandler implements ParameterInfoHandler<
   public void showParameterInfo(@NotNull PsiElement element, @NotNull CreateParameterInfoContext context) {
     String error = ParameterInfoUtil.verify(context);
     if (error != null) {
-      IDEAUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
+      ExceptionUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
     } else {
       context.showHint(element, element.getTextRange().getStartOffset(), this);
     }

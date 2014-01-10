@@ -162,7 +162,7 @@ public class GosuCompletionContributor extends CompletionContributor {
 
   @NotNull
   private CompletionResultSet updateResult(CompletionParameters params, @NotNull CompletionResultSet result) {
-    CompletionResultSet completionResultSet = result.caseInsensitive();
+    CompletionResultSet completionResultSet = result;
     CompletionSorter completionSorter =
         CompletionSorter.defaultSorter(params, completionResultSet.getPrefixMatcher())
             .weighBefore("priority", new LookupElementWeigher("gosuWeight") {

@@ -22,7 +22,6 @@ import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IModule;
 import gw.util.DynamicArray;
-import gw.util.Extensions;
 import gw.util.Pair;
 import gw.util.StreamUtil;
 import gw.util.cache.FqnCache;
@@ -91,16 +90,13 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
 
       Set<String> extensions = new HashSet<String>();
       extensions.add(".java");
+      extensions.add(".xsd");
       extensions.addAll(Arrays.asList(GosuClassTypeLoader.ALL_EXTS));
 
       // Scan for potential extensions
       for( IDirectory file : sourcePath )
       {
         _sourcePath.add( new ClassPathEntry( file, isTestFolder(file)) );
-        List<String> sourceFileExtensions = Extensions.getExtensions(file, Extensions.CONTAINS_SOURCES);
-        for (String ext : sourceFileExtensions) {
-          extensions.add('.' + ext);
-        }
       }
       _extensions = extensions.toArray(new String[extensions.size()]);
 

@@ -4,7 +4,11 @@
 
 package gw.plugin.ij.codeInspection.expression;
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.LocalInspectionToolSession;
+import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.codeInspection.ex.BaseLocalInspectionTool;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -12,11 +16,16 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.PsiFile;
 import gw.internal.gosu.parser.GosuClassTypeInfo;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.expressions.INewExpression;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
-import gw.lang.reflect.*;
+import gw.lang.reflect.IFeatureInfo;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.intentions.NewExpressionAsBlockFix;
 import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
@@ -31,7 +40,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class NewExpressionAsBlockInspection extends BaseLocalInspectionTool {
+public class NewExpressionAsBlockInspection extends BaseLocalInspectionTool implements IWarningSuppressor {
+
+  public static final String SUPPRESS_WARNING_CODE = "NewExprToBlock";
 
   @Nls
   @NotNull
@@ -70,11 +81,13 @@ public class NewExpressionAsBlockInspection extends BaseLocalInspectionTool {
         INewExpression parsedElement = newExpression.getParsedElement();
         VirtualFile virtualFile = holder.getFile().getVirtualFile();
         if (parsedElement != null && virtualFile != null && parsedElement.isAnonymousClass()) {
+          if( parsedElement.isSuppressed( NewExpressionAsBlockInspection.this ) ) {
+            return;
+          }
           IModule module = GosuModuleUtil.findModuleForFile(virtualFile, holder.getProject());
           if (module == null) {
             return;
           }
-          IExecutionEnvironment executionEnvironment = module.getExecutionEnvironment();
           TypeSystem.pushModule(module);
           try {
             ITypeLiteralExpression typeLiteral = parsedElement.getTypeLiteral();
@@ -125,6 +138,10 @@ public class NewExpressionAsBlockInspection extends BaseLocalInspectionTool {
     };
   }
 
+  @Override
+  public boolean isSuppressed( String warningCode ) {
+    return SUPPRESS_WARNING_CODE.equals( warningCode ) || "all".equals( warningCode );
+  }
 
   private class NewExpressionAsBlockInspectionFix implements LocalQuickFix {
     private final NewExpressionAsBlockFix myQuickFix;

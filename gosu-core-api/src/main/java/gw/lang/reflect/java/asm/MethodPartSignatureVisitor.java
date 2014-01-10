@@ -160,7 +160,7 @@ public class MethodPartSignatureVisitor implements SignatureVisitor {
 
   @Override
   public void visitTypeArgument() {
-    _currentType.addTypeParameter( new AsmWildcardType( null, true ) );
+    _typeArg.addTypeParameter( new AsmWildcardType( null, true ) );
   }
 
   @Override

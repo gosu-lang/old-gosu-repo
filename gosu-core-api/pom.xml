@@ -8,7 +8,6 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>gosu-core-api</artifactId>
-  <packaging>bundle</packaging>
 
   <name>Gosu :: Core API</name>
 
@@ -18,8 +17,52 @@
 
   <dependencies>
     <dependency>
-      <groupId>gw.managed.osgi</groupId>
-      <artifactId>gosu-shades</artifactId>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-commons-cli</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-antlr-runtime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-analysis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-commons</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-tree</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-asm-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-commons-collections</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-xercesImpl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-commons-logging</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-jetty</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.gosu-lang.gosu.managed</groupId>
+      <artifactId>gw-jetty-util</artifactId>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
@@ -94,6 +137,10 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

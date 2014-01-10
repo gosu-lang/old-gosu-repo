@@ -17,6 +17,7 @@ import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.impl.source.tree.LeafPsiElement;
 import gw.lang.parser.IExpression;
+import gw.lang.parser.IParsedElement;
 import gw.lang.parser.expressions.IEqualityExpression;
 import gw.plugin.ij.intentions.EqualityQuickFix;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
@@ -62,11 +63,14 @@ public class GosuEqualityInspection extends BaseLocalInspectionTool {
       public void visitElement( PsiElement elem ) {
         if( elem instanceof IGosuExpression ) {
           IGosuExpression expr = (IGosuExpression)elem;
-          IExpression pe = (IExpression)expr.getParsedElement();
-          if( pe instanceof IEqualityExpression ) {
-            LeafPsiElement notEqualsOp = (LeafPsiElement)expr.getNode().findChildByType( GosuElementTypes.TT_OP_not_equals_for_losers );
-            if( notEqualsOp != null ) {
-              holder.registerProblem( notEqualsOp, GosuBundle.message( "inspection.equality.obsolete.operator" ), ProblemHighlightType.GENERIC_ERROR_OR_WARNING, new EqualityFix( notEqualsOp ) );
+          IParsedElement parsedElement = expr.getParsedElement();
+          if( parsedElement instanceof IExpression ) {
+            IExpression pe = (IExpression) parsedElement;
+            if( pe instanceof IEqualityExpression ) {
+              LeafPsiElement notEqualsOp = (LeafPsiElement)expr.getNode().findChildByType( GosuElementTypes.TT_OP_not_equals_for_losers );
+              if( notEqualsOp != null ) {
+                holder.registerProblem( notEqualsOp, GosuBundle.message( "inspection.equality.obsolete.operator" ), ProblemHighlightType.GENERIC_ERROR_OR_WARNING, new EqualityFix( notEqualsOp ) );
+              }
             }
           }
         }

@@ -4,6 +4,7 @@
 
 package gw.test.remote;
 
+import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.xml.simple.SimpleXmlNode;
 import junit.framework.AssertionFailedError;
@@ -69,7 +70,12 @@ public class RemoteTestResult {
       if (cause != null && cause != t) {
         causeExceptionInfo = fromThrowable(cause);
       }
-      return new ExceptionInfo( TypeSystem.getFromObject( t ).getName(), t.getMessage(), t.getStackTrace(), causeExceptionInfo);
+      IType type = TypeSystem.getFromObject( t );
+      if ( type == null ) {
+        t.printStackTrace();
+        throw new IllegalStateException( "Unable to determine type from throwable: " + t );
+      }
+      return new ExceptionInfo( type.getName(), t.getMessage(), t.getStackTrace(), causeExceptionInfo);
     }
 
     private ExceptionInfo(String className, String message, StackTraceElement[] stackTrace, ExceptionInfo cause) {

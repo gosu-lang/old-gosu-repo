@@ -39,6 +39,8 @@ public interface IGosuClass extends IFileBasedType, ICompilableType, IEnumType, 
 
   boolean isSubClass( IType gsSubType );
 
+  boolean isStructure();
+
   boolean isCompiled();
 
   IGosuClass getInnerClass( CharSequence strTypeName );

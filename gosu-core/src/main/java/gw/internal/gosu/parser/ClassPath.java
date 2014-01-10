@@ -4,16 +4,20 @@
 
 package gw.internal.gosu.parser;
 
+import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
+import gw.internal.gosu.module.fs.FileSystemImpl;
 import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IClassPath;
+import gw.lang.reflect.module.IFileSystem;
 import gw.lang.reflect.module.IModule;
 import gw.util.cache.FqnCache;
 import gw.util.cache.FqnCacheNode;
 
-import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,46 +27,74 @@ import java.util.Set;
 public class ClassPath implements IClassPath
 {
   private static final String CLASS_FILE_EXT = ".class";
-  private IModule module;
-  private ClassPathFilter filter;
-  private FqnCache<IFile> cache = new FqnCache<IFile>();
+  private IModule _module;
+  private ClassPathFilter _filter;
+  private FqnCache<Object> _cache = new FqnCache<Object>();
+  private IFileSystem _fs;
+  private boolean _bStableFiles;
 
   public ClassPath(IModule module, ClassPathFilter filter)
   {
-    this.module = module;
-    this.filter = filter;
+    _module = module;
+    _filter = filter;
+
+    // Files are assumed stable outside an IDE
+    _fs = CommonServices.getFileSystem();
+    _bStableFiles = _fs instanceof FileSystemImpl;
+
     loadClasspathInfo();
   }
 
   public ArrayList<IDirectory> getPaths()
   {
-    return new ArrayList<IDirectory>(module.getJavaClassPath());
+    return new ArrayList<IDirectory>( _module.getJavaClassPath());
   }
 
   public boolean contains(String fqn) {
-    return cache.contains(fqn);
+    return _cache.contains(fqn);
   }
 
   public IFile get( String fqn ) {
-    return cache.get( fqn );
+    FqnCacheNode<Object> node = _cache.getNode( fqn );
+    if( node == null ) {
+      return null;
+    }
+    Object value = node.getUserData();
+    if( value instanceof IFile ) {
+      if( _bStableFiles ) {
+        // Files are assumed stable outside an IDE
+        return (IFile)value;
+      }
+      try {
+        // Lazily compute and cache the URL, it can be an expensive native file system call
+        value = ((IFile)value).toURI().toURL();
+        node.setUserData( value );
+      }
+      catch( MalformedURLException e ) {
+        throw new RuntimeException( e );
+      }
+    }
+    //## todo: it'd be better if ClassPath could listen to FS changes and not query the FS for every
+    // Get the file *fresh* from the abstract file system
+    return _fs.getIFile( (URL)value );
   }
 
   public Set<String> getFilteredClassNames() {
-    return cache.getFqns();
+    return _cache.getFqns();
   }
 
   public boolean isEmpty() {
-    return cache.getRoot().isLeaf();
+    return _cache.getRoot().isLeaf();
   }
 
   // ====================== PRIVATE ====================================
 
   private void loadClasspathInfo()
   {
-    List<IDirectory> javaClassPath = module.getJavaClassPath();
+    List<IDirectory> javaClassPath = _module.getJavaClassPath();
     IDirectory[] paths = javaClassPath.toArray(new IDirectory[javaClassPath.size()]);
     for (int i = 0; i < paths.length; i++) {
-      addClassNames(paths[i], paths[i], filter);
+      addClassNames(paths[i], paths[i], _filter );
     }
   }
 
@@ -83,7 +115,7 @@ public class ClassPath implements IClassPath
     }
   }
 
-  private void putClassName( IFile file, String strClassName, ClassPathFilter filter )
+  private void putClassName( final IFile file, String strClassName, ClassPathFilter filter )
   {
     boolean bFiltered = filter != null && !filter.acceptClass( strClassName );
     if( bFiltered )
@@ -93,7 +125,8 @@ public class ClassPath implements IClassPath
     }
     if( strClassName != null )
     {
-      cache.add( strClassName, file );
+      // Store the abstract file, not the URL; we compute and recache that lazily, see #get()
+      _cache.add( strClassName, file );
     }
   }
 
@@ -105,21 +138,6 @@ public class ClassPath implements IClassPath
       return strClassName.substring( 0, iIndex+1 ) + PLACEHOLDER_FOR_PACKAGE;
     }
     return null;
-  }
-
-  private String makeClassNameFromFileName( String strFileName )
-  {
-    int iLength = strFileName.length() - CLASS_FILE_EXT.length();
-    char[] classNameChars = new char[iLength];
-    strFileName.getChars( 0, iLength, classNameChars, 0 );
-    for( int i = 0; i < classNameChars.length; i++ )
-    {
-      char c = classNameChars[i];
-      classNameChars[i] =
-        c == File.separatorChar || c == '/' || c == '\\'
-        ? '.' : c;
-    }
-    return new String( classNameChars );
   }
 
   private String getClassNameFromFile( IDirectory root, IFile file )
@@ -149,23 +167,20 @@ public class ClassPath implements IClassPath
     }
     // look for private or anonymous inner classes
     int index = strClassName.lastIndexOf('$');
-    if (filter.isIgnoreAnonymous() &&
-            index >= 0 && index < strClassName.length() - 1 &&
-            Character.isDigit(strClassName.charAt(index + 1))) {
-      return false;
-    }
-    return true;
+    return !(_filter.isIgnoreAnonymous() &&
+             index >= 0 && index < strClassName.length() - 1 &&
+             Character.isDigit( strClassName.charAt( index + 1 ) ));
   }
 
   public boolean hasNamespace(String namespace) {
-    FqnCacheNode infoNode = cache.getNode(namespace);
+    FqnCacheNode infoNode = _cache.getNode(namespace);
     return infoNode != null && !infoNode.isLeaf();
   }
 
   @Override
   public Set<TypeName> getTypeNames(String namespace) {
-    FqnCacheNode<?> node = cache.getNode(namespace);
-    IDefaultTypeLoader defaultTypeLoader = module.getModuleTypeLoader().getDefaultTypeLoader();
+    FqnCacheNode<?> node = _cache.getNode(namespace);
+    IDefaultTypeLoader defaultTypeLoader = _module.getModuleTypeLoader().getDefaultTypeLoader();
     if (node != null) {
       Set<TypeName> names = new HashSet<TypeName>();
       for (FqnCacheNode<?> child : node.getChildren()) {
@@ -183,6 +198,6 @@ public class ClassPath implements IClassPath
 
   @Override
   public String toString() {
-    return module.getName();
+    return _module.getName();
   }
 }

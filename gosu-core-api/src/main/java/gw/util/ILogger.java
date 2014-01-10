@@ -4,6 +4,9 @@
 
 package gw.util;
 
+/**
+ * Gosu logger-independent logging system.
+ */
 public interface ILogger
 {
   String getName();

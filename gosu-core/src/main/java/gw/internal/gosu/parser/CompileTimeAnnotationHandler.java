@@ -31,15 +31,14 @@ import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IMethodInfoDelegate;
 import gw.lang.reflect.IPropertyInfo;
-import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuFragment;
 import gw.lang.reflect.java.JavaTypes;
 import gw.util.GosuClassUtil;
 import gw.util.GosuExceptionUtil;
 
+import java.lang.reflect.Constructor;
 import java.util.List;
 
 public class CompileTimeAnnotationHandler
@@ -251,14 +250,13 @@ public class CompileTimeAnnotationHandler
       {
         IUsageSiteValidatorReference ref = (IUsageSiteValidatorReference)evalAndHandleError( ai, expr );
         if(ref != null) {
-          IType validator = TypeSystem.get( ref.value() );
-          IConstructorInfo ctor = ((IRelativeTypeInfo)validator.getTypeInfo()).getConstructor( validator, null );
-          if( ctor != null )
-          {
-            mcv = (IUsageSiteValidator)ctor.getConstructor().newInstance();
+          Class<? extends IUsageSiteValidator> validator = ref.value();
+          try {
+            Constructor<? extends IUsageSiteValidator> ctor = validator.getDeclaredConstructor();
+            ctor.setAccessible( true );
+            mcv = ctor.newInstance();
           }
-          else
-          {
+          catch( Exception e ) {
             CommonServices.getEntityAccess().getLogger().warn( "Unable to instantiate IUsageSiteValidator of type " + validator.getName() );
           }
         }

@@ -11,4 +11,5 @@ import java.lang.annotation.RetentionPolicy;
 @java.lang.annotation.Documented
 public @interface Deprecated {
   public String value();
+  public String version() default "";
 }

@@ -4,17 +4,17 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.internal.gosu.parser.expressions.UnaryExpression;
-import gw.internal.gosu.parser.expressions.UnsupportedNumberTypeException;
-import gw.internal.gosu.parser.BeanAccess;
+import gw.config.CommonServices;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
-import gw.lang.ir.IRExpression;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.TypeSystem;
+import gw.internal.gosu.parser.BeanAccess;
+import gw.internal.gosu.parser.expressions.UnaryExpression;
+import gw.internal.gosu.parser.expressions.UnsupportedNumberTypeException;
 import gw.lang.IDimension;
-import gw.config.CommonServices;
+import gw.lang.ir.IRExpression;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  */
@@ -58,16 +58,15 @@ public class UnaryExpressionTransformer extends AbstractExpressionTransformer<Un
   private IRExpression negateComplex( IRExpression root )
   {
     // Call into Gosu's runtime for the answer
-    IRExpression negateCall = callStaticMethod( getClass(), "negateComplex", new Class[]{Object.class, IType.class, boolean.class},
+    IRExpression negateCall = callStaticMethod( getClass(), "negateComplex", new Class[]{Object.class, boolean.class},
             exprList( boxValue( _expr().getExpression().getType(), root ),
-                      pushType( _expr().getType() ),
                       pushConstant( _expr().isNegated() ) ) );
 
     // Ensure value is unboxed if type is primitive
     return unboxValueToType( _expr().getType(), negateCall );
   }
 
-  public static Object negateComplex( Object value, IType type, boolean bNegated )
+  public static Object negateComplex( Object value, boolean bNegated )
   {
     if( value == null )
     {
@@ -77,48 +76,47 @@ public class UnaryExpressionTransformer extends AbstractExpressionTransformer<Un
     if( bNegated )
     {
       IDimension dimension = null;
-      if( JavaTypes.IDIMENSION().isAssignableFrom( type ) )
+      if( value instanceof IDimension )
       {
         dimension = (IDimension)value;
-        type = TypeSystem.get( ((IDimension)value).numberType() );
         value = ((IDimension)value).toNumber();
       }
 
-      if( type == JavaTypes.BIG_DECIMAL() )
+      if( value instanceof BigDecimal )
       {
         value = CommonServices.getCoercionManager().makeBigDecimalFrom( value ).negate();
       }
-      else if( type == JavaTypes.BIG_INTEGER() )
+      else if( value instanceof BigInteger )
       {
         value = CommonServices.getCoercionManager().makeBigIntegerFrom( value ).negate();
       }
-      else if( type == JavaTypes.INTEGER() || type == JavaTypes.pINT() )
+      else if( value instanceof Integer )
       {
         value = -CommonServices.getCoercionManager().makeIntegerFrom( value );
       }
-      else if( type == JavaTypes.LONG() || type == JavaTypes.pLONG() )
+      else if( value instanceof Long )
       {
         value = -CommonServices.getCoercionManager().makeLongFrom( value );
       }
-      else if( type == JavaTypes.DOUBLE() || type == JavaTypes.pDOUBLE() )
+      else if( value instanceof Double )
       {
         value = -CommonServices.getCoercionManager().makeDoubleFrom( value );
       }
-      else if( type == JavaTypes.FLOAT() || type == JavaTypes.pFLOAT() )
+      else if( value instanceof Float )
       {
         value = -CommonServices.getCoercionManager().makeFloatFrom( value );
       }
-      else if( type == JavaTypes.SHORT() || type == JavaTypes.pSHORT() )
+      else if( value instanceof Short )
       {
         value = (short)-CommonServices.getCoercionManager().makeIntegerFrom( value ).shortValue();
       }
-      else if( type == JavaTypes.BYTE() || type == JavaTypes.pBYTE() )
+      else if( value instanceof Byte )
       {
         value = (byte)-CommonServices.getCoercionManager().makeIntegerFrom( value ).byteValue();
       }
       else
       {
-        throw new UnsupportedNumberTypeException( type );
+        throw new UnsupportedNumberTypeException( value.getClass() );
       }
 
       if( dimension != null )

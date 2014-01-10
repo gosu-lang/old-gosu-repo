@@ -40,7 +40,8 @@ public class JavaSourceField implements IJavaClassField {
   }
 
   public String getRhs() {
-    return _fieldNode.getChildOfType( JavaASTConstants.variableInitializer ).getSource();
+    IJavaASTNode initializerNode = _fieldNode.getChildOfType( JavaASTConstants.variableInitializer );
+    return initializerNode == null ? null : initializerNode.getSource();
   }
 
   @Override

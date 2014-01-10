@@ -11,6 +11,7 @@ import gw.lang.parser.MemberAccessKind;
 import gw.lang.parser.IExpressionRuntime;
 import gw.lang.parser.expressions.IBeanMethodCallExpression;
 import gw.lang.reflect.*;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuMethodInfo;
 import gw.lang.reflect.java.JavaTypes;
 
@@ -186,7 +187,9 @@ public final class BeanMethodCallExpression extends Expression implements IBeanM
   /**
    */
   public IType getRootType() {
-    return getRootExpression().getType();
+    IType rootType = getRootExpression().getType();
+    rootType = IGosuClass.ProxyUtil.isProxy(rootType) && rootType instanceof IGosuClass ? ((IGosuClass) rootType).getJavaType() : rootType;
+    return rootType;
   }
 
   public MemberAccessKind getMemberAccessKind()

@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.reflect.*;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.BaseFeatureInfo;
 import gw.lang.reflect.IAnnotationInfo;
@@ -15,10 +14,10 @@ import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGenericTypeVariable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.*;
 
 /**
  */
@@ -69,7 +68,7 @@ public abstract class GosuBaseAttributedFeatureInfo extends BaseFeatureInfo impl
   }
 
   public boolean isDeprecated() {
-    return getOwnersType().getTypeInfo().isDeprecated() || super.isDeprecated();
+    return getOwnersType().getTypeInfo().isDeprecated() || super.isDeprecated() || hasDeclaredAnnotation( TypeSystem.get( java.lang.Deprecated.class ) );
   }
 
   public String getDeprecatedReason()

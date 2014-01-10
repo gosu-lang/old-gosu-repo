@@ -17,19 +17,25 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Helper methods for analyzing methods, and instantiating test classes.
  */
 public class TestClassHelper {
-  private static final Map<Class<?>, List<Method>> cache = Collections.synchronizedMap(new HashMap<Class<?>, List<Method>>());
+  private static final Map<Class<?>, List<Method>> cache = new ConcurrentHashMap<Class<?>, List<Method>>();
 
   /**
    * Returns list of methods according to their order in the source file.
-   *
+   * <p/>
    * Supertype methods go first in the list.
-   *
+   * <p/>
    * Returns empty list if cannot find class file for the specified class. Class file is retrieved by
    * using {@link Class#getResourceAsStream} so it won't work for classes generated at runtine.
    *
@@ -91,7 +97,7 @@ public class TestClassHelper {
     try {
       Constructor<T> constructor = getConstructor(clazz);
       junit.framework.TestSuite newSuite = new junit.framework.TestSuite();
-      for (String name: methodNames) {
+      for (String name : methodNames) {
         TestCase test;
         if (constructor.getParameterTypes().length == 0) {
           test = constructor.newInstance();

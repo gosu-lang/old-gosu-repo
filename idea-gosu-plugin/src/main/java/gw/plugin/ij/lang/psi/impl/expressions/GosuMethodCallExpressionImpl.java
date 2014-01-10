@@ -32,11 +32,10 @@ import gw.plugin.ij.lang.psi.api.types.IGosuTypeElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeParameterList;
 import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 
 public class GosuMethodCallExpressionImpl extends GosuReferenceExpressionImpl<IMethodCallExpression>
@@ -88,9 +87,9 @@ public class GosuMethodCallExpressionImpl extends GosuReferenceExpressionImpl<IM
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         final IMethodCallExpression parsedElement = getParsedElement();
         if (parsedElement == null) {
           return null;
@@ -118,7 +117,7 @@ public class GosuMethodCallExpressionImpl extends GosuReferenceExpressionImpl<IM
           return functionSymbol != null ? PsiFeatureResolver.resolveMethodOrConstructor(functionSymbol, GosuMethodCallExpressionImpl.this) : null;
         }
       }
-    }, this);
+    });
   }
 
   @NotNull

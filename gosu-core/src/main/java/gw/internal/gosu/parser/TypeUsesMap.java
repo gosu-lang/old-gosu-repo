@@ -18,11 +18,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  */
 public class TypeUsesMap implements ITypeUsesMap
 {
+  private boolean _bSupportRelativePackageResolution;
   private HashMap<String, String> _specialTypeUsesByRelativeName;
   private HashMap<String, String> _typeUsesByRelativeName;
   private DynamicArray<String> _defaultNamespaces;
@@ -64,6 +66,7 @@ public class TypeUsesMap implements ITypeUsesMap
   public ITypeUsesMap copy()
   {
     TypeUsesMap copy = new TypeUsesMap();
+    copy._bSupportRelativePackageResolution = _bSupportRelativePackageResolution;
     copy._specialTypeUsesByRelativeName = (HashMap<String, String>) _specialTypeUsesByRelativeName.clone();
     copy._defaultNamespaces = (DynamicArray<String>)_defaultNamespaces.clone();
     copy._specialNamespaces = (DynamicArray<String>)_specialNamespaces.clone();
@@ -76,6 +79,7 @@ public class TypeUsesMap implements ITypeUsesMap
   public ITypeUsesMap copyLocalScope()
   {
     TypeUsesMap copy = new TypeUsesMap();
+    copy._bSupportRelativePackageResolution = _bSupportRelativePackageResolution;
     copy._specialTypeUsesByRelativeName = _specialTypeUsesByRelativeName;
     copy._defaultNamespaces = (DynamicArray<String>)_defaultNamespaces.clone();
     copy._specialNamespaces = (DynamicArray<String>)_specialNamespaces.clone();
@@ -95,7 +99,7 @@ public class TypeUsesMap implements ITypeUsesMap
   public boolean containsType(String typeName) {
     for (Object o : getTypeUses()) {
       String used = (String) o;
-      if (used.endsWith("*")) {
+      if (used.endsWith(".")) {
         if (used.lastIndexOf('.') == typeName.lastIndexOf('.')) {
           return typeName.startsWith(used);
         }
@@ -274,11 +278,49 @@ public class TypeUsesMap implements ITypeUsesMap
 
   private IType resolveType( String strRelativeName, String strNs ) {
     String strQualifiedName = strNs + strRelativeName;
-    return TypeLoaderAccess.instance().getByFullNameIfValid(strQualifiedName);
+    IType type = TypeLoaderAccess.instance().getByFullNameIfValid(strQualifiedName);
+    if( type != null && !isSupportRelativePackageResolution() )
+    {
+      type = verifyTypeNameDoesNotHaveRelativePackage( type, strNs, strRelativeName );
+    }
+    return type;
+  }
+
+  // For example,
+  //   type = "com.abc.Foo"
+  //   strNs = "com."
+  //   strRelativeName = "abc.Foo"
+  //
+  //   ns = abc
+  //   token = abc
+  //   token2 = abc
+  //   return null
+  private IType verifyTypeNameDoesNotHaveRelativePackage(IType type, String strNs, String strRelativeName) {
+    String ns = type.getNamespace();
+    if( ns != null && ns.contains(strNs) )  {
+      ns = ns.substring( strNs.length() );
+      //noinspection LoopStatementThatDoesntLoop
+      for( StringTokenizer tokenizer = new StringTokenizer( ns, "." ); tokenizer.hasMoreTokens(); ) {
+        String token = tokenizer.nextToken();
+        for( StringTokenizer t2 = new StringTokenizer( strRelativeName, "." ); t2.hasMoreTokens(); ) {
+          String token2 = t2.nextToken();
+          if( token.equals( token2 ) ) {
+            return null;
+          }
+        }
+        return type;
+      }
+    }
+    return type;
   }
 
   public INamespaceType resolveRelativeNamespaceInAllNamespaces( String strRelativeName )
   {
+    if( !isSupportRelativePackageResolution() )
+    {
+      return null;
+    }
+
     for (int i = 0; i < _specialNamespaces.size; i++) {
       String strQualifiedName = _specialNamespaces.data[i] + strRelativeName;
       INamespaceType type = TypeSystem.getNamespace(strQualifiedName);
@@ -304,6 +346,13 @@ public class TypeUsesMap implements ITypeUsesMap
     }
 
     return null;
+  }
+
+  public boolean isSupportRelativePackageResolution() {
+    return _bSupportRelativePackageResolution;
+  }
+  public void setSupportRelativePackageResolution( boolean bSupportRelativePackageResolution ) {
+    _bSupportRelativePackageResolution = bSupportRelativePackageResolution;
   }
 
   private void addToTypeUses( String strQualifiedType, Map<String, String> mapQualifiedNameByRelativeName, List<String> namespacesSet ) throws ClassNotFoundException

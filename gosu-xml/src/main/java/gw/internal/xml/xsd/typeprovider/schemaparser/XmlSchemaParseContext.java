@@ -42,6 +42,10 @@ public class XmlSchemaParseContext {
     return XmlSchemaIndex.REDEFINE_PREFIX + _nextRedefineNumber++;
   }
 
+  public boolean isSchemaAlreadyIncluded( URL url ) {
+    return _alreadyIncludedSchemas.contains( url );
+  }
+
   public boolean pushIncludedSchema( URL url ) {
     return ! _alreadyIncludedSchemas.add( url );
   }

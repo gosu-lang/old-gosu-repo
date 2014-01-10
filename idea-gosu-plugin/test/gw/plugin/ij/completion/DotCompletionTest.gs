@@ -297,7 +297,7 @@ class DotCompletionTest extends AbstractCodeCompletionTest {
       "package pkg\n" +
       "class Foo {\n" +
       "  function method() {\n" +
-      "    for (lvar in 1..^^\n" +
+      "    for (lvar in 0..|1..^^\n" +
       "  }\n" +
       "}\n")
   }
@@ -350,7 +350,7 @@ class DotCompletionTest extends AbstractCodeCompletionTest {
       "//JAVA\n" +
       "package some.pkg;\n" +
       "import java.util.List;"  +
-      "class SuperJavaClass {\n" +
+      "public class SuperJavaClass {\n" +
       "    public String foo(int i, String s, List<String> l) {return \"\";}\n" +
       "}"
     ,

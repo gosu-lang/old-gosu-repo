@@ -30,6 +30,11 @@ public final class Extensions {
     return extensions;
   }
 
+  public static boolean containsManifest(IDirectory dir) {
+    IFile manifestFile = dir.file( "META-INF/MANIFEST.MF" );
+    return manifestFile != null && manifestFile.exists();
+  }
+
   public static void getExtensions(Collection<String> result, IDirectory dir, String headerName) {
     IFile manifestFile = dir.file( "META-INF/MANIFEST.MF" );
     if (manifestFile == null || !manifestFile.exists()) {
@@ -66,12 +71,11 @@ public final class Extensions {
     }
   }
 
-  public static List<IDirectory> getJarsWithSources(List<String> fileExtensions, IModule module) {
+  public static List<IDirectory> getJarsWithSources(IModule module) {
     List<IDirectory> jars = new ArrayList<IDirectory>();
     for (IDirectory root : module.getJavaClassPath()) {
       List<String> extensions = new ArrayList<String>();
       Extensions.getExtensions(extensions, root, CONTAINS_SOURCES);
-      extensions.retainAll(fileExtensions);
       if (!extensions.isEmpty()) {
         jars.add(root);
       }

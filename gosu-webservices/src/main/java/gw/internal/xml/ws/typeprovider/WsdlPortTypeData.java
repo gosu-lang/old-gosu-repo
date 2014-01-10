@@ -271,7 +271,7 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
    * @param methods the methods array for the port or service
    * @param port the port Wsdl definition     @return the address for this port
    */
-  private void addPortPropertiesAndMethods( IFeatureInfo container, final Wsdl wsdl, final List<IPropertyInfo> props, final List<IMethodInfo> methods, final WsdlPort port ) {
+  protected void addPortPropertiesAndMethods( IFeatureInfo container, final Wsdl wsdl, final List<IPropertyInfo> props, final List<IMethodInfo> methods, final WsdlPort port ) {
     addMethodForOperations(container, methods, port, wsdl);
     addProperties( container, props );
     props.add( new PropertyInfoBuilder().withName( "ADDRESS" )
@@ -331,7 +331,6 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
               public Object getValue(Object ctx) {
                 return ((WsdlPortImpl) ctx).getLogger();
               }
-
               @Override
               public void setValue(Object ctx, Object value) {
                 ((WsdlPortImpl) ctx).setLogger((ILogger) value);
@@ -410,48 +409,11 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
       final String soapAction = getSoapAction(bindingOp);
       final WsdlOperationInputInfo input = convertInputParametersXMLType( op, inputParts, wsdl );
       if ( input == null ) {
-        getLogger().warn("On " + _service.getQName() + " operation=" + bindingOp.getName() + ": can not convert request parameters");
+        getLogger().warn("On " + _service.getQName() + " operation=" + bindingOp.getName() + ": cannot convert request parameters");
         continue; // skip this operation
       }
-      if ( op.getOutput() == null ) { // One-way
-        final WsdlOperationInfo opTypeData = new WsdlOperationInfo( opName, soapAction, input, null, wsdlPort );
-        final MethodInfoBuilder opBldr = new MethodInfoBuilder()
-                .withLocation( op.getLocationInfo() )
-                .withName(XmlSchemaIndex.normalizeName(opName, XmlSchemaIndex.NormalizationMode.PRESERVECASE));
-        opBldr.withReturnType(JavaTypes.pVOID());
-        List<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
-        addParameters( input, params );
-        opBldr.withCallHandler(new IMethodCallHandler() {
-          @Override
-          public Object handleCall(Object ctx, Object... args) {
-            return ((WsdlPortImpl)ctx).invoke( null, opTypeData, args );
-          }
-        });
-
-        // methodName( params..., )
-        opBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
-        methods.add(opBldr.build(container));
-
-        // methodName( params..., soapheadersobject )
-        final WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData = _soapHeadersTypeDataByBindingOperation.get( bindingOp );
-        if ( wsdlSoapHeadersTypeData != null ) {
-          params.add( new ParameterInfoBuilder()
-                  .withName( "soapheaders" )
-                  .withType( wsdlSoapHeadersTypeData.getType() )
-          );
-          opBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
-          opBldr.withCallHandler( new IMethodCallHandler() {
-            @Override
-            public Object handleCall( Object ctx, Object... args ) {
-              return ( (WsdlPortImpl) ctx ).invoke( wsdlSoapHeadersTypeData.getType(), opTypeData, args );
-            }
-          } );
-          methods.add( opBldr.build( container ) );
-        }
-
-        addAsyncOperationToMethods(container, methods, opName, op.getLocationInfo(), opTypeData, input, _wsdlDefPort.getBinding().getSoapBinding().getSoapVersion(), bindingOp);
-      }
-      else {
+      WsdlOperationOutputInfo outputInfo = null;
+      if ( op.getOutput() != null ) {
         final WsdlPortTypeOutput outputWsdl = op.getOutput();
         final List<WsdlSoapHeader> outExtList = bindingOp.getBindingOutput().getSoapHeaders();
         @SuppressWarnings({"unchecked"})
@@ -466,51 +428,45 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
             }
           }
         }
-        final WsdlOperationOutputInfo outputInfo = convertOutputToReturnType( op, outputParts, wsdl );
+        outputInfo = convertOutputToReturnType( op, outputParts, wsdl );
         if ( outputInfo == null ) {
-          getLogger().warn("On " + _service.getQName() + " operation=" + bindingOp.getName() + ": can not convert response");
+          getLogger().warn("On " + _service.getQName() + " operation=" + bindingOp.getName() + ": cannot convert response");
           continue; // skip this operation
         }
-
-        final WsdlOperationInfo opTypeData = new WsdlOperationInfo( opName, soapAction, input, outputInfo, wsdlPort );
-
-        final MethodInfoBuilder opBldr = new MethodInfoBuilder()
-                .withLocation( op.getLocationInfo() )
-                .withName(XmlSchemaIndex.normalizeName(opName, XmlSchemaIndex.NormalizationMode.PRESERVECASE));
-        opBldr.withReturnType( outputInfo.getReturnType() );
-        List<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
-        opBldr.withCallHandler(new IMethodCallHandler() {
-          @Override
-          public Object handleCall(Object ctx, Object... args) {
-            return ((WsdlPortImpl)ctx).invoke( null, opTypeData, args );
-          }
-        });
-        addParameters( input, params );
-
-        // methodName( params... )
-        opBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
-        methods.add(opBldr.build(container));
-
-        // methodName( params..., soapheadersobject )
-        final WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData = _soapHeadersTypeDataByBindingOperation.get( bindingOp );
-        if ( wsdlSoapHeadersTypeData != null ) {
-          params.add( new ParameterInfoBuilder()
-                  .withName( "soapheaders" )
-                  .withType( wsdlSoapHeadersTypeData.getType() )
-          );
-          opBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
-          opBldr.withCallHandler( new IMethodCallHandler() {
-            @Override
-            public Object handleCall( Object ctx, Object... args ) {
-              return ( (WsdlPortImpl) ctx ).invoke( wsdlSoapHeadersTypeData.getType(), opTypeData, args );
-            }
-          } );
-          methods.add( opBldr.build( container ) );
-        }
-
-        addAsyncOperationToMethods(container, methods, opName, op.getLocationInfo(), opTypeData, input, _wsdlDefPort.getBinding().getSoapBinding().getSoapVersion(), bindingOp );
       }
+      final WsdlOperationInfo opTypeData = new WsdlOperationInfo( opName, soapAction, input, outputInfo, wsdlPort );
+
+      final MethodInfoBuilder opBldr = new MethodInfoBuilder()
+         .withLocation( getLocationInfo() )
+         .withName( XmlSchemaIndex.normalizeName( opName, XmlSchemaIndex.NormalizationMode.PRESERVECASE ) );
+      opBldr.withReturnType( outputInfo == null ? JavaTypes.pVOID() : outputInfo.getReturnType() );
+      List<ParameterInfoBuilder> params = addParameters( input );
+
+      // methodName( params... )
+      opBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
+      opBldr.withCallHandler(new IMethodCallHandler() {
+        @Override
+        public Object handleCall(Object ctx, Object... args) {
+          return handleOperationCall((WsdlPortImpl) ctx, opTypeData, args);
+        }
+      });
+      methods.add(opBldr.build(container));
+
+      // methodName( params..., soapheadersobject )
+      final WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData = _soapHeadersTypeDataByBindingOperation.get( bindingOp );
+      if ( wsdlSoapHeadersTypeData != null ) {
+        opBldr.withParameters( addHeadersToParams(wsdlSoapHeadersTypeData, params) );
+        opBldr.withCallHandler( new IMethodCallHandler() {
+          @Override
+          public Object handleCall( Object ctx, Object... args ) {
+            return handleOperationCall( (WsdlPortImpl)ctx, opTypeData, args );
+          }
+        } );
+        methods.add( opBldr.build( container ) );
+      }
+      addAsyncOperationToMethods(container, methods, opName, opTypeData, params, _wsdlDefPort.getBinding().getSoapBinding().getSoapVersion(), wsdlSoapHeadersTypeData);
     }
+
     if (incomingSize == methods.size()) {
       getLogger().warn("On " + _service.getQName() + ": no supported operations");
     }
@@ -523,7 +479,7 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
     opBldr.withCallHandler(new IMethodCallHandler() {
                     @Override
                     public Object handleCall(Object ctx, Object... args) {
-                      return ((WsdlPortImpl)ctx).invoke( null, null, args );
+                      return handleOperationCall( (WsdlPortImpl)ctx, null, args );
                     }
                   });
     methods.add(opBldr.build(container));
@@ -536,7 +492,7 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
     opAsyncBldr.withCallHandler(new IMethodCallHandler() {
                     @Override
                     public Object handleCall(Object ctx, Object... args) {
-                      return ((WsdlPortImpl)ctx).invokeAsync( null, args );
+                      return handleOperationAsyncCall((WsdlPortImpl)ctx, null, args );
                     }
                   });
     methods.add(opAsyncBldr.build(container));
@@ -574,48 +530,58 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
   private void addAsyncOperationToMethods( IFeatureInfo container,
                                            List<IMethodInfo> methods,
                                            final String opName,
-                                           final LocationInfo locationInfo,
                                            final WsdlOperationInfo opTypeData,
-                                           final WsdlOperationInputInfo input,
-                                           final SoapVersion soapVersion, WsdlBindingOperation bindingOp ) {
+                                           List<ParameterInfoBuilder> params,
+                                           final SoapVersion soapVersion,
+                                           WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData) {
 
     final MethodInfoBuilder opAsyncBldr = new MethodInfoBuilder()
-            .withLocation( locationInfo )
+            .withLocation( getLocationInfo() )
             .withName("async_" + XmlSchemaIndex.normalizeName(opName, XmlSchemaIndex.NormalizationMode.PRESERVECASE));
     opAsyncBldr.withReturnType(WsdlPortImpl.getParameterizedAsyncResponseType(opTypeData, soapVersion, false));
-    List<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
-    addParameters(input, params);
-    opAsyncBldr.withCallHandler(new IMethodCallHandler() {
-      @Override
-      public Object handleCall(Object ctx, Object... args) {
-        return ((WsdlPortImpl) ctx).invokeAsync( opTypeData, args );
-      }
-    });
 
     // methodName( params... )
     opAsyncBldr.withParameters(params.toArray(new ParameterInfoBuilder[params.size()]));
+    opAsyncBldr.withCallHandler(new IMethodCallHandler() {
+      @Override
+      public Object handleCall(Object ctx, Object... args) {
+        return handleOperationAsyncCall((WsdlPortImpl) ctx, opTypeData, args);
+      }
+    });
     methods.add(opAsyncBldr.build(container));
 
     // methodName( params..., soapheadersobject )
-    final WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData = _soapHeadersTypeDataByBindingOperation.get( bindingOp );
     if ( wsdlSoapHeadersTypeData != null ) {
-      params.add( new ParameterInfoBuilder()
-              .withName( "soapheaders" )
-              .withType( wsdlSoapHeadersTypeData.getType() )
-      );
-      opAsyncBldr.withParameters( params.toArray( new ParameterInfoBuilder[ params.size() ] ) );
+      opAsyncBldr.withParameters(addHeadersToParams(wsdlSoapHeadersTypeData, params));
       opAsyncBldr.withCallHandler( new IMethodCallHandler() {
         @Override
         public Object handleCall( Object ctx, Object... args ) {
-          return ( (WsdlPortImpl) ctx ).invokeAsync( opTypeData, args );
+          return handleOperationAsyncCall((WsdlPortImpl) ctx, opTypeData, args );
         }
       } );
       methods.add( opAsyncBldr.build( container ) );
     }
   }
 
+  private ParameterInfoBuilder[] addHeadersToParams(WsdlSoapHeadersTypeDataClass wsdlSoapHeadersTypeData, List<ParameterInfoBuilder> paramsSource) {
+    List<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>(paramsSource);
+    params.add(new ParameterInfoBuilder()
+        .withName("soapheaders")
+        .withType(wsdlSoapHeadersTypeData.getType())
+    );
+    return params.toArray(new ParameterInfoBuilder[params.size()]);
+  }
 
-  private static void addParameters( WsdlOperationInputInfo input, List<ParameterInfoBuilder> params ) {
+  protected Object handleOperationCall(WsdlPortImpl ctx, WsdlOperationInfo opTypeData, Object[] args) {
+    return ctx.invoke(opTypeData, args);
+  }
+
+  protected Object handleOperationAsyncCall(WsdlPortImpl ctx, WsdlOperationInfo opTypeData, Object[] args) {
+    return ctx.invokeAsync( opTypeData, args );
+  }
+
+  private static List<ParameterInfoBuilder> addParameters( WsdlOperationInputInfo input ) {
+    List<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
     for ( Pair<WsdlOperationParameterInfo,Boolean> param : input.getParameterInfos() ) {
       IType type = param.getFirst().getType();
       if ( param.getSecond() ) {
@@ -623,6 +589,7 @@ public class WsdlPortTypeData extends XmlTypeData implements IWsdlPortTypeData, 
       }
       params.add( new ParameterInfoBuilder().withName( param.getFirst().getName() ).withType( type ) );
     }
+    return params;
   }
 
   private static String getSoapAction( WsdlBindingOperation bindingOp ) {

@@ -313,7 +313,6 @@ public abstract class GosuBaseExpressionToFieldHandler extends IntroduceHandlerB
                                                     PsiType type, PsiExpression[] occurrences, PsiElement anchorElement,
                                                     PsiElement anchorElementIfAll, boolean isLocalVariable);
 
-
   private static PsiType getTypeByExpression(PsiExpression expr) {
     return GosuRefactoringUtil.getTypeByExpressionWithExpectedType(expr);
   }
@@ -429,7 +428,7 @@ public abstract class GosuBaseExpressionToFieldHandler extends IntroduceHandlerB
   private static PsiField createField(String fieldName,
                                       PsiType type,
                                       PsiExpression initializerExpr,
-                                      boolean includeInitializer, final PsiClass parentClass) {
+                                      boolean includeInitializer, final PsiClass parentClass, boolean isPrivate) {
     @NonNls StringBuilder pattern = new StringBuilder();
     pattern.append("var ");
     pattern.append(fieldName);
@@ -437,10 +436,13 @@ public abstract class GosuBaseExpressionToFieldHandler extends IntroduceHandlerB
       includeInitializer = false;
     }
 
+    //only private members can have their type ommited
+    if (!isPrivate || !includeInitializer) {
+      pattern.append(": ").append(type != null ? type.getPresentableText() : "Object");
+    }
+
     if (includeInitializer) {
       pattern.append(" = ").append(initializerExpr.getText());
-    } else {
-      pattern.append(": ").append(type != null ? type.getPresentableText() : "Object");
     }
 
     final PsiElement psiElement = GosuPsiParseUtil.parseProgramm(pattern.toString(), PsiManager.getInstance(parentClass.getProject()), null);
@@ -471,7 +473,6 @@ public abstract class GosuBaseExpressionToFieldHandler extends IntroduceHandlerB
       return null;
     }
   }
-
 
   protected Pass<GosuElementToWorkOn> getElementProcessor(final Project project, final Editor editor) {
     return new Pass<GosuElementToWorkOn>() {
@@ -771,7 +772,7 @@ public abstract class GosuBaseExpressionToFieldHandler extends IntroduceHandlerB
         }
         myField = mySettings.isIntroduceEnumConstant() ? EnumConstantsUtil.createEnumConstant(destClass, myFieldName, initializer) :
                 createField(myFieldName, myType, initializer, initializerPlace == InitializationPlace.IN_FIELD_DECLARATION && initializer != null,
-                        myParentClass);
+                        myParentClass, PsiModifier.PRIVATE.equalsIgnoreCase(mySettings.getFieldVisibility()));
 
         setModifiers(myField, mySettings);
         myField = appendField(initializer, initializerPlace, destClass, myParentClass, myAnchorElement, myField);

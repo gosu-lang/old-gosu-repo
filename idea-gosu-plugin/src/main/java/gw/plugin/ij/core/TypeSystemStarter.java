@@ -4,6 +4,7 @@
 
 package gw.plugin.ij.core;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
@@ -22,7 +23,6 @@ import com.intellij.openapi.roots.OrderRootType;
 import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.roots.ex.ProjectRootManagerEx;
 import com.intellij.openapi.roots.libraries.Library;
-import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import gw.config.CommonServices;
@@ -44,13 +44,10 @@ import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.filesystem.IDEAFileSystem;
 import gw.plugin.ij.sdk.GosuSdkType;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,11 +60,11 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.collect.Iterables.elementsEqual;
 import static com.google.common.collect.Iterables.filter;
 
 public class TypeSystemStarter {
   private static final Logger LOG = Logger.getInstance(TypeSystemStarter.class);
+  public static final String JAR_INDICATOR = ".jar!";
 
   private static final Map<Project, TypeSystemStarter> INSTANCES = new WeakHashMap<>();
 
@@ -155,7 +152,7 @@ public class TypeSystemStarter {
   }
 
   void initializeGosu(@NotNull Project project) {
-    String circularDependency = IDEAUtil.getCircularModuleDependency(project);
+    String circularDependency = GosuModuleUtil.getCircularModuleDependency(project);
     if (circularDependency != null) {
       throw new GosuPluginException("Gosu does not support circular dependencies.\n" + circularDependency, PluginFailureReason.CIRCULAR_DEPENDENCY);
     }
@@ -330,10 +327,11 @@ public class TypeSystemStarter {
 //    File moduleLocation = new File(ijModule.getProject().getLocation());
 //    IDirectory eclipseModuleRoot = CommonServices.getFileSystem().getIDirectory(moduleLocation);
 //    gosuModule.addRoot(eclipseModuleRoot);
-    List<IDirectory> sourceFolders = getSourceFolders(ijModule);
-    gosuModule.configurePaths(getClassPaths(ijModule), sourceFolders);
-    IDirectory sourceRoot = computeCommonRoot(sourceFolders);
-    if (sourceRoot != null) {
+    List<VirtualFile> sourceFolders = getSourceRoots(ijModule);
+    gosuModule.configurePaths(getClassPaths(ijModule), Lists.transform(sourceFolders, ToDirectory.INSTANCE));
+    VirtualFile root = sourceFolders.size() == 1 ? sourceFolders.get(0).getParent() : VfsUtil.getCommonAncestor(sourceFolders);
+    if (root != null) {
+      IDirectory sourceRoot = CommonServices.getFileSystem().getIDirectory(new File(root.getPath()));
       gosuModule.setRoots(Collections.<IDirectory>singletonList(sourceRoot));
     }
 
@@ -347,57 +345,34 @@ public class TypeSystemStarter {
     return gosuModule;
   }
 
-  @Nullable
-  private IDirectory computeCommonRoot(@NotNull List<IDirectory> sourceFolders) {
-    if (sourceFolders.isEmpty()) {
-      return null;
-    } else if (sourceFolders.size() == 1) {
-      return sourceFolders.get(0).getParent();
-    } else {
-      String[] paths = new String[sourceFolders.size()];
-      int minLength = Integer.MAX_VALUE;
-      for (int i = 0; i < paths.length; i++) {
-        //TODO-dp is it ok to call getFileSystemPathString() ?
-        paths[i] = sourceFolders.get(i).getPath().getFileSystemPathString();
-        if (paths[i].length() < minLength) {
-          minLength = paths[i].length();
-        }
-      }
-      int charIndex;
-      outer:
-      for (charIndex = 0; charIndex < minLength; charIndex++) {
-        char c0 = paths[0].charAt(charIndex);
-        for (int i = 1; i < paths.length; i++) {
-          if (paths[i].charAt(charIndex) != c0) {
-            break outer;
-          }
-        }
-      }
-      String dirName = paths[0].substring(0, charIndex);
-      File dir = new File(dirName);
-      if (!dir.exists()) {
-        return null;
-      } else {
-        return CommonServices.getFileSystem().getIDirectory(dir);
-      }
-    }
+  public static List<IDirectory> getSourceFolders(@NotNull Module ijModule) {
+    return Lists.transform(getSourceRoots(ijModule), ToDirectory.INSTANCE);
   }
 
-  public static List<IDirectory> getSourceFolders(@NotNull Module ijModule) {
+  public static List<VirtualFile> getSourceRoots(@NotNull Module ijModule) {
     final ModuleRootManager moduleManager = ModuleRootManager.getInstance(ijModule);
-    final List<IDirectory> sourcePaths = Lists.newArrayList();
+    final List<VirtualFile> sourcePaths = Lists.newArrayList();
     List<VirtualFile> excludeRoots = Arrays.asList(moduleManager.getExcludeRoots());
     for (VirtualFile sourceRoot : moduleManager.getSourceRoots()) {
       if (!excludeRoots.contains(sourceRoot)) {
-        String sourcePath = sourceRoot.getPath();
-        if (sourcePath.contains(IDEAUtil.JAR_INDICATOR)) {
-          sourcePath = sourcePath.substring(0, sourcePath.length() - 2);
-        }
-        sourcePaths.add(CommonServices.getFileSystem().getIDirectory(new File(sourcePath)));
+        sourcePaths.add(sourceRoot);
       }
     }
 
     return sourcePaths;
+  }
+
+  private enum ToDirectory implements Function<VirtualFile, IDirectory> {
+    INSTANCE;
+
+    @Override
+    public IDirectory apply(VirtualFile file) {
+      String sourcePath = file.getPath();
+      if (sourcePath.contains(JAR_INDICATOR)) {
+        sourcePath = sourcePath.substring(0, sourcePath.length() - 2);
+      }
+      return CommonServices.getFileSystem().getIDirectory(new File(sourcePath));
+    }
   }
 
   public void stop(@NotNull Project project) {

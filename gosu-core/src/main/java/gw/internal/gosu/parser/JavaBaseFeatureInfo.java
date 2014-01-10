@@ -5,20 +5,14 @@
 package gw.internal.gosu.parser;
 
 import gw.lang.Deprecated;
-import gw.lang.PublishInGosu;
 import gw.lang.reflect.BaseFeatureInfo;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.java.IJavaAnnotatedElement;
-import gw.lang.reflect.java.IJavaClassConstructor;
-import gw.lang.reflect.java.IJavaClassField;
-import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.reflect.java.IJavaClassMethod;
 import sun.reflect.annotation.AnnotationParser;
 
-import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -78,6 +72,7 @@ public abstract class JavaBaseFeatureInfo extends BaseFeatureInfo
   protected gw.lang.Deprecated makeDeprecated(String reason) {
     Map<String, Object> annotationMap = new HashMap<String, Object>();
     annotationMap.put("value", reason);
+    annotationMap.put("version", "");
     return (Deprecated) AnnotationParser.annotationForMap(Deprecated.class, annotationMap);
   }
 

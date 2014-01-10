@@ -8,6 +8,7 @@ import com.intellij.formatting.Spacing;
 import com.intellij.patterns.ElementPattern;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.codeStyle.CommonCodeStyleSettings;
+import gw.plugin.ij.lang.GosuCommentImpl;
 import gw.plugin.ij.lang.GosuTokenSets;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +79,10 @@ public class GosuSpacingNonConfigured extends GosuElementTypes {
         DOT_IN_MEMBER_ACCESS.accepts(psi1) ||
         DOT_IN_TYPE_LITERAL.accepts(psi2) ||
         DOT_IN_TYPE_LITERAL.accepts(psi1)) {
-      return GosuSpaces.EMPTY;
+      if(psi1 instanceof GosuCommentImpl) {
+        return Spacing.createSafeSpacing(true, 0);
+      }
+      return GosuSpaces.getSpace(false, settings);
     }
 
     // package [SPACE] Identifier
@@ -138,7 +142,7 @@ public class GosuSpacingNonConfigured extends GosuElementTypes {
     // statement [SPACE] statement
     if (IN_STATEMENT_LIST.accepts(psi1) &&
         IN_STATEMENT_LIST.accepts(psi2)) {
-      return GosuSpaces.LINE_FEED;
+      return GosuSpaces.getSpace(false, 1, settings);
     }
 
     return null;

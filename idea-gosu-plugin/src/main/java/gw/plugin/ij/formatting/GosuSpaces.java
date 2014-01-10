@@ -14,8 +14,13 @@ public class GosuSpaces {
   public static final Spacing LINE_FEED = Spacing.createSpacing(0, Integer.MAX_VALUE, 1, false, 0);
 
   public static Spacing getSpace(boolean hasSpace, @NotNull CommonCodeStyleSettings settings) {
+    return getSpace(hasSpace, 0, settings);
+  }
+
+  public static Spacing getSpace(boolean hasSpace, int minLineFeeds, @NotNull CommonCodeStyleSettings settings) {
     final boolean keepLineBreaks = settings.KEEP_LINE_BREAKS;
-    return hasSpace ? Spacing.createSpacing(1, 1, 0, keepLineBreaks, 0) : Spacing.createSpacing(0, 0, 0, keepLineBreaks, 0);
+    final int keepBlankLines = settings.KEEP_BLANK_LINES_IN_CODE;
+    return hasSpace ? Spacing.createSpacing(1, 1, minLineFeeds, keepLineBreaks, keepBlankLines) : Spacing.createSpacing(0, 0, minLineFeeds, keepLineBreaks, keepBlankLines);
   }
 
   public static Spacing blankLines(int blankLines) {

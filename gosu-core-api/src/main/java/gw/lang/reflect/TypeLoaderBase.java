@@ -12,7 +12,12 @@ import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IModule;
 import gw.util.GosuClassUtil;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.LineNumberReader;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
@@ -76,22 +81,27 @@ public abstract class TypeLoaderBase extends BaseService implements ITypeLoader 
 
   @Override
   public final void refreshedTypes(RefreshRequest request) {
-    // get the type name set initialized first
-    getAllTypeNames();
+    if (shouldCacheTypeNames()) {
+      // get the type name set initialized first
+      getAllTypeNames();
 
-    if (request.kind == RefreshKind.CREATION) {
-      for (String type : request.types) {
-        _typeNames.add(type);
+      if (request.kind == RefreshKind.CREATION) {
+        for (String type : request.types) {
+          _typeNames.add(type);
+        }
+      } else if (request.kind == RefreshKind.DELETION) {
+        for (String type : request.types) {
+          _typeNames.remove(type);
+        }
+      } else if (request.kind == RefreshKind.MODIFICATION) {
+        for (String type : request.types) {
+          _typeNames.add(type);
+        }
       }
-    } else if (request.kind == RefreshKind.DELETION) {
-      for (String type : request.types) {
-        _typeNames.remove(type);
-      }
-    } else if (request.kind == RefreshKind.MODIFICATION) {
-      for (String type : request.types) {
-        _typeNames.add(type);
-      }
+    } else {
+      clearTypeNames();
     }
+
     refreshedTypesImpl(request);
   }
 
@@ -101,8 +111,12 @@ public abstract class TypeLoaderBase extends BaseService implements ITypeLoader 
 
   @Override
   public final void refreshed() {
-    _typeNames = null;
+    clearTypeNames();
     refreshedImpl();
+  }
+
+  protected void clearTypeNames() {
+    _typeNames = null;
   }
 
   protected void refreshedImpl() {
@@ -148,7 +162,7 @@ public abstract class TypeLoaderBase extends BaseService implements ITypeLoader 
 
   @Override
   public void shutdown() {
-    if (CommonServices.getPlatformHelper().shouldCacheTypeNames()) {
+    if (shouldCacheTypeNames()) {
       saveTypeNames();
     }
   }
@@ -218,13 +232,19 @@ public abstract class TypeLoaderBase extends BaseService implements ITypeLoader 
   @Override
   public final Set<String> getAllTypeNames() {
     if (_typeNames == null) {
-      Set<String> names = CommonServices.getPlatformHelper().shouldCacheTypeNames() ? loadTypeNames() : null;
+      Set<String> names = shouldCacheTypeNames() ? loadTypeNames() : null;
       if (names != null) {
         _typeNames = names;
       } else {
-        _typeNames = new HashSet<String>(computeTypeNames());
+        _typeNames = CommonServices.getPlatformHelper().isInIDE()
+                     ? new HashSet<String>( computeTypeNames() )
+                     : new HashSet<String>( computeTypeNames() );
       }
     }
     return _typeNames;
+  }
+
+  protected boolean shouldCacheTypeNames() {
+    return CommonServices.getPlatformHelper().shouldCacheTypeNames();
   }
 }

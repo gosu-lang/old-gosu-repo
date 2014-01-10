@@ -17,7 +17,7 @@ import java.util.List;
 
 public class CompletionFilterExtensionPointBean extends AbstractExtensionPointBean {
 
-  public static final ExtensionPointName<CompletionFilterExtensionPointBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.completionFilter");
+  public static final ExtensionPointName<CompletionFilterExtensionPointBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.completionFilter");
 
   @Attribute("class")
   public String className;

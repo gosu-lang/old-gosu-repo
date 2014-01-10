@@ -5,8 +5,9 @@
 package gw.lang.reflect.gs;
 
 import gw.lang.parser.IExpression;
+import gw.lang.reflect.java.IJavaBackedTypeData;
 
-public interface IGosuFragment extends ICompilableType {
+public interface IGosuFragment extends ICompilableType, IJavaBackedTypeData {
 
   public static final String FRAGMENT_PACKAGE = "fragment_";
 

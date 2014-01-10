@@ -4,7 +4,11 @@
 
 package gw.plugin.ij.codeInspection.statement;
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.LocalInspectionToolSession;
+import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.codeInspection.ex.BaseLocalInspectionTool;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.TextRange;
@@ -21,8 +25,10 @@ import gw.internal.gosu.parser.expressions.RelationalExpression;
 import gw.internal.gosu.parser.statements.WhileStatement;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IStatement;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.statements.IAssignmentStatement;
 import gw.lang.parser.statements.IStatementList;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
 import gw.plugin.ij.intentions.WhileToForFix;
 import gw.plugin.ij.lang.psi.api.statements.IGosuVariable;
@@ -36,7 +42,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Collection;
 
-public class GosuWhileToForInspection extends BaseLocalInspectionTool {
+public class GosuWhileToForInspection extends BaseLocalInspectionTool implements IWarningSuppressor {
+
+  public static final String SUPPRESS_WARNING_CODE = "WhileToFor";
 
   @Nls
   @NotNull
@@ -79,6 +87,15 @@ public class GosuWhileToForInspection extends BaseLocalInspectionTool {
               WhileStatement whileStmt = (WhileStatement) parsedElement;
               Expression expr = whileStmt.getExpression();
               if(expr instanceof RelationalExpression && ((RelationalExpression) expr).getOperator().equals("<") ) {
+                TypeSystem.pushModule(parsedElement.getModule());
+                try {
+                  if( whileStmt.isSuppressed( GosuWhileToForInspection.this ) ) {
+                    return;
+                  }
+                }
+                finally{
+                  TypeSystem.popModule( parsedElement.getModule() );
+                }
                 RelationalExpression cond = (RelationalExpression) expr;
                 Expression lhs = cond.getLHS();
                 if(!lhs.getType().equals(JavaTypes.INTEGER()) &&
@@ -184,6 +201,11 @@ public class GosuWhileToForInspection extends BaseLocalInspectionTool {
       }
 
     };
+  }
+
+  @Override
+  public boolean isSuppressed( String warningCode ) {
+    return SUPPRESS_WARNING_CODE.equals( warningCode ) || "all".equals( warningCode );
   }
 
   private class WhileFix implements LocalQuickFix {

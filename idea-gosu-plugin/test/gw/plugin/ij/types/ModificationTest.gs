@@ -43,7 +43,7 @@ class ModificationTest extends DynamicTypesTest {
     var superClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass { \n" +
+      "public class SuperClass { \n" +
       "  public [[String]] foo() {}\n" +
       "} \n"
     )
@@ -89,7 +89,7 @@ class ModificationTest extends DynamicTypesTest {
     var superClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass { \n" +
+      "public class SuperClass { \n" +
       "  public String foo([[String]] s) {}\n" +
       "} \n"
     )
@@ -135,7 +135,7 @@ class ModificationTest extends DynamicTypesTest {
     var superClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass { \n" +
+      "public class SuperClass { \n" +
       "  public [[String]] getField() {}\n" +
       "} \n"
     )
@@ -158,7 +158,7 @@ class ModificationTest extends DynamicTypesTest {
     var superClass = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass { \n" +
+      "public  class SuperClass { \n" +
       "  public [[String]] field; \n" +
       "} \n"
     )
@@ -217,7 +217,7 @@ class ModificationTest extends DynamicTypesTest {
     var superClass2 = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass2 { \n" +
+      "public class SuperClass2 { \n" +
       "  public String bar(String s) {}\n" +
       "} \n"
     )
@@ -240,13 +240,13 @@ class ModificationTest extends DynamicTypesTest {
     var superClass1 = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass1 { \n" +
+      "public class SuperClass1 { \n" +
       "  public String foo(String s) {}\n" +
       "} \n"
     )
     var superClass2 = ResourceFactory.createFile(this,
       "package some.pkg \n" +
-      "class SuperClass2 { \n" +
+      "public class SuperClass2 { \n" +
       "  function bar(s : String) : String {}\n" +
       "} \n"
     )
@@ -269,14 +269,14 @@ class ModificationTest extends DynamicTypesTest {
     var superClass1 = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass1 { \n" +
+      "public class SuperClass1 { \n" +
       "  public String foo(String s) {}\n" +
       "} \n"
     )
     var superClass2 = ResourceFactory.createFile(this,
       "//JAVA \n" +
       "package some.pkg; \n" +
-      "class SuperClass2 { \n" +
+      "public class SuperClass2 { \n" +
       "  public String bar(String s) {}\n" +
       "} \n"
     )

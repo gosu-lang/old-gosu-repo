@@ -44,7 +44,8 @@ public class GosuOverrideImplementUtil {
   private static int adjustOffsetForLBrace(@NotNull IGosuTypeDefinition aClass, int offset) {
     LeafPsiElement lBrace = aClass.getGosuLBrace();
     if (lBrace == null) {
-      throw new UnsupportedOperationException("men at work");
+//      throw new UnsupportedOperationException("men at work");
+      return offset;
     }
     int lBraceOffset = lBrace.getTextOffset();
     return offset < lBraceOffset ? lBraceOffset + 1 : offset;
@@ -63,7 +64,9 @@ public class GosuOverrideImplementUtil {
       final int usableOffset = adjustOffsetForLBrace(aClass, offset);
       final ASTNode locationNode = findImmediateChildAtOffset(aClass.getNode(), usableOffset);
       final PsiElement location = locationNode != null ? locationNode.getPsi() : null;
-      invokeOverrideImplement(editor, aClass, location, isImplement);
+      if (location != null) {
+        invokeOverrideImplement(editor, aClass, location, isImplement);
+      }
     }
   }
 
@@ -72,7 +75,9 @@ public class GosuOverrideImplementUtil {
     locationNode = findPriorNonDocNonWSNode(locationNode);
     PsiElement location = locationNode != null ? locationNode.getPsi() : null;
     // XXX should/can 'isImplement' be dynamically computed?
-    invokeOverrideImplement(editor, aClass, location, true);
+    if (location != null) {
+      invokeOverrideImplement(editor, aClass, location, true);
+    }
   }
 
   public static void invokeOverrideImplement(@NotNull final Editor editor, @NotNull final IGosuTypeDefinition aClass, @NotNull PsiElement location, final boolean isImplement) {

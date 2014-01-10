@@ -13,15 +13,34 @@ import com.intellij.codeInsight.lookup.PsiTypeLookupItem;
 import com.intellij.codeInsight.lookup.VariableLookupItem;
 import com.intellij.openapi.util.Key;
 import com.intellij.patterns.PsiJavaPatterns;
-import com.intellij.psi.*;
+import com.intellij.psi.PsiClass;
+import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiNamedElement;
+import com.intellij.psi.PsiVariable;
+import com.intellij.psi.filters.ElementFilter;
+import com.intellij.psi.filters.TrueFilter;
+import gw.lang.parser.ITypeUsesMap;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.IModule;
-import gw.plugin.ij.completion.*;
+import gw.plugin.ij.completion.GosuAdditionalSyntaxLookupElement;
+import gw.plugin.ij.completion.GosuClassNameInsertHandler;
+import gw.plugin.ij.completion.GosuFeatureCallLookupElement;
+import gw.plugin.ij.completion.GosuFeatureInfoLookupItem;
+import gw.plugin.ij.completion.InitializerCompletionProposalLookupElement;
+import gw.plugin.ij.completion.RawSymbolLookupItem;
 import gw.plugin.ij.completion.handlers.filter.CompletionFilter;
 import gw.plugin.ij.completion.handlers.filter.CompletionFilterExtensionPointBean;
-import gw.plugin.ij.completion.proposals.*;
+import gw.plugin.ij.completion.proposals.GosuCompletionProposal;
+import gw.plugin.ij.completion.proposals.ICompletionHasAdditionalSyntax;
+import gw.plugin.ij.completion.proposals.InitializerCompletionProposal;
+import gw.plugin.ij.completion.proposals.PathCompletionProposal;
+import gw.plugin.ij.completion.proposals.PrimitiveCompletionProposal;
+import gw.plugin.ij.completion.proposals.SymbolCompletionProposal;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.util.GosuModuleUtil;
 import org.jetbrains.annotations.NotNull;
@@ -35,10 +54,16 @@ public abstract class AbstractCompletionHandler implements IPathCompletionHandle
   protected final CompletionParameters _params;
   private final CompletionResultSet _resultSet;
   private int _completionCount;
+  private boolean _bFilterByInvocationCount;
 
   public AbstractCompletionHandler(CompletionParameters params, CompletionResultSet resultSet) {
     _params = params;
     _resultSet = resultSet;
+    _bFilterByInvocationCount = true;
+  }
+
+  protected void stopFilterByInvocationCount() {
+    _bFilterByInvocationCount = false;
   }
 
   public CompletionParameters getContext() {
@@ -163,4 +188,71 @@ public abstract class AbstractCompletionHandler implements IPathCompletionHandle
     return JavaTypes.ANNOTATION().isAssignableFrom(type) ||
       JavaTypes.IANNOTATION().isAssignableFrom(type);
   }
+
+  protected ElementFilter getLocalFilter( PsiElement insertedElement ) {
+    PsiFile file = insertedElement.getContainingFile();
+    if( file instanceof AbstractGosuClassFileImpl ) {
+      final IGosuClass gsClass = ((AbstractGosuClassFileImpl)file).getParseData().getClassFileStatement().getGosuClass();
+      if( gsClass != null ) {
+        final ITypeUsesMap typeUsesMap = gsClass.getTypeUsesMap();
+        if( typeUsesMap != null ) {
+          return new ElementFilter() {
+            @Override
+            public boolean isAcceptable( Object element, PsiElement context ) {
+              String fqn;
+              if( element instanceof PsiClass ) {
+                PsiClass element1 = (PsiClass)element;
+                fqn = element1.getQualifiedName();
+              }
+              else if( element instanceof CharSequence ) {
+                fqn = element.toString();
+              }
+              else {
+                return false;
+              }
+              int iLastDot = fqn.lastIndexOf( '.' );
+              String simpleName = iLastDot > 0 ? fqn.substring( iLastDot + 1 ) : fqn;
+              if( simpleName.startsWith( getResult().getPrefixMatcher().getPrefix() ) ) {
+                if( _bFilterByInvocationCount && _params.getInvocationCount() < 2 ) {
+                  // Limit to Local scope if this is the first Ctrl-Space
+                  return isFirstCtrlSpaceWorthy( fqn );
+                }
+                // Second Ctrl-Space widens scope of completion proposals to All types
+                return true;
+              }
+              return false;
+            }
+
+            private boolean isFirstCtrlSpaceWorthy( String fqn ) {
+              if( fqn.startsWith( gsClass.getName() ) ) {
+                // inner class of the file
+                return true;
+              }
+              if( typeUsesMap.containsType( fqn ) ) {
+                // reachable via uses-statements
+                return true;
+              }
+              if( isCommonType( fqn ) ) {
+                // is java.lang.* and the like
+                return true;
+              }
+              return false;
+            }
+
+            private boolean isCommonType( String fqn ) {
+              return fqn.startsWith( "java.lang." ) ||
+                     fqn.startsWith( "java.util." );
+            }
+
+            @Override
+            public boolean isClassAcceptable( Class hintClass ) {
+              return true;
+            }
+          };
+        }
+      }
+    }
+    return TrueFilter.INSTANCE;
+  }
+
 }

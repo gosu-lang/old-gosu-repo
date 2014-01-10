@@ -23,13 +23,12 @@ import gw.plugin.ij.lang.psi.impl.GosuResolveResultImpl;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
 import gw.plugin.ij.lang.psi.impl.statements.GosuFieldImpl;
 import gw.plugin.ij.lang.psi.stubs.GosuFieldStub;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 public class GosuEnumConstantImpl extends GosuFieldImpl implements IGosuEnumConstant, PsiPolyVariantReference {
 
@@ -176,22 +175,21 @@ public class GosuEnumConstantImpl extends GosuFieldImpl implements IGosuEnumCons
   }
 
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(
-        new Callable<PsiElement>() {
-          @Nullable
-          public PsiElement call() throws Exception {
-            final IExpression asExpression = getParsedElement().getAsExpression();
-            if (asExpression instanceof INewExpression) {
-              IConstructorInfo constructor = ((INewExpression) asExpression).getConstructor();
-              PsiElement element = PsiFeatureResolver.resolveMethodOrConstructor(constructor, getContainingClass());
-              if (constructor.isDefault() && element instanceof PsiClass && ((PsiClass) element).isEnum()) {
-                return null;
-              }
-              return element;
-            }
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
+      @Nullable
+      public PsiElement execute() throws Exception {
+        final IExpression asExpression = getParsedElement().getAsExpression();
+        if (asExpression instanceof INewExpression) {
+          IConstructorInfo constructor = ((INewExpression) asExpression).getConstructor();
+          PsiElement element = PsiFeatureResolver.resolveMethodOrConstructor(constructor, getContainingClass());
+          if (constructor.isDefault() && element instanceof PsiClass && ((PsiClass) element).isEnum()) {
             return null;
           }
-        }, this);
+          return element;
+        }
+        return null;
+      }
+    });
   }
 
   @NotNull

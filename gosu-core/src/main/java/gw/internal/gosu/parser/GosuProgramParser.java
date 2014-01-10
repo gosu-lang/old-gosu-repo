@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser;
 
+import gw.config.CommonServices;
 import gw.internal.gosu.parser.expressions.EvalExpression;
 import gw.internal.gosu.template.TemplateTokenizerInstructor;
 import gw.lang.parser.ICapturedSymbol;
@@ -25,6 +26,7 @@ import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.StringSourceFileHandle;
+import gw.lang.reflect.module.IModule;
 import gw.util.GosuStringUtil;
 import gw.util.fingerprint.FP64;
 
@@ -164,8 +166,7 @@ public class GosuProgramParser implements IGosuProgramParser
       }
       sfh.setParentType( options.getEnclosingType() );
       sfh.setTypeUsesMap( options.getTypeUsesMap() );
-      GosuClassTypeLoader defaultClassLoader = GosuClassTypeLoader.getDefaultClassLoader();
-      IGosuProgramInternal program = (IGosuProgramInternal) defaultClassLoader.makeNewClass(sfh, symTable);
+      IGosuProgramInternal program = makeProgramClass( symTable, sfh );
       if( options.getParser() != null )
       {
         program.setEditorParser( (GosuParser)options.getParser() );
@@ -241,7 +242,7 @@ public class GosuProgramParser implements IGosuProgramParser
         sfh.setFilePath(options.getFileContext().getFilePath());
       }
       sfh.setTypeUsesMap( options.getTypeUsesMap() );
-      IGosuProgramInternal program = (IGosuProgramInternal)GosuClassTypeLoader.getDefaultClassLoader().makeNewClass( sfh, symTable );
+      IGosuProgramInternal program = makeProgramClass( symTable, sfh );
       if( options.getParser() != null )
       {
         program.setEditorParser( (GosuParser)options.getParser() );
@@ -287,6 +288,14 @@ public class GosuProgramParser implements IGosuProgramParser
     {
       TypeSystem.unlock();
     }
+  }
+
+  private IGosuProgramInternal makeProgramClass( ISymbolTable symTable, StringSourceFileHandle sfh ) {
+    IModule module = TypeSystem.getCurrentModule();
+    module = module == null ? TypeSystem.getGlobalModule() : module;
+    GosuClassTypeLoader defaultClassLoader = CommonServices.getTypeSystem().getTypeLoader( GosuClassTypeLoader.class, module );
+    //GosuClassTypeLoader defaultClassLoader = GosuClassTypeLoader.getDefaultClassLoader();
+    return (IGosuProgramInternal) defaultClassLoader.makeNewClass(sfh, symTable);
   }
 
   synchronized static private int getIndex()

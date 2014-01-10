@@ -20,6 +20,7 @@ import gw.lang.reflect.IMetaType;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.IPropertyInfoDelegate;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IProgramInstance;
 import gw.lang.reflect.java.ICompileTimeConstantValue;
 
@@ -130,7 +131,9 @@ public class MemberAccess extends Expression implements IFieldAccessExpression, 
 
   public IType getRootType()
   {
-    return getRootExpression().getType();
+    IType rootType = getRootExpression().getType();
+    rootType = IGosuClass.ProxyUtil.isProxy(rootType) && rootType instanceof IGosuClass ? ((IGosuClass) rootType).getJavaType() : rootType;
+    return rootType;
   }
 
   public IPropertyInfo getPropertyInfo()

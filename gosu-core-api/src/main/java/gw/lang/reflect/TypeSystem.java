@@ -933,6 +933,10 @@ public class TypeSystem
     return type instanceof ITypeRef && ((ITypeRef)type).isDeleted();
   }
 
+  public static IType replaceTypeVariableTypeParametersWithBoundingTypes( IType type, IType enclosingType ) {
+    return CommonServices.getTypeSystem().replaceTypeVariableTypeParametersWithBoundingTypes( type, enclosingType );
+  }
+
   public static IModule getJreModule() {
     return getExecutionEnvironment().getJreModule();
   }

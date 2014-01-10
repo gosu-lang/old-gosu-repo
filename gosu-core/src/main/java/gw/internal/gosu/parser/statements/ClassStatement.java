@@ -3,6 +3,7 @@
  */
 package gw.internal.gosu.parser.statements;
 
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.expressions.ClassDeclaration;
@@ -11,6 +12,8 @@ import gw.lang.parser.statements.ITerminalStatement;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
+
+import java.util.List;
 
 
 /**
@@ -112,4 +115,9 @@ public final class ClassStatement extends Statement implements IClassStatement
     _classDeclaration = classDeclaration;
   }
 
+  @Override
+  public List<IGosuAnnotation> getAnnotations()
+  {
+    return getGosuClass().getModifierInfo().getAnnotations();
+  }
 }

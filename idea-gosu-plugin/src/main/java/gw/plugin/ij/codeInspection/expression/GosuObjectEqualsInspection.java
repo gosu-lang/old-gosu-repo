@@ -4,13 +4,18 @@
 
 package gw.plugin.ij.codeInspection.expression;
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.LocalInspectionToolSession;
+import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.codeInspection.ex.BaseLocalInspectionTool;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.PsiFile;
 import gw.lang.parser.IExpression;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.expressions.IBeanMethodCallExpression;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IType;
@@ -22,7 +27,9 @@ import gw.plugin.ij.util.GosuBundle;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
-public class GosuObjectEqualsInspection extends BaseLocalInspectionTool {
+public class GosuObjectEqualsInspection extends BaseLocalInspectionTool implements IWarningSuppressor {
+
+  public static final String SUPPRESS_WARNING_CODE = "EqualsMethodToOperator";
 
   @Nls
   @NotNull
@@ -62,6 +69,9 @@ public class GosuObjectEqualsInspection extends BaseLocalInspectionTool {
         if(parsedElement == null) {
           return;
         }
+        if( parsedElement.isSuppressed( GosuObjectEqualsInspection.this ) ) {
+          return;
+        }
         IFunctionType functionType = parsedElement.getFunctionType();
         if(functionType == null) {
           return;
@@ -84,6 +94,11 @@ public class GosuObjectEqualsInspection extends BaseLocalInspectionTool {
         }
       }
     };
+  }
+
+  @Override
+  public boolean isSuppressed( String warningCode ) {
+    return SUPPRESS_WARNING_CODE.equals( warningCode ) || "all".equals( warningCode );
   }
 
 

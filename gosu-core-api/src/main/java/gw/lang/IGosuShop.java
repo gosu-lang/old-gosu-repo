@@ -6,11 +6,25 @@ package gw.lang;
 
 import gw.config.IService;
 import gw.fs.IDirectory;
+import gw.fs.IFile;
 import gw.lang.init.GosuPathEntry;
 import gw.lang.ir.IRClassCompiler;
 import gw.lang.ir.IRTypeResolver;
 import gw.lang.javadoc.IJavaDocFactory;
-import gw.lang.parser.*;
+import gw.lang.parser.IConstructorInfoFactory;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IFullParserState;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.IParserPart;
+import gw.lang.parser.IReducedDynamicFunctionSymbol;
+import gw.lang.parser.IScope;
+import gw.lang.parser.ISourceCodeTokenizer;
+import gw.lang.parser.IStackProvider;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITokenizerInstructor;
+import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.exceptions.ParseException;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INullExpression;
@@ -33,7 +47,6 @@ import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.ITypeInfoFactory;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IEnhancementIndex;
-import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IFileSystemGosuClassRepository;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuEnhancement;
@@ -41,15 +54,12 @@ import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.gs.ITemplateType;
 import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.module.IClassPath;
-import gw.fs.IFile;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
 import gw.util.GosuExceptionUtil;
 import gw.util.IFeatureFilter;
 
-import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Method;
@@ -121,11 +131,13 @@ public interface IGosuShop extends IService
 
   IModule createModule( IExecutionEnvironment execEnv, String strMemberName );
 
+  IGosuClass getGosuClassFrom( IType fromType );
+
   INullExpression getNullExpressionInstance();
 
   GosuExceptionUtil.IForceThrower getForceThrower();
 
-  Class getBlockToInterfaceConversionClass( IJavaType typeToCoerceTo );
+  Class getBlockToInterfaceConversionClass( IType typeToCoerceTo );
 
   IRTypeResolver getIRTypeResolver();
 
@@ -156,4 +168,8 @@ public interface IGosuShop extends IService
   byte[] updateReloadClassesIndicator( List<String> changedTypes, String strScript );
 
   ITemplateObserver.ITemplateObserverManager makeTemplateObserverManager();
+
+  void print( Object ret );
+
+  String toString( Object val );
 }

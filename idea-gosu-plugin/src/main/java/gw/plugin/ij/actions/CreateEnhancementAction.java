@@ -16,7 +16,7 @@ import com.intellij.util.IncorrectOperationException;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.module.IModule;
-import gw.plugin.ij.util.IDEAUtil;
+
 import gw.plugin.ij.icons.GosuIcons;
 import gw.plugin.ij.util.GosuBundle;
 import org.jetbrains.annotations.NotNull;

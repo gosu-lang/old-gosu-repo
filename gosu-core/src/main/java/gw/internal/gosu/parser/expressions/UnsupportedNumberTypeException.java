@@ -14,4 +14,7 @@ public class UnsupportedNumberTypeException extends RuntimeException
     super( "The type " + type.getName() + " is not supported in mathematical expressions" );
   }
 
+  public UnsupportedNumberTypeException( Class<?> aClass ) {
+    super( "The type " + aClass.getName() + " is not supported in mathematical expressions" );
+  }
 }

@@ -7,6 +7,7 @@ package gw.internal.gosu.parser;
 import gw.config.CommonServices;
 import gw.fs.IFile;
 import gw.internal.gosu.annotations.AnnotationMap;
+import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.AbstractType;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IType;
@@ -14,6 +15,8 @@ import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.ITypeRef;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ClassType;
+import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.gs.IGosuFragment;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.java.IJavaBackedTypeData;
 import gw.lang.reflect.java.IJavaClassInfo;
@@ -27,7 +30,6 @@ import gw.util.perf.objectsize.IObjectSizeFilter;
 import gw.util.perf.objectsize.ObjectSize;
 import gw.util.perf.objectsize.ObjectSizeUtil;
 import gw.util.perf.objectsize.UnmodifiableArraySet;
-import gw.lang.parser.TypeVarToTypeMap;
 
 import java.beans.MethodDescriptor;
 import java.io.File;
@@ -352,6 +354,10 @@ class JavaType extends AbstractType implements IJavaTypeInternal
 
   public boolean isAssignableFrom( IType type )
   {
+    if (TypeSystem.isDeleted(type)) {
+      return false;
+    }
+
     IType pThis = thisRef();
 
     // Short-circuit if the types are the same
@@ -378,29 +384,34 @@ class JavaType extends AbstractType implements IJavaTypeInternal
       return getComponentType().isPrimitive() == type.getComponentType().isPrimitive() &&
              getComponentType().isAssignableFrom( type.getComponentType() );
     }
-    else if( isArray() || type.isArray() )
+
+    if( isArray() || type.isArray() )
     {
       return false;
     }
-    else
+
+    if( isInterface() && type instanceof IGosuClass && ((IGosuClass)type).isStructure() )
     {
-      final Set<? extends IType> allTypesInHierarchy = type.getAllTypesInHierarchy();
-      @SuppressWarnings({"SuspiciousMethodCalls"})
-      boolean isAssignable = allTypesInHierarchy != null && allTypesInHierarchy.contains(pThis);
-      if( !isAssignable )
-      {
-        isAssignable = TypeLord.areGenericOrParameterizedTypesAssignable( pThis, type );
-      }
-      return isAssignable || isAssignableFromJavaBackedType(type);
+      // A structure *not* implicitly assignable to an interface because there is no hierarchy, just a structure
+      // (force an explicit cast if the runtime type is expected to directly implement the interface)
+      return false;
     }
+
+    final Set<? extends IType> allTypesInHierarchy = type.getAllTypesInHierarchy();
+    @SuppressWarnings({"SuspiciousMethodCalls"})
+    boolean isAssignable = allTypesInHierarchy != null && allTypesInHierarchy.contains(pThis);
+    if( !isAssignable )
+    {
+      isAssignable = TypeLord.areGenericOrParameterizedTypesAssignable( pThis, type );
+    }
+    return isAssignable || isAssignableFromJavaBackedType(type);
   }
 
   private boolean isAssignableFromJavaBackedType(IType type) {
     //HACK! for now we assume that the entity info is class-based so we only
     // do this if this class info is also class-based 
     boolean isAssignable = false;
-    if( !(type instanceof IJavaTypeInternal) && 
-        type instanceof IJavaBackedTypeData)
+    if( !(type instanceof IJavaTypeInternal) && type instanceof IJavaBackedTypeData && !(type instanceof IGosuFragment))
     {
       // Handle case e.g., where we are comparing an entity type with a java type, 
       // we want the backing class of the entity to be assignable to the java class 
@@ -835,6 +846,11 @@ class JavaType extends AbstractType implements IJavaTypeInternal
       // more sense, but more importantly avoids the cyclic reference.
       return thisRef();
     }
+
+//    if( !isGenericType() )
+//    {
+//      throw new IllegalStateException( "Cannot parameterize non-generic type: " + getName() );
+//    }
 
     if( _parameterizationByParamsName == null )
     {

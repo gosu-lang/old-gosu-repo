@@ -155,7 +155,7 @@ public class JavaPropertyInfo extends JavaBaseFeatureInfo implements IJavaProper
 
   private void findFieldOn(IJavaClassInfo clazz, boolean setter) {
     for (IJavaClassField field : clazz.getFields()) {
-      if (field.getName().equals(_name)) {
+      if (field.getName().equals(_name) && Modifier.isStatic( field.getModifiers() ) == isStatic() ) {
         IType lhs, rhs;
         if (setter) {
           lhs = getFeatureType();

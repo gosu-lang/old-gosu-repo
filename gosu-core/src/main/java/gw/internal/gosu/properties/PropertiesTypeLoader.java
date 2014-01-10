@@ -4,10 +4,12 @@
 
 package gw.internal.gosu.properties;
 
-import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IFile;
-import gw.lang.reflect.*;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.RefreshKind;
+import gw.lang.reflect.TypeLoaderBase;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
 import gw.util.concurrent.LockingLazyVar;
 
@@ -23,6 +25,9 @@ import java.util.Set;
 
 public class PropertiesTypeLoader extends TypeLoaderBase {
   public static final Set<String> EXTENSIONS = Collections.singleton("properties");
+  private static final String FILE_EXTENSION = "properties";
+  private static final String DISPLAY_PROPERTIES = "display.properties";
+
   protected Set<String> _namespaces;
 
   private List<PropertySetSource> _sources;
@@ -43,14 +48,10 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
   }
 
   private void initSources(IModule module) {
-    if (CommonServices.getEntityAccess().getLanguageLevel().isStandard()) {
-      _sources = Arrays.asList(
-              SystemPropertiesPropertySet.SOURCE,
-              new PropertiesPropertySet.Source(module) // Conflicts with display key type loader in non-open source Gosu
-      );
-    } else {
-      _sources = Collections.singletonList(SystemPropertiesPropertySet.SOURCE);
-    }
+    _sources = Arrays.asList(
+            SystemPropertiesPropertySet.SOURCE,
+            new PropertiesPropertySet.Source(module)
+    );
   }
 
   @Override
@@ -67,12 +68,22 @@ public class PropertiesTypeLoader extends TypeLoaderBase {
     return Collections.emptyList();
   }
 
-    @Override
-    public boolean handlesNonPrefixLoads() {
-        return true;
-    }
+  @Override
+  public boolean handlesNonPrefixLoads() {
+      return true;
+  }
 
-    @Override
+  @Override
+  public boolean handlesFile( IFile file ) {
+    return FILE_EXTENSION.equalsIgnoreCase( file.getExtension() ) &&
+           !isDisplayPropertiesFile( file.getName() );
+  }
+
+  public static boolean isDisplayPropertiesFile( String fileName ) {
+    return fileName.toLowerCase().endsWith( DISPLAY_PROPERTIES );
+  }
+
+  @Override
   public IType getType(String fullyQualifiedName) {
       // hack to not allow property file in jline to shadow the java type
       if (fullyQualifiedName.startsWith("jline.")) {

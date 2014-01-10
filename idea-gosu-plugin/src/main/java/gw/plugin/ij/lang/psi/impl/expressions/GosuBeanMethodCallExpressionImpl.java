@@ -18,15 +18,12 @@ import com.intellij.psi.PsiReferenceParameterList;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.impl.source.codeStyle.CodeEditUtil;
 import com.intellij.psi.impl.source.tree.TreeElement;
-import com.intellij.psi.tree.TokenSet;
 import com.intellij.psi.util.PsiMatcherImpl;
 import com.intellij.psi.util.PsiMatchers;
 import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.IncorrectOperationException;
 import gw.lang.parser.expressions.IBeanMethodCallExpression;
-import gw.lang.parser.expressions.IMemberAccessExpression;
 import gw.lang.reflect.IMethodInfo;
-import gw.lang.reflect.IType;
 import gw.plugin.ij.lang.GosuTokenTypes;
 import gw.plugin.ij.lang.parser.GosuCompositeElement;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
@@ -38,12 +35,10 @@ import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.GosuSyntheticClassDefinitionImpl;
 import gw.plugin.ij.lang.psi.util.ElementTypeMatcher;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-import java.util.concurrent.Callable;
 
 
 public class GosuBeanMethodCallExpressionImpl extends GosuReferenceExpressionImpl<IBeanMethodCallExpression> implements IGosuCodeReferenceElement, IGosuTypeElement, PsiCallExpression {
@@ -85,9 +80,9 @@ public class GosuBeanMethodCallExpressionImpl extends GosuReferenceExpressionImp
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         final IBeanMethodCallExpression pe = getParsedElement();
         if (pe != null) {
           final IMethodInfo mi = pe.getGenericMethodDescriptor();
@@ -97,7 +92,7 @@ public class GosuBeanMethodCallExpressionImpl extends GosuReferenceExpressionImp
         }
         return null;
       }
-    }, this);
+    });
   }
 
   //TODO-dp consider adding an extension point for these kinds of special cases

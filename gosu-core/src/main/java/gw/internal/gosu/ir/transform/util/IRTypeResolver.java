@@ -4,54 +4,57 @@
 
 package gw.internal.gosu.ir.transform.util;
 
-import gw.lang.ir.IRType;
-import gw.internal.gosu.ir.nodes.JavaClassIRType;
-import gw.internal.gosu.ir.nodes.GosuClassIRType;
-import gw.internal.gosu.ir.transform.AbstractElementTransformer;
-import gw.internal.gosu.parser.TypeLord;
-import gw.internal.gosu.parser.IGosuClassInternal;
-import gw.internal.gosu.parser.TypeVariableType;
-import gw.internal.gosu.parser.MetaType;
 import gw.internal.gosu.compiler.FunctionClassUtil;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.IMetaType;
+import gw.internal.gosu.ir.nodes.GosuClassIRType;
+import gw.internal.gosu.ir.nodes.JavaClassIRType;
+import gw.internal.gosu.ir.transform.AbstractElementTransformer;
+import gw.internal.gosu.parser.IGosuClassInternal;
+import gw.internal.gosu.parser.MetaType;
+import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.TypeVariableType;
+import gw.lang.ir.IRType;
 import gw.lang.reflect.IFunctionType;
+import gw.lang.reflect.IMetaType;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.IJavaBackedType;
 import gw.lang.reflect.java.IJavaClassInfo;
+import gw.lang.reflect.java.IJavaType;
 import gw.util.GosuExceptionUtil;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class IRTypeResolver {
 
-  public static IRType getDescriptor( IType type) {
+  public static IRType getDescriptor( IType type)
+  {
     return getDescriptor( type, false );
   }
 
-  public static IRType getDescriptor( IType type, boolean getConcreteTypeForMetaType)
+  public static IRType getDescriptor( IType type, boolean getConcreteTypeForMetaType )
   {
     type = type instanceof IMetaType ? type : TypeLord.getPureGenericType( type );
 
-    if( type instanceof IJavaType) // handles primitives too
+    if( type instanceof IJavaType ) // handles primitives too
     {
       try
       {
-        return JavaClassIRType.get( ((IJavaType) type).getBackingClassInfo() );
+        return JavaClassIRType.get( ((IJavaType)type).getBackingClassInfo() );
       }
       catch( Exception e )
       {
         throw GosuExceptionUtil.forceThrow( e, type.getName() );
       }
     }
-    else if( type instanceof IGosuClassInternal)
+    else if( type instanceof IGosuClassInternal )
     {
-      if (IGosuClass.ProxyUtil.isProxy( type )) {
+      if( IGosuClass.ProxyUtil.isProxy( type ) )
+      {
         return getDescriptor( IGosuClass.ProxyUtil.getProxiedType( type ), getConcreteTypeForMetaType );
-      } else {
+      }
+      else
+      {
         return GosuClassIRType.get( type );
       }
     }

@@ -12,19 +12,25 @@ import org.apache.bcel.classfile.Method;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Analyzes byte code of Java classes.
  */
 public class ClassByteCodeAnalyzer {
-  private final Map<Class<?>, List<Method>> cache = Collections.synchronizedMap(new HashMap<Class<?>, List<Method>>());
+  private final Map<Class<?>, List<Method>> cache = new ConcurrentHashMap<Class<?>, List<Method>>();
 
   /**
    * Returns list of methods according to their order in the source file.
-   *
+   * <p/>
    * Supertype methods go first in the list.
-   *
+   * <p/>
    * Returns empty list if cannot find class file for the specified class. Class file is retrieved by
    * using {@link Class#getResourceAsStream} so it won't work for classes generated at runtine.
    *

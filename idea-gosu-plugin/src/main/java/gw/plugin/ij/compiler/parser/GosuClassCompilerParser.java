@@ -15,9 +15,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.exceptions.ParseResultsException;
-import gw.lang.parser.expressions.IEvalExpression;
-import gw.lang.parser.expressions.IQueryExpression;
-import gw.lang.parser.statements.IEvalStatement;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
@@ -28,8 +25,9 @@ import gw.lang.reflect.module.IModule;
 import gw.compiler.ij.processors.DependencyCollector;
 import gw.compiler.ij.processors.DependencySink;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuIdentifierExpressionImpl;
+import gw.plugin.ij.util.ExecutionUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.SafeRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,8 +39,10 @@ import java.io.StringWriter;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import static gw.plugin.ij.util.ExecutionUtil.*;
+
 public class GosuClassCompilerParser implements ICompilerParser {
-  protected boolean generateByteCode( VirtualFile file, CompileContext context, IGosuClass gsClass ) {
+  protected boolean generateByteCode(VirtualFile file, CompileContext context, IGosuClass gsClass) {
     return true;
   }
 
@@ -51,15 +51,15 @@ public class GosuClassCompilerParser implements ICompilerParser {
     final String name = file.getName();
     return
         name.endsWith(GosuClassTypeLoader.GOSU_CLASS_FILE_EXT) ||
-        name.endsWith(GosuClassTypeLoader.GOSU_ENHANCEMENT_FILE_EXT) ||
-        name.endsWith(GosuClassTypeLoader.GOSU_TEMPLATE_FILE_EXT) ||
-        name.endsWith(GosuClassTypeLoader.GOSU_PROGRAM_FILE_EXT);
+            name.endsWith(GosuClassTypeLoader.GOSU_ENHANCEMENT_FILE_EXT) ||
+            name.endsWith(GosuClassTypeLoader.GOSU_TEMPLATE_FILE_EXT) ||
+            name.endsWith(GosuClassTypeLoader.GOSU_PROGRAM_FILE_EXT);
   }
 
   // ICompilerParser
   public boolean parse(@NotNull CompileContext context, VirtualFile file, @NotNull List<TranslatingCompiler.OutputItem> outputItems, DependencySink sink) {
     final Module ijModule = context.getModuleByFile(file);
-    final String qualifiedName = IDEAUtil.getSourceQualifiedName(file, IDEAUtil.getModule(ijModule));
+    final String qualifiedName = gw.plugin.ij.util.FileUtil.getSourceQualifiedName(file, GosuModuleUtil.getModule(ijModule));
 
     // Parse
     ParseResult parseResult = parseImpl(context, ijModule, file, qualifiedName, outputItems);
@@ -71,15 +71,15 @@ public class GosuClassCompilerParser implements ICompilerParser {
 
       // Compile to bytecode (.class files)
       try {
-        VirtualFile bytecodeOutputFile = makeClassFileForOut(context, ijModule, (IGosuClass)parseResult.type, file );
-        if( bytecodeOutputFile != null ) {
+        VirtualFile bytecodeOutputFile = makeClassFileForOut(context, ijModule, (IGosuClass) parseResult.type, file);
+        if (bytecodeOutputFile != null) {
           outputItems.add(new OutputItemImpl(FileUtil.toSystemIndependentName(bytecodeOutputFile.getPath()), file));
         }
       } catch (Exception e) {
         final String url = VirtualFileManager.constructUrl(LocalFileSystem.PROTOCOL, file.getPath());
         StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter( sw );
-        e.printStackTrace( pw );
+        PrintWriter pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
         context.addMessage(CompilerMessageCategory.ERROR, "Failed to generate bytecode\n" + e + "\n" + sw.toString(), url, 0, 0);
       }
 
@@ -100,86 +100,74 @@ public class GosuClassCompilerParser implements ICompilerParser {
   }
 
   private VirtualFile makeClassFileForOut(@NotNull final CompileContext context, final Module ijModule, @NotNull final IGosuClass gsClass, final VirtualFile file) {
-      final VirtualFile[] classFile = new VirtualFile[1];
-      final Throwable[] throwable = new Throwable[1];
-      IDEAUtil.runWriteActionInDispatchThread(
-        new Runnable() {
-          public void run() {
-            VirtualFile moduleOutputDirectory = context.getModuleOutputDirectory( ijModule );
-            if( moduleOutputDirectory == null ) {
-              return;
-            }
-
-            final IModule gsModule = GosuModuleUtil.getModule( ijModule );
-            TypeSystem.pushModule( gsModule );
-            try {
-              final String outRelativePath = gsClass.getName().replace( '.', File.separatorChar ) + ".class";
-              VirtualFile child = moduleOutputDirectory;
-              child = createFile( outRelativePath, child );
-              if( createClassFile( child, gsClass, file, context ) ) {
-                classFile[0] = child;
-              }
-              else {
-                child.delete( null );
-              }
-            }
-            catch( Exception e ) {
-              throwable[0] = e;
-            }
-            finally {
-              TypeSystem.popModule( gsModule );
-            }
+    final VirtualFile[] classFile = new VirtualFile[1];
+    final Throwable[] throwable = new Throwable[1];
+    ExecutionUtil.execute(WRITE | DISPATCH | BLOCKING, new SafeRunnable(GosuModuleUtil.getModule(ijModule)) {
+      public void execute() {
+        VirtualFile moduleOutputDirectory = context.getModuleOutputDirectory(ijModule);
+        if (moduleOutputDirectory == null) {
+          return;
+        }
+        try {
+          final String outRelativePath = gsClass.getName().replace('.', File.separatorChar) + ".class";
+          VirtualFile child = moduleOutputDirectory;
+          child = createFile(outRelativePath, child);
+          if (createClassFile(child, gsClass, file, context)) {
+            classFile[0] = child;
+          } else {
+            child.delete(null);
           }
-
-          private VirtualFile createFile( String outRelativePath, VirtualFile child ) throws IOException {
-            for( StringTokenizer tokenizer = new StringTokenizer( outRelativePath, File.separator + "/" ); tokenizer.hasMoreTokens(); ) {
-              String token = tokenizer.nextToken();
-              VirtualFile existingChild = child.findChild( token );
-              if( existingChild == null ) {
-                if( token.endsWith( ".class" ) ) {
-                  child = child.createChildData( this, token );
-                }
-                else {
-                  child = child.createChildDirectory( this, token );
-                }
-              }
-              else {
-                child = existingChild;
-              }
-            }
-            return child;
-          }
-        }, true );
-
-      if (throwable[0] != null) {
-        throw new RuntimeException(throwable[0]);
-      } else {
-        return classFile[0];
+        } catch (Exception e) {
+          throwable[0] = e;
+        }
       }
+
+      private VirtualFile createFile(String outRelativePath, VirtualFile child) throws IOException {
+        for (StringTokenizer tokenizer = new StringTokenizer(outRelativePath, File.separator + "/"); tokenizer.hasMoreTokens(); ) {
+          String token = tokenizer.nextToken();
+          VirtualFile existingChild = child.findChild(token);
+          if (existingChild == null) {
+            if (token.endsWith(".class")) {
+              child = child.createChildData(this, token);
+            } else {
+              child = child.createChildDirectory(this, token);
+            }
+          } else {
+            child = existingChild;
+          }
+        }
+        return child;
+      }
+    });
+
+    if (throwable[0] != null) {
+      throw new RuntimeException(throwable[0]);
+    } else {
+      return classFile[0];
     }
+  }
 
   private boolean createClassFile(@NotNull final VirtualFile outputFile, @NotNull final IGosuClass gosuClass, VirtualFile file, CompileContext context) throws IOException {
     if (hasDoNotVerifyAnnotation(gosuClass)) {
       return false;
     }
 
-    if( generateByteCode( file, context, gosuClass ) ) {
+    if (generateByteCode(file, context, gosuClass)) {
       final byte[] bytes = TypeSystem.getGosuClassLoader().getBytes(gosuClass);
-      OutputStream out = outputFile.getOutputStream( this );
+      OutputStream out = outputFile.getOutputStream(this);
       try {
-        out.write( bytes );
-      }
-      finally {
+        out.write(bytes);
+      } finally {
         out.close();
       }
 
       for (IGosuClass innerClass : gosuClass.getInnerClasses()) {
         final String innerClassName = String.format("%s$%s.class", outputFile.getNameWithoutExtension(), innerClass.getRelativeName());
-        VirtualFile innerClassFile = outputFile.getParent().findChild( innerClassName );
-        if( innerClassFile == null ) {
-          innerClassFile = outputFile.getParent().createChildData( this, innerClassName );
+        VirtualFile innerClassFile = outputFile.getParent().findChild(innerClassName);
+        if (innerClassFile == null) {
+          innerClassFile = outputFile.getParent().createChildData(this, innerClassName);
         }
-        createClassFile( innerClassFile, innerClass, file, context);
+        createClassFile(innerClassFile, innerClass, file, context);
       }
 
       return true;
@@ -226,7 +214,7 @@ public class GosuClassCompilerParser implements ICompilerParser {
     IGosuClass klass = null;
     try {
       klass = (IGosuClass) getType(ijModule, qualifiedName);
-      if( klass != null ) {
+      if (klass != null) {
         klass.setCreateEditorParser(false);
         klass.isValid(); // force compilation
       }
@@ -234,7 +222,7 @@ public class GosuClassCompilerParser implements ICompilerParser {
       TypeSystem.unlock();
     }
 
-    if( klass != null ) {
+    if (klass != null) {
       final boolean report = reportParseIssues(klass);
       return new ParseResult(klass, klass.getClassStatement().getClassFileStatement(), report ? klass.getParseResultsException() : null);
     }

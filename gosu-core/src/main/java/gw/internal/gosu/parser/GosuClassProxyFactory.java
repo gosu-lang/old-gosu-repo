@@ -6,7 +6,6 @@ package gw.internal.gosu.parser;
 
 import gw.config.CommonServices;
 import gw.internal.gosu.parser.java.classinfo.JavaSourceDefaultValue;
-import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ISource;
 import gw.lang.parser.Keyword;
 import gw.lang.reflect.IAnnotatedFeatureInfo;
@@ -135,7 +134,9 @@ public class GosuClassProxyFactory
 
     type.setAdapterClass( gsAdapterClass );
 
-    gsAdapterClass.setJavaType( type );
+    if( gsAdapterClass != null ) {
+      gsAdapterClass.setJavaType( type );
+    }
     return gsAdapterClass;
   }
 
@@ -183,11 +184,11 @@ public class GosuClassProxyFactory
       } ) );
   }
 
-  class LazyStringSourceFileHandle extends StringSourceFileHandle
+  private static class LazyStringSourceFileHandle extends StringSourceFileHandle
   {
     private Callable<StringBuilder> _sourceGen;
 
-    public LazyStringSourceFileHandle( IJavaType type, Callable<StringBuilder> sourceGen )
+    public LazyStringSourceFileHandle( IType type, Callable<StringBuilder> sourceGen )
     {
       super( getProxyName( type ), null, false, ClassType.Class );
       _sourceGen = sourceGen;
@@ -211,7 +212,7 @@ public class GosuClassProxyFactory
     }
   }
 
-  private String getProxyName( IJavaType type )
+  private static String getProxyName( IType type )
   {
     if( type.isParameterizedType() )
     {
@@ -236,14 +237,7 @@ public class GosuClassProxyFactory
   {
     addAnnotations( type.getTypeInfo(), sb );
 
-    if( type.isAbstract() )
-    {
-      sb.append( "abstract " );
-    }
-    if( type.getEnclosingType() != null && Modifier.isStatic( type.getModifiers() ) )
-    {
-      sb.append( "static " );
-    }
+    addModifiers(type, sb);
 
     sb.append( "class " ).append( getRelativeName( type ) ).append( '\n' );
     sb.append( "{\n" );
@@ -276,26 +270,50 @@ public class GosuClassProxyFactory
     for( Object o : ti.getMethods( type ) )
     {
       IMethodInfo mi = (IMethodInfo)o;
-      genMethodImpl( sb, mi, type );
+      genMethodImpl( sb, mi );
     }
     // Inner classes/interfaces
     for( IJavaType innerClass : type.getInnerClasses() )
     {
       if( (Modifier.isPublic( innerClass.getModifiers() ) ||
-           Modifier.isProtected( innerClass.getModifiers() )) && //## todo: maybe change to include internal for bytecode?
-          !Modifier.isFinal( innerClass.getModifiers() ) )
+           Modifier.isProtected( innerClass.getModifiers() ) ||
+           !Modifier.isPrivate( innerClass.getModifiers() )) )
       {
         if( innerClass.isInterface() )
         {
           genInterfaceImpl( innerClass, sb );
         }
-        else if( Modifier.isStatic( innerClass.getModifiers() ) ) // must be static, otherwise can't really generate a java super class proxy
+        else
         {
           genClassImpl( innerClass, sb );
         }
       }
     }
     sb.append( "}\n" );
+  }
+
+  private void addModifiers(IJavaType type, StringBuilder sb) {
+    if( type.isAbstract() )
+    {
+      sb.append( "abstract " );
+    }
+    if( type.getEnclosingType() != null && Modifier.isStatic(type.getModifiers()) )
+    {
+      sb.append( "static " );
+    }
+
+    if( type.isFinal() )
+    {
+      sb.append( Keyword.KW_final ).append( " " );
+    }
+    if( Modifier.isProtected( type.getModifiers() ) )
+    {
+      sb.append( Keyword.KW_protected ).append( " " );
+    }
+    else if( !Modifier.isPrivate( type.getModifiers() ) && !Modifier.isPublic( type.getModifiers() ) )
+    {
+      sb.append( Keyword.KW_internal ).append( " " );
+    }
   }
 
   private void addAnnotations( IAnnotatedFeatureInfo featureInfo, StringBuilder sb ) {
@@ -305,6 +323,10 @@ public class GosuClassProxyFactory
   }
 
   private static String makeAnnotationSource( IAnnotationInfo annotation ) {
+    if( ErrorType.NAME.equals( annotation.getName() ) ) {
+      // It's possible from IJ that the Java type is not compiled completely with incomplete or invalid annotation expressions
+      return "";
+    }
     StringBuilder sb = new StringBuilder( "@" + annotation.getName() + "(" );
     boolean bFirst = true;
     for( IMethodInfo mi : annotation.getType().getTypeInfo().getMethods() ) {
@@ -334,7 +356,7 @@ public class GosuClassProxyFactory
       return ((JavaSourceDefaultValue)value).getValue();
     }
     if( returnType == JavaTypes.STRING() ) {
-       return "\"" + value + "\"";
+      return "\"" + value.toString().replace( '\n', ' ' ) + "\"";
     }
     if( returnType.isEnum() ) {
        return value.toString();
@@ -343,6 +365,9 @@ public class GosuClassProxyFactory
       return String.valueOf( value );
     }
     if( JavaTypes.CLASS().isAssignableFrom( returnType ) ) {
+      if( value instanceof String ) {
+        return (String)value;
+      }
       return ((Class)value).getName();
     }
     if( value instanceof IAnnotationInfo ) {
@@ -382,7 +407,7 @@ public class GosuClassProxyFactory
     throw new IllegalStateException();
   }
 
-  private static boolean isObjectMethod( IMethodInfo mi )
+  public static boolean isObjectMethod( IMethodInfo mi )
   {
     IParameterInfo[] params = mi.getParameters();
     IType[] paramTypes = new IType[params.length];
@@ -426,7 +451,7 @@ public class GosuClassProxyFactory
 
   private void genInterfaceImpl( IJavaType type, StringBuilder sb )
   {
-    sb.append( Modifier.toModifierString(type.getModifiers()) + " interface " ).append( getRelativeName( type ) ).append('\n');
+    sb.append( Modifier.toModifierString( type.getModifiers() ) ).append( " interface " ).append( getRelativeName( type ) ).append('\n');
     sb.append( "{\n" );
 
     ITypeInfo ti = type.getTypeInfo();
@@ -435,7 +460,7 @@ public class GosuClassProxyFactory
     for( Object o : ti.getProperties() )
     {
       IPropertyInfo pi = (IPropertyInfo)o;
-      genInterfacePropertyDecl( sb, pi, type );
+      genInterfacePropertyDecl( sb, pi );
     }
 
     // Interface methods
@@ -450,7 +475,8 @@ public class GosuClassProxyFactory
     {
       if( iface.isInterface() &&
           (Modifier.isPublic( iface.getModifiers() ) ||
-           Modifier.isProtected( iface.getModifiers() )) && //## todo: maybe change to include internal for bytecode?
+           Modifier.isProtected( iface.getModifiers() ) ||
+           !Modifier.isPrivate( iface.getModifiers() )) &&
           !Modifier.isFinal( iface.getModifiers() ) )
       {
         genInterfaceImpl( iface, sb );
@@ -459,31 +485,36 @@ public class GosuClassProxyFactory
     sb.append( "}\n" );
   }
 
-  private void genMethodImpl( StringBuilder sb, IMethodInfo mi, IJavaType type )
+  private void genMethodImpl( StringBuilder sb, IMethodInfo mi )
   {
-    if( mi.isPrivate() || mi.isInternal() )
+    if( mi.isPrivate() )
     {
       return;
     }
 
     if( mi.isStatic() && mi.getDisplayName().indexOf( '$' ) < 0 )
     {
-      genStaticMethod( sb, mi, type );
+      genStaticMethod( sb, mi );
     }
     else
     {
-      genMemberMethod( sb, mi, type );
+      genMemberMethod( sb, mi );
     }
   }
 
   private void genConstructor( StringBuilder sb, IConstructorInfo ci )
   {
-    if( ci.isPrivate() || ((ci instanceof JavaConstructorInfo) && ((JavaConstructorInfo)ci).isSynthetic()) )
+    if( (ci instanceof JavaConstructorInfo) && ((JavaConstructorInfo)ci).isSynthetic() )
     {
       return;
     }
 
-    sb.append( "  construct(" );
+    StringBuilder sbModifiers = appendVisibilityModifier( ci );
+    if( ci.getDescription() != null )
+    {
+      sb.append( "\n/** " ).append( ci.getDescription() ).append( " */\n" );
+    }
+    sb.append( "  " ).append( sbModifiers ).append( "  construct(" );
     IParameterInfo[] params = getGenericParameters( ci );
     for( int i = 0; i < params.length; i++ )
     {
@@ -499,11 +530,20 @@ public class GosuClassProxyFactory
   private StringBuilder appendVisibilityModifier( IAttributedFeatureInfo fi )
   {
     StringBuilder sb = new StringBuilder();
-    if( fi.isProtected() )
+    addAnnotations( fi, sb );
+    if( fi.isPublic() )
+    {
+      // default
+    }
+    else if( fi.isProtected() )
     {
       sb.append( Keyword.KW_protected ).append( " " );
     }
-    else if( fi.isInternal() )
+    else if( fi.isPrivate() )
+    {
+      sb.append( Keyword.KW_private ).append( " " );
+    }
+    else // internal
     {
       sb.append( Keyword.KW_internal ).append( " " );
     }
@@ -513,22 +553,23 @@ public class GosuClassProxyFactory
   private StringBuilder appendFieldVisibilityModifier( IAttributedFeatureInfo fi )
   {
     StringBuilder sb = new StringBuilder();
-    if( fi.isProtected() )
+    addAnnotations( fi, sb );
+    if( fi.isPublic() )
+    {
+      sb.append( Keyword.KW_public ).append( " " );
+    }
+    else if( fi.isProtected() )
     {
       sb.append( Keyword.KW_protected ).append( " " );
     }
-    else if( fi.isInternal() )
+    else if( !fi.isPrivate() )
     {
       sb.append( Keyword.KW_internal ).append( " " );
-    }
-    else if( fi.isPublic() )
-    {
-      sb.append( Keyword.KW_public ).append( " " );
     }
     return sb;
   }
 
-  private void genMemberMethod( StringBuilder sb, IMethodInfo mi, IJavaType type )
+  private void genMemberMethod( StringBuilder sb, IMethodInfo mi )
   {
     if( !canExtendMethod( mi ) )
     {
@@ -538,7 +579,7 @@ public class GosuClassProxyFactory
     StringBuilder sbModifiers = buildModifiers( mi );
     if( mi.getDescription() != null )
     {
-      sb.append( "/** " ).append( mi.getDescription() ).append( " */" );
+      sb.append( "\n/** " ).append( mi.getDescription() ).append( " */\n" );
     }
     sb.append( "  " ).append( sbModifiers ).append( "function " ).append( mi.getDisplayName() ).append( TypeInfoUtil.getTypeVarList( mi ) ).append( "(" );
     IParameterInfo[] params = getGenericParameters( mi );
@@ -555,7 +596,7 @@ public class GosuClassProxyFactory
     }
   }
 
-  private void generateStub( StringBuilder sb, IType returnType )
+  private static void generateStub( StringBuilder sb, IType returnType )
   {
     sb.append( "{\n" )
       .append( (returnType == JavaTypes.pVOID()
@@ -590,7 +631,7 @@ public class GosuClassProxyFactory
       mi.getDisplayName().indexOf( '$' ) < 0;
   }
 
-  private void genStaticMethod( StringBuilder sb, IMethodInfo mi, IJavaType type )
+  private void genStaticMethod( StringBuilder sb, IMethodInfo mi )
   {
     if( !(mi instanceof JavaMethodInfo) )
     {
@@ -609,7 +650,7 @@ public class GosuClassProxyFactory
     StringBuilder sbModifiers = appendVisibilityModifier( mi );
     if( mi.getDescription() != null )
     {
-      sb.append( "/** " ).append( mi.getDescription() ).append( " */" );
+      sb.append( "\n/** " ).append( mi.getDescription() ).append( " */\n" );
     }
     sb.append( "  " ).append( sbModifiers ).append( "static function " ).append( mi.getDisplayName() ).append( TypeInfoUtil.getTypeVarList( mi ) ).append( "(" );
     IParameterInfo[] params = getGenericParameters( mi );
@@ -619,18 +660,8 @@ public class GosuClassProxyFactory
       sb.append( ' ' ).append( "p" ).append( i ).append( " : " ).append( pi.getFeatureType().getName() )
         .append( i < params.length - 1 ? ',' : ' ' );
     }
-    sb.append( ") : " ).append( getGenericReturnType( mi ).getName() ).append( "\n" )
-      .append( "{\n" )
-      .append( (mi.getReturnType() == GosuParserTypes.NULL_TYPE()
-                ? ""
-                : "    return ") )
-      .append( type.getName() ).append( '.' ).append( mi.getDisplayName() ).append( TypeInfoUtil.getTypeVarListNoBounds( mi ) ).append( "(" );
-    for( int i = 0; i < params.length; i++ )
-    {
-      sb.append( ' ' ).append( "p" ).append( i ).append( i < params.length - 1 ? ',' : ' ' );
-    }
-    sb.append( ");\n" );
-    sb.append( "}\n" );
+    sb.append( ") : " ).append( getGenericReturnType( mi ).getName() ).append( "\n" );
+    generateStub( sb, mi.getReturnType() );
   }
 
   private void genInterfaceMethodDecl( StringBuilder sb, IMethodInfo mi )
@@ -654,7 +685,7 @@ public class GosuClassProxyFactory
     }
     if( mi.getDescription() != null )
     {
-      sb.append( "/** " ).append( mi.getDescription() ).append( " */" );
+      sb.append( "\n/** " ).append( mi.getDescription() ).append( " */\n" );
     }
     sb.append( "  function " ).append( mi.getDisplayName() ).append( TypeInfoUtil.getTypeVarList( mi ) ).append( "(" );
     IParameterInfo[] params = getGenericParameters( mi );
@@ -667,19 +698,19 @@ public class GosuClassProxyFactory
     sb.append( ") : " ).append( getGenericReturnType( mi ).getName() ).append( ";\n" );
   }
 
-  private boolean isPropertyMethod( IMethodInfo mi )
+  public static boolean isPropertyMethod( IMethodInfo mi )
   {
     return isPropertyGetter( mi ) ||
            isPropertySetter( mi );
   }
 
-  private boolean isPropertyGetter( IMethodInfo mi )
+  public static boolean isPropertyGetter( IMethodInfo mi )
   {
     return isPropertyGetter( mi, "get" ) ||
            isPropertyGetter( mi, "is" );
   }
 
-  private boolean isPropertySetter( IMethodInfo mi )
+  public static boolean isPropertySetter( IMethodInfo mi )
   {
     String strMethod = mi.getDisplayName();
     if( strMethod.startsWith( "set" ) &&
@@ -694,17 +725,17 @@ public class GosuClassProxyFactory
         IPropertyInfo pi = ti instanceof IRelativeTypeInfo
                            ? ((IRelativeTypeInfo)ti).getProperty( mi.getOwnersType(), strProp )
                            : ti.getProperty( strProp );
-        if( pi != null && pi.isReadable() &&
+        if( pi != null && pi.isReadable() && mi.isStatic() == pi.isStatic() &&
             getGenericType( pi ).getName().equals( getGenericParameters( mi )[0].getFeatureType().getName() ) )
         {
-          return !Keyword.isReserved( pi.getName() ) || Keyword.isReservedValue( pi.getName() );
+          return !Keyword.isKeyword( pi.getName() ) || Keyword.isValueKeyword( pi.getName() );
         }
       }
     }
     return false;
   }
 
-  private boolean isPropertyGetter( IMethodInfo mi, String strPrefix )
+  public static boolean isPropertyGetter( IMethodInfo mi, String strPrefix )
   {
     String strMethod = mi.getDisplayName();
     if( strMethod.startsWith( strPrefix ) &&
@@ -719,18 +750,18 @@ public class GosuClassProxyFactory
                            : ti.getProperty( strProp );
         if( pi != null && getGenericType( pi ).getName().equals( getGenericReturnType( mi ).getName() ) )
         {
-          return !Keyword.isReserved( pi.getName() ) || Keyword.isReservedValue( pi.getName() );
+          return !Keyword.isKeyword( pi.getName() ) || Keyword.isValueKeyword( pi.getName() );
         }
       }
     }
     return false;
   }
 
-  private void genInterfacePropertyDecl( StringBuilder sb, IPropertyInfo pi, IJavaType javaType )
+  private void genInterfacePropertyDecl( StringBuilder sb, IPropertyInfo pi )
   {
     if( pi.isStatic() )
     {
-      genStaticProperty( pi, sb, javaType );
+      genStaticProperty( pi, sb );
       return;
     }
     if( !pi.isReadable() )
@@ -746,7 +777,7 @@ public class GosuClassProxyFactory
     IType type = getGenericType( pi );
     if( pi.getDescription() != null )
     {
-      sb.append( "/** " ).append( pi.getDescription() ).append( " */" );
+      sb.append( "\n/** " ).append( pi.getDescription() ).append( " */\n" );
     }
     sb.append( " property get " ).append( pi.getName() ).append( "() : " ).append( type.getName() ).append( "\n" );
     if( pi.isWritable( pi.getOwnersType() ) )
@@ -757,14 +788,14 @@ public class GosuClassProxyFactory
 
   private void genProperty( IPropertyInfo pi, StringBuilder sb, IJavaType type )
   {
-    if( pi.isPrivate() || pi.isInternal() )
+    if( pi.isPrivate() )
     {
       return;
     }
 
     if( pi.isStatic() )
     {
-      genStaticProperty( pi, sb, type );
+      genStaticProperty( pi, sb );
     }
     else
     {
@@ -786,7 +817,7 @@ public class GosuClassProxyFactory
       return;
     }
 
-    if( Keyword.isReserved( pi.getName() ) && !Keyword.isReservedValue( pi.getName() ) )
+    if( Keyword.isKeyword( pi.getName() ) && !Keyword.isValueKeyword( pi.getName() ) )
     {
       // Sorry these won't compile
       //## todo: handle them reflectively?
@@ -812,7 +843,7 @@ public class GosuClassProxyFactory
       {
         if( mi.getDescription() != null )
         {
-          sb.append( "/** " ).append( mi.getDescription() ).append( " */" );
+          sb.append( "\n/** " ).append( mi.getDescription() ).append( " */\n" );
         }
         StringBuilder sbModifiers = buildModifiers( mi );
         sb.append( "  " ).append( sbModifiers ).append( "property get " ).append( pi.getName() ).append( "() : " ).append( getGenericType( pi ).getName() ).append( "\n" );
@@ -823,7 +854,6 @@ public class GosuClassProxyFactory
       }
       else
       {
-        String strJavaClassName = type.getName();
         StringBuilder sbModifiers;
         boolean bAbstact = false;
         if( bFinal )
@@ -866,7 +896,6 @@ public class GosuClassProxyFactory
       {
         if( pi.isWritable( type.getEnclosingType() != null ? null : pi.getOwnersType() ) )
         {
-          String strJavaClassName = type.getName();
           StringBuilder sbModifiers;
           boolean bAbstact = false;
           if( bFinal )
@@ -906,7 +935,7 @@ public class GosuClassProxyFactory
     {
       sbModifiers.append( Keyword.KW_protected ).append( " " );
     }
-    else if( fi.isInternal() )
+    else if( !fi.isPrivate() && !fi.isPublic() )
     {
       sbModifiers.append( Keyword.KW_internal ).append( " " );
     }
@@ -977,7 +1006,7 @@ public class GosuClassProxyFactory
     return null;
   }
 
-  private void genStaticProperty( IPropertyInfo pi, StringBuilder sb, IJavaType type )
+  private void genStaticProperty( IPropertyInfo pi, StringBuilder sb )
   {
     if( !pi.isStatic() )
     {
@@ -991,7 +1020,7 @@ public class GosuClassProxyFactory
       return;
     }
 
-    if( Keyword.isReserved( pi.getName() ) )
+    if( Keyword.isKeyword( pi.getName() ) )
     {
       // Sorry these won't compile
       //## todo: handle them reflectively?
@@ -1000,7 +1029,7 @@ public class GosuClassProxyFactory
 
     if( pi.getDescription() != null )
     {
-      sb.append( "/** " ).append( pi.getDescription() ).append( " */" );
+      sb.append( "\n/** " ).append( pi.getDescription() ).append( " */\n" );
     }
     if( pi instanceof JavaFieldPropertyInfo )
     {
@@ -1010,97 +1039,49 @@ public class GosuClassProxyFactory
     else
     {
       StringBuilder sbModifiers = appendVisibilityModifier( pi );
-      sb.append( "  " ).append( sbModifiers ).append( "static property get " ).append( pi.getName() ).append( "() : " ).append( getGenericType( pi ).getName() ).append( "\n" )
-        .append( "  {\n" )
-        .append( "    return " ).append( type.getName() ).append( '.' ).append( pi.getName() ).append( ";\n" )
-        .append( "  }\n" );
+      sb.append( "  " ).append( sbModifiers ).append( "static property get " ).append( pi.getName() ).append( "() : " ).append( getGenericType( pi ).getName() ).append( "\n" );
+      if( !pi.isAbstract() )
+      {
+        generateStub( sb, getGenericType( pi ) );
+      }
 
       if( pi.isWritable( pi.getOwnersType() ) )
       {
         sb
-          .append( "  static property set " ).append( pi.getName() ).append( "( _proxy_arg_value : " ).append( getGenericType( pi ).getName() ).append( " )\n" )
-          .append( "  {\n" )
-          .append( "  " ).append( type.getName() ).append( '.' ).append( pi.getName() ).append( " = _proxy_arg_value;\n" )
-          .append( "  }\n" );
+          .append( "  static property set " ).append( pi.getName() ).append( "( _proxy_arg_value : " ).append( getGenericType( pi ).getName() ).append( " )\n" );
+          if( !pi.isAbstract() )
+          {
+            generateStub( sb, JavaTypes.pVOID() );
+          }
       }
     }
   }
 
-  private IType getGenericType( IPropertyInfo pi )
+  private static IType getGenericType( IPropertyInfo pi )
   {
     return (pi instanceof JavaPropertyInfo)
            ? ((JavaPropertyInfo)pi).getGenericIntrinsicType()
            : pi.getFeatureType();
   }
 
-  private IType getGenericReturnType( IMethodInfo mi )
+  public static IType getGenericReturnType( IMethodInfo mi )
   {
     return (mi instanceof JavaMethodInfo)
            ? ((JavaMethodInfo)mi).getGenericReturnType()
            : mi.getReturnType();
   }
 
-  private IParameterInfo[] getGenericParameters( IMethodInfo mi )
+  public static IParameterInfo[] getGenericParameters( IMethodInfo mi )
   {
     return (mi instanceof JavaMethodInfo)
            ? ((JavaMethodInfo)mi).getGenericParameters()
            : mi.getParameters();
   }
 
-  private IParameterInfo[] getGenericParameters( IConstructorInfo ci )
+  private static IParameterInfo[] getGenericParameters( IConstructorInfo ci )
   {
     return (ci instanceof JavaConstructorInfo)
            ? ((JavaConstructorInfo)ci).getGenericParameters()
            : ci.getParameters();
-  }
-
-  private void appendHashCodeLine( StringBuffer buffer, String varName, IType varType )
-  {
-    varName = "_" + varName;
-    if( "byte".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else if( "int".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else if( "short".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else if( "boolean".equals( varType.getName() ) || "java.lang.Boolean".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + (" ).append( varName ).append( " == true ? 1 : 0);\n" );
-    }
-    else if( "double".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else if( "long".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else if( "float".equals( varType.getName() ) )
-    {
-      buffer.append( "    result = result + " ).append( varName ).append( " as int;\n" );
-    }
-    else
-    {
-      if( varType.isArray() )
-      {
-        buffer.append( "    result = result + gw.util.GosuObjectUtil.arrayHashCode(" ).append( varName ).append( ");\n" );
-      }
-      else
-      {
-        buffer.append( "    result = result + (" ).append( varName ).append( " == null ? 0 : " ).append( varName ).append( ".hashCode());\n" );
-      }
-    }
-
-  }
-
-  private String getTypeName( Class type )
-  {
-    return TypeSystem.get( type ).getName();
   }
 }

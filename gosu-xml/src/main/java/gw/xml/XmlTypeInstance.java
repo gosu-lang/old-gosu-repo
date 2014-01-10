@@ -53,7 +53,6 @@ public class XmlTypeInstance extends XmlBase {
     _schemaInfo = (XmlSchemaTypeSchemaInfo) schemaInfo;
   }
 
-  @gw.lang.InternalAPI
   @Override
   public IType getIntrinsicType() {
     return _type == null ? ANY_TYPE.get() : _type;

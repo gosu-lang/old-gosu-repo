@@ -242,15 +242,30 @@ public class ModuleTypeLoader implements ITypeLoaderStackInternal {
       for (String fullyQualifiedTypeName : request.types) {
         clearFromCaches(fullyQualifiedTypeName);
       }
+      clearNamespaces(request); // Clear namespace types that might be affected.
 
       DefaultTypeLoader defaultTypeLoader = getTypeLoader(DefaultTypeLoader.class);
       if (defaultTypeLoader != null) {
         defaultTypeLoader.clearMisses();
       }
+
+      // This is vital for runtime where Java types are redefined in via debugger
+      NewIntrospector.flushCaches();
     }
     finally
     {
       TypeSystem.unlock();
+    }
+  }
+
+  private void clearNamespaces(RefreshRequest request) {
+    // Type could be added, removed or renamed.
+    for (String fullyQualifiedTypeName : request.types) {
+      int pos = fullyQualifiedTypeName.lastIndexOf('.');
+      if (pos != -1) {
+        String pkgName = fullyQualifiedTypeName.substring(0, pos);
+        _namespaceTypesByName.remove(pkgName);
+      }
     }
   }
 

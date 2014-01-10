@@ -4,7 +4,6 @@
 
 package gw.lang.ir;
 
-import gw.lang.reflect.IType;
 import gw.lang.UnstableAPI;
 
 @UnstableAPI
@@ -124,4 +123,13 @@ public class SyntheticIRType implements IRType {
     return false;
   }
 
+  @Override
+  public boolean isStructural() {
+    return false;
+  }
+
+  @Override
+  public boolean isStructuralAndErased( IRType ownersType ) {
+    return false;
+  }
 }

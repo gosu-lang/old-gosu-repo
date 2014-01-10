@@ -16,14 +16,15 @@ import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.ProgramRunner;
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.compiler.CompileContext;
 import com.intellij.openapi.compiler.CompileStatusNotification;
 import com.intellij.openapi.compiler.CompilerFilter;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.projectRoots.ProjectJdkTable;
 import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.projectRoots.SdkModificator;
-import com.intellij.openapi.util.JDOMExternalizable;
 import com.intellij.util.concurrency.Semaphore;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
@@ -33,7 +34,7 @@ import gw.plugin.ij.core.PluginFailureReason;
 import gw.plugin.ij.core.PluginLoaderUtil;
 import gw.plugin.ij.framework.core.DaemonAnalyzerTestCase;
 import gw.plugin.ij.sdk.GosuSdkUtils;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExceptionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,7 +53,7 @@ abstract public class GosuTestCase extends DaemonAnalyzerTestCase {
     try {
       // setup Modules for the test class
       super.beforeClass();
-      IDEAUtil._inTestMode = true;
+      ExceptionUtil._inTestMode = true;
 
     } finally {
       ModuleClasspathListener.ENABLED = previousValue;
@@ -218,5 +219,23 @@ abstract public class GosuTestCase extends DaemonAnalyzerTestCase {
       }
     }
     return extraClasspath;
+  }
+
+  public static void runWriteActionInDispatchThread(@NotNull final Runnable operation, boolean blocking) {
+    final Application application = ApplicationManager.getApplication();
+
+    final Runnable action = new Runnable() {
+      public void run() {
+        application.runWriteAction(operation);
+      }
+    };
+
+    if (application.isDispatchThread()) {
+      action.run();
+    } else if (blocking) {
+      application.invokeAndWait(action, ModalityState.defaultModalityState());
+    } else {
+      application.invokeLater(action);
+    }
   }
 }

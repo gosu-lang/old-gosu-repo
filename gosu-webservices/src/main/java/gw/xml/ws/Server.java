@@ -9,14 +9,9 @@ import gw.internal.ext.org.mortbay.jetty.Connector;
 import gw.internal.ext.org.mortbay.jetty.servlet.Context;
 import gw.internal.ext.org.mortbay.jetty.servlet.ServletHolder;
 import gw.internal.xml.ws.GosuWebservicesServlet;
+import gw.internal.xml.ws.server.ServerAnnotationVerifier;
 import gw.lang.PublishInGosu;
-import gw.lang.parser.IExpression;
-import gw.lang.parser.IParsedElement;
-import gw.lang.parser.IUsageSiteValidator;
 import gw.lang.parser.IUsageSiteValidatorReference;
-import gw.lang.parser.expressions.IBeanMethodCallExpression;
-import gw.lang.parser.expressions.ITypeLiteralExpression;
-import gw.lang.parser.resources.Res;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.util.GosuExceptionUtil;
@@ -171,27 +166,5 @@ public final class Server {
       throw new IllegalArgumentException( "Port cannot be less than zero" );
     }
     return new Server( null, port );
-  }
-
-  // method call validator - validates call sites for publish(IType) to ensure only types annotated with
-  // @WsiWebService are published, for user convenience
-  public static class ServerAnnotationVerifier implements IUsageSiteValidator
-  {
-    @gw.lang.InternalAPI
-    public void validate( IParsedElement pe ) {
-      if ( pe instanceof IBeanMethodCallExpression ) { // should always be true
-        IBeanMethodCallExpression expr = (IBeanMethodCallExpression) pe;
-        if ( expr.getArgs() != null ) {
-          IExpression arg = expr.getArgs()[0];
-          if ( arg instanceof ITypeLiteralExpression ) {
-            ITypeLiteralExpression typeLiteral = (ITypeLiteralExpression) arg;
-            IType type = typeLiteral.getType().getType();
-            if ( ! type.getTypeInfo().hasAnnotation( TypeSystem.getByFullName( "gw.xml.ws.annotation.WsiWebService" ) ) ) {
-              expr.addParseException( Res.MSG_ANY, "Type argument must have @WsiWebService annotation" );
-            }
-          }
-        }
-      }
-    }
   }
 }

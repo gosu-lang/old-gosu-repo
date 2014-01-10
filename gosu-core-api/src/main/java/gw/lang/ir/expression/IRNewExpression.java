@@ -18,7 +18,7 @@ public class IRNewExpression extends IRExpression {
 
   public IRNewExpression(IRType ownersType, List<IRType> parameterTypes, List<IRExpression> args) {
     _ownersType = ownersType;
-    _parameterTypes = parameterTypes;
+    _parameterTypes = maybeEraseStructuralTypes( ownersType, parameterTypes );
     _args = args;
 
     for (IRExpression arg : args) {

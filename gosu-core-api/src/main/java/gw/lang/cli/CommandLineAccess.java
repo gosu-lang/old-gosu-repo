@@ -257,18 +257,18 @@ public class CommandLineAccess {
   }
 
   private static void printHelpToWriter(String programName, Object obj, PrintWriter pw) {
-    GosuHelpFormatter f = new GosuHelpFormatter();
+    GosuHelpFormatter formatter = new GosuHelpFormatter();
     if( _useTerminalWidth ) // may be invalid if run from a non-terminal environment
     {
-      f.defaultWidth = 80;
+      formatter.setWidth(80);
     }
     ITypeInfo typeInfo = obj instanceof IType ? ((IType)obj).getTypeInfo() : TypeSystem.getFromObject( obj ).getTypeInfo();
     Options options = deriveOptionsFromTypeInfo( typeInfo, new ArrayList<IPropertyInfo>(), obj instanceof IType );
-    System.err.println("Printing help with defaultWidth= " + f.defaultWidth +
+    System.err.println("Printing help with defaultWidth= " + formatter.getWidth() +
             " programName= " + programName +
-            " defaultLeftPad= " + f.defaultLeftPad +
-            " defaultDescPad= " + f.defaultDescPad);
-    f.printHelp(pw, f.defaultWidth, programName, null, options, f.defaultLeftPad, f.defaultDescPad, null, false);
+            " defaultLeftPad= " + formatter.getLeftPadding() +
+            " defaultDescPad= " + formatter.getDescPadding());
+    formatter.printHelp(pw, formatter.getWidth(), programName, null, options, formatter.getLeftPadding(), formatter.getDescPadding(), null, false);
   }
 
   private static Options deriveOptionsFromTypeInfo( ITypeInfo typeInfo,

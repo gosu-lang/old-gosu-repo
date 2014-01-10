@@ -16,9 +16,8 @@ public abstract class XmlSchemaFacet<T extends XmlSchemaFacet> extends XmlSchema
     _value = value;
   }
 
-  // TODO - each facet class could store its own value in its own way for better performance.
-  // For example, the pattern facet could pre-compile the pattern
-  public String getValue() {
+  public final String getValue() {
     return _value;
   }
+
 }

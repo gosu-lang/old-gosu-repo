@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser.java.classinfo;
 
+import gw.internal.gosu.parser.AsmClassJavaClassInfo;
 import gw.internal.gosu.parser.TypeUsesMap;
 import gw.internal.gosu.parser.java.IJavaASTNode;
 import gw.internal.gosu.parser.java.JavaASTConstants;
@@ -192,13 +193,20 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
     throw new SourceTypeFormatException("no class name");
   }
 
+  private static IJavaClassType resolveParameterizedArrayType(ITypeInfoResolver typeResolver, TypeASTNode typeASTNode, String typeName) {
+    if (!typeName.endsWith("[]")) {
+      return resolveParameterizedType(typeResolver, typeASTNode, typeName);
+    }
+    IJavaClassType type = resolveParameterizedArrayType(typeResolver, typeASTNode, typeName.substring(0, typeName.length() - 2));
+    return new JavaSourceArrayType(type);
+  }
+
   public static IJavaClassType createType(ITypeInfoResolver typeResolver, IJavaASTNode typeNode) {
     if (typeNode instanceof TypeASTNode) {
       TypeASTNode typeASTNode = (TypeASTNode) typeNode;
       String typeName = typeASTNode.getTypeName();
       if (typeASTNode.isParameterizedArrayType()) {
-        IJavaClassType type = resolveParameterizedType(typeResolver, typeASTNode, typeName.substring(0, typeName.length() - 2));
-        return new JavaSourceArrayType(type);
+        return resolveParameterizedArrayType(typeResolver, typeASTNode, typeName);
       } else if (typeASTNode.isParameterized()) {
         return resolveParameterizedType(typeResolver, typeASTNode, typeName);
       } else {
@@ -613,8 +621,22 @@ public abstract class JavaSourceType extends AbstractJavaClassInfo implements IJ
         }
       }
       if (getterType != null) {
+        if( setter == null ) {
+          setter = AsmClassJavaClassInfo.maybeFindSetterInSuper( getter, getSuperclass() );
+        }
         propertyDescriptors.add(new JavaSourcePropertyDescriptor(
             propName, (IJavaClassInfo) getterType.getConcreteType(), getter, setter));
+      }
+      else {
+        setter = setters.get(propName);
+        if( setter != null ) {
+          getter = AsmClassJavaClassInfo.maybeFindGetterInSuper( setter, getSuperclass() );
+          if( getter != null ) {
+            setters.remove( propName );
+            propertyDescriptors.add( new JavaSourcePropertyDescriptor(
+                    propName, (IJavaClassInfo)getterType.getConcreteType(), getter, setter ) );
+          }
+        }
       }
     }
     for (Map.Entry<String, IJavaClassMethod> entry : setters.entrySet()) {

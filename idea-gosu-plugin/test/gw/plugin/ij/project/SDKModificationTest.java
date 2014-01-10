@@ -19,7 +19,9 @@ import gw.plugin.ij.core.PluginLoaderUtil;
 import gw.plugin.ij.framework.GosuTestCase;
 import gw.plugin.ij.sdk.GosuSdkAdditionalData;
 import gw.plugin.ij.sdk.GosuSdkUtils;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeRunnable;
+import gw.plugin.ij.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,8 +84,8 @@ public class SDKModificationTest extends GosuTestCase {
     final GosuSdkAdditionalData sdkAdditionalData = (GosuSdkAdditionalData) GosuSdkUtils.getDefaultGosuSdk().getSdkAdditionalData();
     final Sdk javaSdk = sdkAdditionalData.getJavaSdk();
     final String jar = javaSdk.getHomePath() + File.separator + "lib" + File.separator + "htmlconverter.jar";
-    IDEAUtil.runWriteActionInDispatchThread(new Runnable() {
-      public void run() {
+    ExecutionUtil.execute(ExecutionUtil.WRITE | ExecutionUtil.DISPATCH | ExecutionUtil.BLOCKING, new SafeRunnable() {
+      public void execute() {
         try {
           final SdkModificator sdkModificator = GosuSdkUtils.getDefaultGosuSdk().getSdkModificator();
           VirtualFile file = VfsUtil.findFileByURL(new File(jar).toURL());
@@ -96,9 +98,9 @@ public class SDKModificationTest extends GosuTestCase {
           throw new RuntimeException(e);
         }
       }
-    }, true);
+    });
     Thread.sleep(5000);
-    IDEAUtil.settleModalEventQueue();
+    UIUtil.settleModalEventQueue();
     return jar;
   }
 
@@ -106,13 +108,13 @@ public class SDKModificationTest extends GosuTestCase {
   Sdk setSDK(final Sdk sdk) throws InterruptedException {
     final ProjectRootManager instance = ProjectRootManagerImpl.getInstance(getProject());
     final Sdk oldSDK = instance.getProjectSdk();
-    IDEAUtil.runWriteActionInDispatchThread(new Runnable() {
-      public void run() {
+    ExecutionUtil.execute(ExecutionUtil.WRITE | ExecutionUtil.DISPATCH | ExecutionUtil.BLOCKING, new SafeRunnable() {
+      public void execute() {
         instance.setProjectSdk(sdk);
       }
-    }, true);
+    });
     Thread.sleep(5000);
-    IDEAUtil.settleModalEventQueue();
+    UIUtil.settleModalEventQueue();
     return oldSDK;
   }
 }

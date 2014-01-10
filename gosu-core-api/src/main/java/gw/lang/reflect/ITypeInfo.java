@@ -322,6 +322,12 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
           }
           else if( !methodParamType.equals( testParamType ) )
           {
+            if( methodParamType instanceof IPlaceholder && ((IPlaceholder)methodParamType).isPlaceholder() ||
+                testParamType instanceof IPlaceholder && ((IPlaceholder)testParamType).isPlaceholder() )
+            {
+              //## hack: This is a total hack for snapshot bullshit
+              return true;
+            }
             return false;
           }
         }

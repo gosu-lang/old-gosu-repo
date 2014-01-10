@@ -225,7 +225,10 @@ public class GosuRefactoringUtil {
   public static PsiElement replaceOccurenceWithFieldRef(PsiExpression occurrence, PsiField newField, PsiClass destinationClass)
           throws IncorrectOperationException {
     final PsiManager manager = destinationClass.getManager();
-    final String fieldName = newField.getName();
+    final PsiClass newFieldClass = getThisClass(newField);
+    final PsiClass occurenceClass = getThisClass(occurrence);
+    final String fieldName = occurenceClass != null && newFieldClass != null && occurenceClass.equals(newFieldClass) ?
+            newField.getName() : newFieldClass.getName() + "." + newField.getName();
 //    final JavaPsiFacade facade = JavaPsiFacade.getInstance(manager.getProject());
 //    final PsiElement element = occurrence.getUserData(GosuElementToWorkOn.PARENT);
 //    final PsiVariable psiVariable = facade.getResolveHelper().resolveAccessibleReferencedVariable(fieldName, element != null ? element : occurrence);
@@ -393,7 +396,6 @@ public class GosuRefactoringUtil {
     }
   }
 
-
   public static PsiElement getParentStatement(PsiElement place, boolean skipScopingStatements) {
     PsiElement parent = place;
     while (true) {
@@ -421,7 +423,6 @@ public class GosuRefactoringUtil {
     return parentStatement;
   }
 
-
   public static PsiElement getParentExpressionAnchorElement(PsiElement place) {
     PsiElement parent = place.getUserData(GosuElementToWorkOn.PARENT);
     if (place.getUserData(GosuElementToWorkOn.OUT_OF_CODE_BLOCK) != null) {
@@ -440,7 +441,6 @@ public class GosuRefactoringUtil {
       }
     }
   }
-
 
   public static boolean isExpressionAnchorElement(PsiElement element) {
     return GosuRefactoringUtil.isStatement(element) || element instanceof PsiClassInitializer || element instanceof PsiField ||
@@ -762,6 +762,7 @@ public class GosuRefactoringUtil {
 
   /**
    * this is gosu replacment for PsiUtil.isStatement(PsiElement)
+   *
    * @return true if element specified is statement or expression statement.
    */
   public static boolean isStatementOrExpressionstatement(@NotNull PsiElement element) {
@@ -1392,7 +1393,6 @@ public class GosuRefactoringUtil {
     }
     return targetQName.charAt(sourceRootPackage.length()) == '.';
   }
-
 
   @Nullable
   public static PsiDirectory findPackageDirectoryInSourceRoot(PackageWrapper aPackage, final VirtualFile sourceRoot) {

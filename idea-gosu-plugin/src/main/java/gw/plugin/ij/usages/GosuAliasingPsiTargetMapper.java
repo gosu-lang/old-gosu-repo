@@ -16,11 +16,12 @@ import com.intellij.psi.targets.AliasingPsiTargetMapper;
 import gw.lang.parser.Keyword;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.lang.psi.api.statements.typedef.IGosuMethod;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class GosuAliasingPsiTargetMapper implements AliasingPsiTargetMapper {
         if (method.isConstructor()) {
           aliasNames = ImmutableList.of(Keyword.KW_construct.getName(), Keyword.KW_this.getName(), Keyword.KW_super.getName());
         } else {
-          aliasNames = IDEAUtil.getGosuPropertyNames(method);
+          aliasNames = getGosuPropertyNames(method);
         }
 
         final Set<AliasingPsiTarget> aliases = Sets.newHashSet();
@@ -82,5 +83,43 @@ public class GosuAliasingPsiTargetMapper implements AliasingPsiTargetMapper {
     }
 
     return Collections.emptySet();
+  }
+
+  // TODO: use GosuProperties class here somehow
+  @NotNull
+  public static List<String> getGosuPropertyNames(@NotNull final PsiMethod method) {
+    List<String> propNames = new ArrayList<>();
+    String name = method.getName();
+    int nameLen = name.length();
+    String returnTypeName = ApplicationManager.getApplication().runReadAction(new Computable<String>() {
+      @Override
+      public String compute() {
+        return method.getReturnType().getCanonicalText();
+      }
+    });
+    if (nameLen > 3 && name.startsWith("get") &&
+        !returnTypeName.equals("void") &&
+        method.getParameterList().getParametersCount() == 0) {
+      propNames.add(name.substring(3));
+      propNames.add("is" + name.substring(3));
+    } else if (nameLen > 3 && name.startsWith("set") &&
+        returnTypeName.equals("void") &&
+        method.getParameterList().getParametersCount() == 1) {
+      propNames.add(name.substring(3));
+    } else if (nameLen > 2 && name.startsWith("is") &&
+        (returnTypeName.equals("boolean") ||
+            returnTypeName.equals("java.lang.Boolean")) &&
+        method.getParameterList().getParametersCount() == 0) {
+      propNames.add(name.substring(2));
+      propNames.add("get" + name.substring(2));
+    } else if (method instanceof IGosuMethod && ((IGosuMethod) method).isForProperty()) {
+      if (returnTypeName.equals("void")) {
+        propNames.add("set" + name);
+      } else {
+        propNames.add("get" + name);
+        propNames.add("is" + name);
+      }
+    }
+    return propNames;
   }
 }

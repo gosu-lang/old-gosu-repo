@@ -42,6 +42,7 @@ public class CompoundType extends AbstractType implements INonLoadableType, ICom
   transient private SortedSet<IType> _types;
   private String _strRelativeName;
   private String _strName;
+  private boolean _bInterface;
   transient private ITypeInfo _typeInfo;
 
   public static CompoundType get( IType... types )
@@ -99,6 +100,16 @@ public class CompoundType extends AbstractType implements INonLoadableType, ICom
     _types.addAll(types);
     _strName = strName;
     _strRelativeName = getNameFrom( types, true );
+    _bInterface = areAllTypesInterfaces( types );
+  }
+
+  private boolean areAllTypesInterfaces( Set<IType> types ) {
+    for( IType type: types ) {
+      if( !type.isInterface() ) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private static String getNameFrom( Set<IType> types, boolean bRelative )
@@ -189,7 +200,7 @@ public class CompoundType extends AbstractType implements INonLoadableType, ICom
   @Override
   public boolean isInterface()
   {
-    return false;
+    return _bInterface;
   }
 
   @Override

@@ -4,12 +4,13 @@
 
 package gw.lang.parser.exceptions;
 
-import gw.lang.parser.resources.ResourceKey;
 import gw.lang.parser.IParserState;
 import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.resources.Res;
+import gw.lang.parser.resources.ResourceKey;
 import gw.lang.reflect.IType;
 
-public class ParseWarning extends ParseIssue
+public class ParseWarning extends ParseIssue implements IWarningSuppressor
 {
   public ParseWarning( IParserState state, ResourceKey msgKey, Object... msgArgs )
   {
@@ -36,5 +37,26 @@ public class ParseWarning extends ParseIssue
   public void setExpectedType( IType argType )
   {
     throw new UnsupportedOperationException( "Parse warnings to do not maintain 'expected types'" );
+  }
+
+  public boolean isDeprecationWarning()
+  {
+    return getMessageKey().equals( Res.MSG_DEPRECATED_MEMBER );
+  }
+
+  @Override
+  public boolean isSuppressed( String warningCode )
+  {
+    if( "all".equals( warningCode ) )
+    {
+      return true;
+    }
+
+    if( "deprecation".equals( warningCode ) && isDeprecationWarning() )
+    {
+      return true;
+    }
+
+    return false;
   }
 }

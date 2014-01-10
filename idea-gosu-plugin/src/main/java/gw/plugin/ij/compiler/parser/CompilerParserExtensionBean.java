@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.annotations.Attribute;
 import org.jetbrains.annotations.NotNull;
 
 public class CompilerParserExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<CompilerParserExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.compilerParser");
+  static final ExtensionPointName<CompilerParserExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.compilerParser");
 
   @Attribute("class")
   public String className;

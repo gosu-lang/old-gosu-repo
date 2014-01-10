@@ -404,11 +404,6 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
     return type.getTypeInfo();
   }
 
-  public List<IGosuAnnotation> getAnnotations()
-  {
-    return getModifierInfo().getAnnotations();
-  }
-
   public String getFullDescription()
   {
     return getModifierInfo() == null ? "" : getModifierInfo().getDescription();

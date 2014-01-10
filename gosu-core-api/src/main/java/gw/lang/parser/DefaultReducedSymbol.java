@@ -4,8 +4,12 @@
 
 package gw.lang.parser;
 
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  */
@@ -27,6 +31,11 @@ public class DefaultReducedSymbol implements IReducedSymbol
   @Override
   public int getModifiers() {
     return 0;  //To change body of implemented methods use File | Settings | File Templates.
+  }
+
+  @Override
+  public List<IGosuAnnotation> getAnnotations() {
+    return Collections.emptyList();
   }
 
   @Override

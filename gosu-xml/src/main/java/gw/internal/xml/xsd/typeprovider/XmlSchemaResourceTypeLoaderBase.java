@@ -44,27 +44,6 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
       return loadAllSchemaNamespaces();
     }
   };
-  protected final LockingLazyVar<Set<String>> _allTypeNames = new LockingLazyVar<Set<String>>( TypeSystem.getGlobalLock() ) {
-    @Override
-    protected Set<String> init() {
-      Map<Pair<URL,String>,XmlSchema> caches = new HashMap<Pair<URL, String>, XmlSchema>();   // key <URL, namespace>
-
-      startProcessingTypeData();
-      try {
-        Set<String> names = new HashSet<String>();
-        for ( String namespace : getAllSchemaNamespaces() ) {
-          XmlSchemaIndex<T> schemaIndex = getSchemaForNamespace( namespace, caches );
-          if ( schemaIndex != null ) {
-            names.addAll( schemaIndex.getAllTypeNames( caches ) );
-          }
-        }
-        return names;
-      }
-      finally {
-        endProcessingTypeData();
-      }
-    }
-  };
   protected final LockingLazyVar<Set<String>> _allNamespaces = new LockingLazyVar<Set<String>>( TypeSystem.getGlobalLock() ) {
     @Override
     protected Set<String> init() {
@@ -136,7 +115,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
         typeloader._allSchemaNamespacesAndSubNamespaces.clear();
         typeloader._schemasByNamespaceCache.clear();
         typeloader._schemaNamespaces.clear();
-        typeloader._allTypeNames.clear();
+        typeloader.clearTypeNames();
         typeloader._allNamespaces.clear();
         TypeSystem.clearErrorTypes();
       }
@@ -253,7 +232,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
         throw GosuExceptionUtil.forceThrow( e );
       }
     }
-    _allTypeNames.clear();
+    clearTypeNames();
     for ( XmlSchemaIndex schemaIndex : schemaIndexes ) {
       schemaIndex.validate( caches );
     }
@@ -285,7 +264,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   }
 
   public XmlSchemaIndex<T> getSchemaForNamespace( String packageName ) {
-    return getSchemaForNamespace( packageName, null );
+    return getSchemaForNamespace(packageName, null);
   }
 
   XmlSchemaIndex<T> getSchemaForNamespace( String packageName, Map<Pair<URL,String>, XmlSchema> caches ) {
@@ -298,7 +277,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   }
 
   protected XmlSchemaIndex<T> addSchemaToCacheIfNeeded( String packageName, IFile resourceFile, Map<Pair<URL, String>, XmlSchema> caches ) {
-    XmlSchemaIndex<T> schemaIndex = _schemasByNamespaceCache.get( packageName );
+    XmlSchemaIndex<T> schemaIndex = _schemasByNamespaceCache.get(packageName);
     if ( schemaIndex == null ) {
       TypeSystem.lock();
       try {
@@ -318,7 +297,20 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   protected abstract XmlSchemaIndex<T> loadSchemaForNamespace( String namespace, IFile resourceFile, Map<Pair<URL,String>, XmlSchema> caches  );
 
   public Set<String> computeTypeNames() {
-    return _allTypeNames.get();
+    Map<Pair<URL,String>,XmlSchema> caches = new HashMap<Pair<URL, String>, XmlSchema>();   // key <URL, namespace>
+    startProcessingTypeData();
+    try {
+      Set<String> names = new HashSet<String>();
+      for ( String namespace : getAllSchemaNamespaces() ) {
+        XmlSchemaIndex<T> schemaIndex = getSchemaForNamespace( namespace, caches );
+        if ( schemaIndex != null ) {
+          names.addAll( schemaIndex.getAllTypeNames( caches ) );
+        }
+      }
+      return names;
+    } finally {
+      endProcessingTypeData();
+    }
   }
 
   public Collection<String> getAllSchemaNamespaces() {
@@ -502,7 +494,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   }
 
   public static void addExceptionListener( IXmlSchemaExceptionListener listener ) {
-    _exceptionListeners.add( listener );
+    _exceptionListeners.add(listener);
   }
 
   public static void removeExceptionListener( IXmlSchemaExceptionListener listener ) {
@@ -540,10 +532,21 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   @Override
   public String[] getTypesForFile(IFile file) {
     String type = TypeSystem.getGlobalModule().pathRelativeToRoot(file.getParent());
-    type = (type.replace('/', '.') + "." + file.getBaseName()).toLowerCase();
-//    List<ITypeRef> typesWithPrefix1 = getModule().getModuleTypeLoader().getTypeRefFactory().getSubordinateRefs(type);
-    List<String> typesWithPrefix2 = getModule().getModuleTypeLoader().getTypeRefFactory().getTypesWithPrefix(type, "");
-    return typesWithPrefix2.toArray( new String[ typesWithPrefix2.size() ] );
+    String packageName = (type.replace('/', '.') + '.' + file.getBaseName()).toLowerCase();
+    XmlSchemaIndex<?> index = getSchemaForNamespace(packageName);
+    if (index != null) {
+      Set<String> allTypeNames = index.getAllTypeNames(null);
+      return allTypeNames.toArray(new String[allTypeNames.size()]);
+    }
+
+    // No schema index yet -- must be a new type, need to refresh namespace type at least
+    return new String[] { packageName };
+  }
+
+  protected void createdType( String typeName ) {
+    if ( _typeNames != null ) {
+      _typeNames.add( typeName );
+    }
   }
 
   @Override
@@ -551,7 +554,7 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
     _allSchemaNamespacesAndSubNamespaces.clear();
     _schemasByNamespaceCache.clear();
     _schemaNamespaces.clear();
-    _allTypeNames.clear();
+    clearTypeNames();
     _allNamespaces.clear();
     TypeSystem.clearErrorTypes();
     XmlSchemaIndex.clearNormalizedSchemaNamespaces();
@@ -559,8 +562,13 @@ public abstract class XmlSchemaResourceTypeLoaderBase<T> extends TypeLoaderBase 
   }
 
   @Override
-  public boolean showTypeNamesInIDE() {
+  protected boolean shouldCacheTypeNames() {
     return false;
+  }
+
+  @Override
+  public boolean showTypeNamesInIDE() {
+    return true;
   }
 
   @Override

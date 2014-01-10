@@ -14,7 +14,7 @@ import com.intellij.util.PathUtil;
 import gw.config.AbstractPlatformHelper;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.psi.impl.GosuClassParseDataCache;
-import gw.plugin.ij.util.IDEAUtil;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

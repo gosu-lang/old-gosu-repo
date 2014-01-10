@@ -12,8 +12,6 @@ import gw.lang.parser.ISourceCodeTokenizer;
 import gw.lang.parser.IToken;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,6 +58,7 @@ public class GosuTokenTypes {
   public static final GosuElementType TT_statictypeof = addKeyword("statictypeof");
   public static final GosuElementType TT_typeis = addKeyword("typeis");
   public static final GosuElementType TT_typeas = addKeyword("typeas");
+  public static final GosuElementType TT_print = addKeyword("print");
   public static final GosuElementType TT_package = addKeyword("package");
   public static final GosuElementType TT_uses = addKeyword("uses");
   public static final GosuElementType TT_if = addKeyword("if");
@@ -106,6 +105,7 @@ public class GosuTokenTypes {
   public static final GosuElementType TT_readonly = addKeyword("readonly");
   public static final GosuElementType TT_class = addKeyword("class");
   public static final GosuElementType TT_interface = addKeyword("interface");
+  public static final GosuElementType TT_structure = addKeyword("structure");
   public static final GosuElementType TT_enum = addKeyword("enum");
   public static final GosuElementType TT_super = addKeyword("super");
   public static final GosuElementType TT_outer = addKeyword("outer");
@@ -173,7 +173,9 @@ public class GosuTokenTypes {
   public static final GosuElementType TT_OP_assign_divide = addTokenType("/=");
   public static final GosuElementType TT_OP_assign_modulo = addTokenType("%=");
   public static final GosuElementType TT_OP_assign_and = addTokenType("&=");
+  public static final GosuElementType TT_OP_assign_logical_and = addTokenType("&&=");
   public static final GosuElementType TT_OP_assing_or = addTokenType("|=");
+  public static final GosuElementType TT_OP_assing_logical_or = addTokenType("||=");
   public static final GosuElementType TT_OP_assign_xor = addTokenType("^=");
 
   // Block operators

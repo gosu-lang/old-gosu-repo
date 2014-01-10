@@ -7,6 +7,7 @@ package gw.internal.gosu.parser;
 import gw.config.CommonServices;
 import gw.fs.IFile;
 import gw.internal.gosu.compiler.GosuClassLoader;
+import gw.internal.gosu.compiler.SingleServingGosuClassLoader;
 import gw.internal.gosu.ir.TransformingCompiler;
 import gw.internal.gosu.parser.expressions.TypeVariableDefinition;
 import gw.internal.gosu.parser.expressions.TypeVariableDefinitionImpl;
@@ -14,6 +15,7 @@ import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.DelegateStatement;
 import gw.internal.gosu.parser.statements.StatementList;
 import gw.internal.gosu.parser.statements.VarStatement;
+import gw.lang.InternalAPI;
 import gw.lang.Returns;
 import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.GosuParserTypes;
@@ -96,6 +98,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   transient private String _strRelativeName;
   transient private GosuClassTypeLoader _typeLoader;
   transient private boolean _bInterface;
+  transient private boolean _bStructure;
   transient private boolean _bEnum;
   transient private Map<CharSequence, IGosuClassInternal> _mapInnerClasses;
   transient private volatile Set<IType> _setTypes;
@@ -246,6 +249,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       _defaultConstructorName = realGenericClass.getRelativeName() + "()";
 
       _bInterface = realGenericClass._bInterface;
+      _bStructure = realGenericClass._bStructure;
 
       _compilationState = realGenericClass._compilationState;
       _hasError = realGenericClass._hasError;
@@ -286,12 +290,26 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       assignParameterizedJavaTypeIfProxy();
 
       assignTypeVarsFromTypeParams( getTypeParameters() );
+//## see ParamInnerClass below
+//      assignParameterizedInnerClasses();
     }
     finally
     {
       TypeSystem.unlock();
     }
   }
+
+//## see ParamInnerClass below
+//  private void assignParameterizedInnerClasses()
+//  {
+//    List<CharSequence> innerClassNames = new ArrayList<CharSequence>( _mapInnerClasses.keySet() );
+//    for( CharSequence relativeInnerClassName: innerClassNames ) {
+//      TypeVarToTypeMap actualParamByVarName = TypeLord.mapTypeByVarName( getOrCreateTypeReference(), getOrCreateTypeReference(), true );
+//      IGosuClassInternal innerGsClass = _mapInnerClasses.get( relativeInnerClassName );
+//      innerGsClass = (IGosuClassInternal) TypeLord.getActualType(innerGsClass, actualParamByVarName, true);
+//      _mapInnerClasses.put( relativeInnerClassName, innerGsClass );
+//    }
+//  }
 
   private void assignParameterizedJavaTypeIfProxy()
   {
@@ -355,7 +373,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     for( IType genInterface : interfaces )
     {
-      if( genInterface.isGenericType() )
+      if( TypeLord.hasTypeVariable( genInterface ) )
       {
         if( genInterface instanceof IJavaType)
         {
@@ -433,22 +451,28 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   public boolean isInterface()
   {
     compileHeaderIfNeeded();
-
     return _bInterface;
   }
-
   public void setInterface( boolean bInterface )
   {
     _bInterface = bInterface;
   }
 
+  public boolean isStructure()
+  {
+    compileHeaderIfNeeded();
+    return _bStructure;
+  }
+  public void setStructure( boolean bStructure )
+  {
+    _bStructure = bStructure;
+  }
+
   public boolean isEnum()
   {
     compileHeaderIfNeeded();
-
     return _bEnum;
   }
-
   public void setEnum()
   {
     _bEnum = true;
@@ -575,6 +599,12 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
         return _genTypeVar = GenericTypeVariable.EMPTY_TYPEVARS;
       }
       _genTypeVar = new GenericTypeVariable[_typeVarDefs.size()];
+
+//## see ParamInnerClass
+//      if( _typeVarDefs.isEmpty() )
+//      {
+//        addFakeGenericTypeVarIfInnerClassHasNoTypeVars();
+//      }
       for( int i = 0; i < _typeVarDefs.size(); i++ )
       {
         _genTypeVar[i] = (GenericTypeVariable) _typeVarDefs.get(i).getTypeVar();
@@ -582,6 +612,18 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     return _genTypeVar;
   }
+
+//## ParamInnerClass (PL-28025)
+//## support case where inner class of a generic class is NOT directly generic, yet we need to have separate copies to propogate the enclosing type's type vars
+//## e.g., class InnerClass extends List<T> where T is from enclosing class -- we need to pass along T for each parameterized instance of enclosing type
+//  private void addFakeGenericTypeVarIfInnerClassHasNoTypeVars() {
+//    if( !isStatic() && getEnclosingType() != null && getEnclosingType().isGenericType() ) {
+//      TypeVariableDefinition fakeTypeVar = new TypeVariableDefinition( getEnclosingType(), false );
+//      fakeTypeVar.setBoundingType( JavaTypes.OBJECT() );
+//      fakeTypeVar.setName( "Fake_T" );
+//      _typeVarDefs.add( fakeTypeVar );
+//    }
+//  }
 
   public IGosuClassInternal getParameterizedType( IType... paramTypes )
   {
@@ -795,6 +837,12 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     else if( isArray() || type.isArray() )
     {
+      return false;
+    }
+    else if( isInterface() && !isStructure() && type instanceof IGosuClass && ((IGosuClass)type).isStructure() )
+    {
+      // A structure *not* implicitly assignable to an interface because there is no hierarchy, just a structure
+      // (force an explicit cast if the runtime type is expected to directly implement the interface)
       return false;
     }
     else
@@ -1425,7 +1473,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
   public void compileDefinitionsIfNeeded( boolean bForce )
   {
-    //System.out.println( "Parsing: " + getName() + " " + "delete me" );
     boolean bHasError = false;
     
     if( !isDefinitionsCompiled() )
@@ -2024,7 +2071,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
         if( clazz == null )
         {
           clazz = GosuClassLoader.instance().defineClass( (IGosuClassInternal)getOrCreateTypeReference(), false );
-          _javaClass = clazz;
+          // Only retain the class if this Gosu class is NOT some kind of transient type e.g., corresponds with an eval expresion or is a PCF fragment.
+          if( !(clazz.getClassLoader() instanceof SingleServingGosuClassLoader) )
+          {
+            _javaClass = clazz;
+          }
         }
       }
       catch( ClassNotFoundException e )
@@ -2202,6 +2253,26 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return miGetter != null && miGetter.isHidden();
   }
 
+  private boolean isHidden( IVarStatement varStmt )
+  {
+    if( ILanguageLevel.Util.STANDARD_GOSU() ) {
+      // essentially isHidden() checks for @InternalAPI, which is evil and not part of standard Gosu
+      return false;
+    }
+
+    if( isCompilingDeclarationsFor( varStmt.getScriptPart() ) ) {
+      return false;
+    }
+
+    // @InternalAPI check
+    for( IGosuAnnotation ann: ((VarStatement)varStmt).getAnnotations() ) {
+      if( ann.getType().getName().equals( InternalAPI.class.getName() ) ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private boolean isCompilingDeclarationsFor( IScriptPartId scriptPart ) {
     if( scriptPart != null ) {
       IGosuClass type = (IGosuClass)scriptPart.getContainingType();
@@ -2284,7 +2355,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     for( IVarStatement varStmt : getStaticFields() )
     {
-      if( !bSuperClass || isAccessible( gsContextClass, varStmt ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, varStmt ) && !isHidden( varStmt )) )
       {
         table.putSymbol( varStmt.getSymbol() );
       }
@@ -2295,7 +2366,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   {
     for( IVarStatement varStmt : getMemberFields() )
     {
-      if( !bSuperClass || isAccessible( gsContextClass, varStmt ) )
+      if( !bSuperClass || (isAccessible( gsContextClass, varStmt ) && !isHidden( varStmt )) )
       {
         ISymbol symbol = varStmt.getSymbol();
         if( isParameterizedType() && symbol instanceof AbstractDynamicSymbol )
@@ -2312,7 +2383,8 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return isInEnclosingTypeChain( compilingClass ) ||
            ads.isPublic() ||
            ads.isProtected() ||
-           (ads.isInternal() && getNamespace().equals( compilingClass.getNamespace() ));
+           (ads.isInternal() && (isProxy() ? getNamespace().endsWith( compilingClass.getNamespace() ) :
+                                             getNamespace().equals( compilingClass.getNamespace() )));
   }
 
   private boolean isAccessible( IGosuClassInternal compilingClass, IVarStatement varStmt )
@@ -2320,7 +2392,8 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return isInEnclosingTypeChain( compilingClass ) ||
            varStmt.isPublic() ||
            varStmt.isProtected() ||
-           (varStmt.isInternal() && getNamespace().equals( compilingClass.getNamespace() ));
+           (varStmt.isInternal() && (isProxy() ? getNamespace().endsWith( compilingClass.getNamespace() ) :
+                                                 getNamespace().equals( compilingClass.getNamespace() )));
   }
 
   private boolean isInEnclosingTypeChain( ICompilableTypeInternal gosuClass )
@@ -2527,7 +2600,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
           IGosuClassInternal gsInterface = Util.getGosuClassFrom( iface );
           if( gsInterface != null )
           {
-            unimpled = getUnimplementedMethods( gsInterface, pThis, unimpled, true );
+            unimpled = getUnimplementedMethods( gsInterface, pThis, unimpled, true, false );
             for( IMethodInfo mi : gsInterface.getTypeInfo().getMethods() )
             {
               GosuMethodInfo gmi = (GosuMethodInfo)mi;
@@ -2615,7 +2688,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       iface = Util.getGosuClassFrom( iface );
       if( iface != null )
       {
-        unimpled = getUnimplementedMethods( (IGosuClassInternal)iface, implClass, unimpled, true );
+        unimpled = getUnimplementedMethods( (IGosuClassInternal)iface, implClass, unimpled, true, false );
       }
     }
     IType superType = getSupertype();
@@ -2623,14 +2696,14 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     {
       IGosuClassInternal gsSuper = Util.getGosuClassFrom( superType );
       if (gsSuper != null) {
-        unimpled = getUnimplementedMethods( gsSuper, implClass, unimpled, false );
+        unimpled = getUnimplementedMethods( gsSuper, implClass, unimpled, false, false );
         unimpled = gsSuper.getUnimplementedMethods( unimpled, implClass );
       }
     }
     return unimpled;
   }
 
-  private List<IFunctionType> getUnimplementedMethods( IGosuClassInternal gsIface, IGosuClass implClass, List<IFunctionType> unimpled, boolean ensurePublic )
+  public static List<IFunctionType> getUnimplementedMethods( IGosuClass gsIface, IGosuClass implClass, List<IFunctionType> unimpled, boolean ensurePublic, boolean bAcceptAbstract )
   {
     if( gsIface.isGenericType() && !gsIface.isParameterizedType() )
     {
@@ -2648,10 +2721,10 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
         continue;
       }
       IFunctionType ifaceFuncType = new FunctionType( mi );
-      DynamicFunctionSymbol implDfs = getImplDfs( (IGosuClassInternal)implClass, ifaceFuncType );
+      DynamicFunctionSymbol implDfs = getImplDfs( (IGosuClassInternal)implClass, ifaceFuncType, bAcceptAbstract );
       if( (implDfs == null || !isAssignable( implDfs, ifaceFuncType ) || (ensurePublic && !implDfs.isPublic()) ) && !isObjectMethod( mi ) )
       {
-        if( !handleParameterizedDfs( implClass, mi, ifaceFuncType ) )
+        if( !handleParameterizedDfs( implClass, mi, ifaceFuncType, bAcceptAbstract ) )
         {
           if( unimpled.isEmpty() )
           {
@@ -2665,7 +2738,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return unimpled;
   }
 
-  private boolean handleParameterizedDfs( IGosuClass implClass, IMethodInfo mi, IFunctionType ifaceFuncType )
+  private static boolean handleParameterizedDfs( IGosuClass implClass, IMethodInfo mi, IFunctionType ifaceFuncType, boolean bAcceptAbstract )
   {
     DynamicFunctionSymbol implDfs;
     if( mi instanceof GosuMethodInfo )
@@ -2675,7 +2748,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       {
         while( miDfs instanceof ReducedParameterizedDynamicFunctionSymbol )
         {
-          implDfs = getImplDfs( (IGosuClassInternal)implClass, (IFunctionType)miDfs.getBackingDfs().getType() );
+          implDfs = getImplDfs( (IGosuClassInternal)implClass, (IFunctionType)miDfs.getBackingDfs().getType(), bAcceptAbstract );
           if( implDfs == null || !isAssignable( implDfs, ifaceFuncType ) )
           {
             miDfs = (ReducedDynamicFunctionSymbol) miDfs.getBackingDfs();
@@ -2690,7 +2763,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return false;
   }
 
-  private boolean isAssignable( DynamicFunctionSymbol implDfs, IFunctionType ifaceFuncType )
+  private static boolean isAssignable( DynamicFunctionSymbol implDfs, IFunctionType ifaceFuncType )
   {
     if( ifaceFuncType.isAssignableFrom( implDfs.getType() ) )
     {
@@ -2723,7 +2796,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return objMethod != null;
   }
 
-  private DynamicFunctionSymbol getImplDfs( IGosuClassInternal implClass, IFunctionType ifaceFuncType )
+  private static DynamicFunctionSymbol getImplDfs( IGosuClassInternal implClass, IFunctionType ifaceFuncType, boolean bAcceptAbstract )
   {
     if( implClass == null )
     {
@@ -2744,16 +2817,16 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     }
     if( implDfs == null )
     {
-      implDfs = getImplDfs( implClass.getSuperClass(), ifaceFuncType );
+      implDfs = getImplDfs( implClass.getSuperClass(), ifaceFuncType, bAcceptAbstract );
     }
-    if( implDfs != null && implDfs.isAbstract() )
+    if( !bAcceptAbstract && implDfs != null && implDfs.isAbstract() )
     {
       implDfs = null;
     }
     return implDfs;
   }
 
-  private DynamicFunctionSymbol findVarPropertyAccessorDfs( String signature, IGosuClassInternal implClass )
+  private static DynamicFunctionSymbol findVarPropertyAccessorDfs( String signature, IGosuClassInternal implClass )
   {
     String strPropName = signature;
     strPropName = strPropName.substring( 1, strPropName.indexOf( '(' ) );
@@ -2899,6 +2972,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
         }
         else
         {
+          if( isProxy() )
+          {
+            return Collections.emptyMap();
+          }
+
           try
           {
             Class classToLoadAnnotationsFrom;

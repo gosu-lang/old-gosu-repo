@@ -12,8 +12,8 @@ import gw.lang.reflect.module.Dependency;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.psi.impl.GosuClassParseDataCache;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
+import gw.plugin.ij.util.UIUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -58,7 +58,7 @@ public class ModuleRefreshListener implements ModuleListener {
 
   public void beforeModuleRemoved(Project project, Module ijModule) {
     final IModule gsModule = GosuModuleUtil.getModule(ijModule);
-    IDEAUtil.closeAllGosuEditors(project, gsModule);
+    UIUtil.closeAllGosuEditors(project, gsModule);
     GosuClassParseDataCache.clear(gsModule);
     deleteModule(gsModule);
   }

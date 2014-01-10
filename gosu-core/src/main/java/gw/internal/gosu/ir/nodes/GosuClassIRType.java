@@ -4,20 +4,20 @@
 
 package gw.internal.gosu.ir.nodes;
 
-import gw.lang.reflect.IType;
-import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.gs.IGosuArrayClass;
-import gw.lang.ir.IRType;
-import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.compiler.GosuClassLoader;
+import gw.internal.gosu.parser.IGosuClassInternal;
+import gw.lang.ir.IRType;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.gs.IGosuArrayClass;
+import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.java.IJavaType;
 import gw.util.GosuClassUtil;
 
 import java.lang.reflect.Array;
 
 public class GosuClassIRType implements IRType {
   private IType _type;
+  private Boolean _structural;
 
   public static GosuClassIRType get(IType type) {
     if (!(type instanceof IGosuClassInternal || type instanceof IGosuArrayClass)) {
@@ -54,6 +54,18 @@ public class GosuClassIRType implements IRType {
   }
 
   @Override
+  public boolean isStructural() {
+    return _structural == null
+           ? _structural = (_type instanceof IGosuClass && ((IGosuClass)_type).isStructure())
+           : _structural;
+  }
+
+  @Override
+  public boolean isStructuralAndErased( IRType ownersType ) {
+    return isStructural() && ownersType instanceof GosuClassIRType;
+  }
+
+  @Override
   public Class getJavaClass() {
     if ( isArray() ) {
       return Array.newInstance(getComponentType().getJavaClass(), 0).getClass();    
@@ -71,7 +83,7 @@ public class GosuClassIRType implements IRType {
 
   @Override
   public String getSlashName() {
-    if (isArray()) {
+    if( isArray() ) {
       return getComponentType().getSlashName() + "[]";
     }
 
@@ -83,7 +95,7 @@ public class GosuClassIRType implements IRType {
 
     IType type = _type;
     IJavaType jtype = ((IGosuClassInternal)_type).getJavaType();
-    if( jtype != null && !jtype.getIntrinsicClass().isAnnotation() )
+    if( jtype != null && !jtype.getBackingClassInfo().isAnnotation() )
     {
       // The Gosu type here is a proxy to a java class; use the java class
       type = jtype;

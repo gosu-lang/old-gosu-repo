@@ -11,7 +11,6 @@ import gw.lang.reflect.IPropertyInfo;
 import gw.plugin.ij.lang.psi.api.AbstractFeatureResolver;
 import gw.plugin.ij.lang.psi.api.IGosuResolveResult;
 import gw.plugin.ij.lang.psi.impl.GosuResolveResultImpl;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,7 +20,7 @@ public class LocationAwareFeatureResolver extends AbstractFeatureResolver {
   public PsiElement resolve(@NotNull IPropertyInfo propertyInfo, @NotNull PsiElement context) {
     if ( propertyInfo instanceof ILocationAwareFeature) {
       ILocationAwareFeature feature = (ILocationAwareFeature) propertyInfo;
-      return IDEAUtil.resolveFeatureAtLocation( context, feature.getLocationInfo() );
+      return PsiFeatureResolver.resolveFeatureAtLocation(context, feature.getLocationInfo());
     }
     return null;
   }
@@ -30,7 +29,7 @@ public class LocationAwareFeatureResolver extends AbstractFeatureResolver {
   public IGosuResolveResult resolveMethodOrConstructor(@NotNull IHasParameterInfos info, @NotNull PsiElement context) {
     if ( info instanceof ILocationAwareFeature) {
       ILocationAwareFeature feature = (ILocationAwareFeature) info;
-      PsiElement element = IDEAUtil.resolveFeatureAtLocation( context, feature.getLocationInfo() );
+      PsiElement element = PsiFeatureResolver.resolveFeatureAtLocation(context, feature.getLocationInfo());
       return new GosuResolveResultImpl(element, true, info);
     }
     return null;

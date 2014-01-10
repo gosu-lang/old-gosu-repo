@@ -64,7 +64,8 @@ public class XmlSchemaElementXmlSortHandler extends XmlSortHandler {
         }
       }
       else if ( ! childQName.equals( _lastQName ) ) {
-        if ( matchSubstitutionGroups( elementQName, childQName, requiredSchemas ) ) {
+        // the substitution group matching logic can be cpu intensive, so let's make sure we're dealing with an element ref first
+        if ( isRef && matchSubstitutionGroups( elementQName, childQName, requiredSchemas ) ) {
           _moreMatches = true;
           break;
         }

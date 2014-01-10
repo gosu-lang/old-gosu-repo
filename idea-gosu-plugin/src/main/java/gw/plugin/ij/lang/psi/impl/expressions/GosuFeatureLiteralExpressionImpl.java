@@ -23,11 +23,10 @@ import gw.plugin.ij.lang.psi.api.types.IGosuTypeElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeParameterList;
 import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 
 public class GosuFeatureLiteralExpressionImpl extends GosuReferenceExpressionImpl<IFeatureLiteralExpression> implements IGosuCodeReferenceElement, IGosuTypeElement {
@@ -63,8 +62,8 @@ public class GosuFeatureLiteralExpressionImpl extends GosuReferenceExpressionImp
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
-      public PsiElement call() throws Exception {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
+      public PsiElement execute() throws Exception {
         IFeatureInfo feature = getParsedElement().getFeature();
         if (feature == null) {
           return null;
@@ -75,7 +74,7 @@ public class GosuFeatureLiteralExpressionImpl extends GosuReferenceExpressionImp
         }
         throw new AssertionError();
       }
-    }, this);
+    });
   }
 
   @Nullable

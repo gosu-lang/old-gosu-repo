@@ -10,9 +10,10 @@ uses com.intellij.psi.impl.source.PsiFileImpl
 uses gw.lang.reflect.TypeSystem
 uses gw.plugin.ij.framework.CaretMarker
 uses gw.plugin.ij.framework.MarkerType
-uses gw.plugin.ij.util.IDEAUtil
+uses gw.plugin.ij.util.ExecutionUtil
 
 uses java.lang.Runnable
+uses gw.plugin.ij.util.UIUtil
 
 class PsiEditingTest extends GosuPsiTestCase {
 
@@ -155,7 +156,7 @@ class PsiEditingTest extends GosuPsiTestCase {
   }
 
   function insert(caret: CaretMarker, text: String) {
-    IDEAUtil.runWriteActionInDispatchThread(new Runnable() {
+    runWriteActionInDispatchThread(new Runnable() {
     function run() {
       TypeSystem.pushModule(GosuModule);
       try {
@@ -167,7 +168,7 @@ class PsiEditingTest extends GosuPsiTestCase {
       }
     }
     }, true);
-    IDEAUtil.settleModalEventQueue();
+    UIUtil.settleModalEventQueue();
   }
 
   function removeMarkers(text: String): String {

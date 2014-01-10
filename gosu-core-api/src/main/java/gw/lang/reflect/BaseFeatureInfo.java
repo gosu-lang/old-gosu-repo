@@ -97,7 +97,7 @@ public abstract class BaseFeatureInfo implements IAttributedFeatureInfo
     }
   }
 
-  public IType[] getParamTypes( IParameterInfo[] parameters )
+  public static IType[] getParamTypes( IParameterInfo[] parameters )
   {
     List<IType> retValue = new ArrayList<IType>();
     if( parameters != null )

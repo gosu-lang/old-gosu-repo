@@ -22,7 +22,7 @@ import java.lang.reflect.Array;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class JavaClassIRType implements IRType, IJavaClassIRType {
+public class JavaClassIRType implements IJavaClassIRType {
 
   private IJavaClassInfo _class;
   private boolean _isArray;
@@ -172,6 +172,16 @@ public class JavaClassIRType implements IRType, IJavaClassIRType {
   }
 
   @Override
+  public boolean isStructural() {
+    return false;
+  }
+
+  @Override
+  public boolean isStructuralAndErased( IRType ownersType ) {
+    return false;
+  }
+
+  @Override
   public IRType getArrayType() {
     return get( _class.getArrayType() );
   }
@@ -182,8 +192,7 @@ public class JavaClassIRType implements IRType, IJavaClassIRType {
   }
 
   public IType getType() {
-    IType iType = TypeSystem.get(_class);
-    return iType;
+    return TypeSystem.get( _class );
   }
 
   @Override

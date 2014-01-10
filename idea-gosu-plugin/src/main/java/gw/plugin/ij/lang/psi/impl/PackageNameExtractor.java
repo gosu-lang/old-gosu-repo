@@ -77,6 +77,6 @@ public class PackageNameExtractor {
   private static boolean isValueKeyword(@NotNull ISourceCodeTokenizer tokenizer, int iType) {
     return iType == ISourceCodeTokenizer.TT_WORD &&
         tokenizer.getType() == ISourceCodeTokenizer.TT_KEYWORD &&
-        Keyword.isReservedValue(tokenizer.getStringValue());
+        Keyword.isValueKeyword( tokenizer.getStringValue() );
   }
 }

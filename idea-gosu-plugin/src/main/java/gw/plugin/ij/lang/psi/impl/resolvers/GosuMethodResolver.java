@@ -53,8 +53,8 @@ import gw.plugin.ij.lang.psi.custom.CustomGosuClass;
 import gw.plugin.ij.lang.psi.impl.CustomPsiClassCache;
 import gw.plugin.ij.lang.psi.impl.GosuPsiSubstitutor;
 import gw.plugin.ij.lang.psi.impl.GosuResolveResultImpl;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
+import gw.plugin.ij.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,14 +79,14 @@ public class GosuMethodResolver extends AbstractFeatureResolver {
       return null;
     }
 
-    IType concreteOwnersType = IDEAUtil.getConcreteType(ownersType);
+    IType concreteOwnersType = TypeUtil.getConcreteType(ownersType);
     if (concreteOwnersType == null) {
       return null;
     }
 
     if (concreteOwnersType instanceof ICompoundType) {
       for (IType type : ((ICompoundType) concreteOwnersType).getTypes()) {
-        final IGosuResolveResult result = resolveGosuOrJavaMethod(info, context, type, IDEAUtil.getConcreteType(type));
+        final IGosuResolveResult result = resolveGosuOrJavaMethod(info, context, type, TypeUtil.getConcreteType(type));
         if (result != null) {
           return result;
         }
@@ -197,7 +197,7 @@ public class GosuMethodResolver extends AbstractFeatureResolver {
     while( info instanceof GosuMethodInfo ) {
       ReducedDynamicFunctionSymbol dfs = ((GosuMethodInfo) info).getDfs();
       IReducedDynamicFunctionSymbol backingDfs = dfs.getBackingDfs();
-      if( backingDfs != null ) {
+      if( backingDfs != null && backingDfs != dfs ) {
         IAttributedFeatureInfo backingInfo = backingDfs.getMethodOrConstructorInfo();
         if( !(backingInfo instanceof IHasParameterInfos) || backingInfo == info ) {
           break;

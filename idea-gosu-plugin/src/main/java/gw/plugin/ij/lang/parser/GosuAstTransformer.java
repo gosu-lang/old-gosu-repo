@@ -333,7 +333,7 @@ public class GosuAstTransformer {
         final List<IToken> tokens = pe.getTokens();
         if (Strings.isNullOrEmpty(strName) ||
             tokens.isEmpty() ||
-            (tokens.size() == 1 && tokens.get(0).getType() != ISourceCodeTokenizer.TT_WORD && !Keyword.isReservedValue(tokens.get(0).getText()) && !(pe.getParent() instanceof IFunctionStatement)) ||
+            (tokens.size() == 1 && tokens.get(0).getType() != ISourceCodeTokenizer.TT_WORD && !Keyword.isValueKeyword( tokens.get( 0 ).getText() ) && !(pe.getParent() instanceof IFunctionStatement)) ||
             pe.getParent() instanceof IConstructorStatement) {
           node = new GosuCompositeElement(GosuElementTypes.ELEM_TYPE_NameInDeclaration);
         } else {

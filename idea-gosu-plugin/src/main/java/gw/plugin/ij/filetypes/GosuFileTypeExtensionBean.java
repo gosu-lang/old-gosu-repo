@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.annotations.Attribute;
 import org.jetbrains.annotations.NotNull;
 
 public class GosuFileTypeExtensionBean extends AbstractExtensionPointBean {
-  public static final ExtensionPointName<GosuFileTypeExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.gosuFileTypeProvider");
+  public static final ExtensionPointName<GosuFileTypeExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.gosuFileTypeProvider");
 
   @Attribute("extension")
   public String extension;

@@ -51,6 +51,7 @@ import com.intellij.util.ArrayUtil;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.ui.UIUtil;
 import gnu.trove.THashSet;
+import gw.plugin.ij.lang.psi.IGosuFile;
 import gw.plugin.ij.lang.psi.api.auxilary.IGosuModifier;
 import gw.plugin.ij.refactor.GosuVisibilityPanel;
 import org.jetbrains.annotations.NonNls;
@@ -470,7 +471,7 @@ class GosuIntroduceConstantDialog extends DialogWrapper {
     public void actionPerformed(ActionEvent e) {
       TreeClassChooser chooser = TreeClassChooserFactory.getInstance(myProject).createWithInnerClassesScopeChooser(RefactoringBundle.message("choose.destination.class"), GlobalSearchScope.projectScope(myProject), new ClassFilter() {
         public boolean isAccepted(PsiClass aClass) {
-          return aClass.getParent() instanceof PsiJavaFile || aClass.hasModifierProperty(IGosuModifier.STATIC);
+          return aClass.getParent() instanceof PsiJavaFile || aClass.getParent() instanceof IGosuFile || aClass.hasModifierProperty(IGosuModifier.STATIC);
         }
       }, null);
       if (myTargetClass != null) {

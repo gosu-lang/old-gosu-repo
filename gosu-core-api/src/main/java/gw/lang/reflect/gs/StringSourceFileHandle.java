@@ -157,8 +157,9 @@ public class StringSourceFileHandle implements ISourceFileHandle
 
   public void setFilePath( String filePath )
   {
-    if (filePath != null) {
-      _file = CommonServices.getFileSystem().getIFile(new File(filePath));
+    if( filePath != null ) {
+      _file = CommonServices.getFileSystem().getIFile( new File( filePath ) );
+      assignFileRef();
     }
   }
 

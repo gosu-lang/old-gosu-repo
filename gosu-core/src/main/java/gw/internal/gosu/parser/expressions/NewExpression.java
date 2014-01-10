@@ -283,7 +283,7 @@ public class NewExpression extends Expression implements INewExpression
     Class<?> cls = Primitives.get( fqn );
     if( cls == null ) {
       try {
-        cls = Class.forName( fqn );
+        cls = Class.forName( fqn, false, getClass().getClassLoader() );
       }
       catch( ClassNotFoundException e ) {
         throw new RuntimeException( e );

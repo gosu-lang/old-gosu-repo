@@ -4,15 +4,24 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.parser.*;
-import gw.lang.reflect.*;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IReducedDynamicFunctionSymbol;
+import gw.lang.parser.IReducedSymbol;
+import gw.lang.parser.ISymbol;
+import gw.lang.reflect.IAttributedFeatureInfo;
+import gw.lang.reflect.IConstructorInfo;
+import gw.lang.reflect.IDFSBackedFeatureInfo;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IModifierInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.IProgramInstance;
 import gw.util.GosuExceptionUtil;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -187,12 +196,12 @@ public class ReducedDynamicFunctionSymbol extends ReducedSymbol implements IRedu
     IMethodInfo mi = gsClass.getTypeInfo().getMethod(gsClass, getDisplayName(), getArgTypes());
     return mi.getCallHandler().handleCall( instance, args );
   }
-  public Collection<? extends IGosuAnnotation> getAnnotations() {
-    Collection<? extends IGosuAnnotation> result;
+  public List<IGosuAnnotation> getAnnotations() {
+    List<IGosuAnnotation> result;
     IAttributedFeatureInfo featureInfo = getMethodOrConstructorInfo();
     if (featureInfo instanceof GosuBaseAttributedFeatureInfo) {
       IModifierInfo modifierInfo = ((GosuClassTypeInfo)getGosuClass().getTypeInfo()).getModifierInfo((GosuBaseAttributedFeatureInfo) featureInfo);
-      result = modifierInfo != null ? (Collection<? extends IGosuAnnotation>) modifierInfo.getAnnotations() : Collections.<IGosuAnnotation>emptyList();
+      result = modifierInfo != null ? modifierInfo.getAnnotations() : Collections.<IGosuAnnotation>emptyList();
     } else {
       result = Collections.emptyList();
     }

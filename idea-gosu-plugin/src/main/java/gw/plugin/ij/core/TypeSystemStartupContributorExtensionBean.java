@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.annotations.Attribute;
 import org.jetbrains.annotations.NotNull;
 
 public class TypeSystemStartupContributorExtensionBean extends AbstractExtensionPointBean {
-  public static final ExtensionPointName<TypeSystemStartupContributorExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.typesystemStartupContributor");
+  public static final ExtensionPointName<TypeSystemStartupContributorExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.typesystemStartupContributor");
 
   @Attribute("class")
   public String className;

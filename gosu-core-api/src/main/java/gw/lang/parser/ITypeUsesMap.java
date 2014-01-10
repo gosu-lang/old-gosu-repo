@@ -93,4 +93,7 @@ public interface ITypeUsesMap extends Cloneable, Serializable
   boolean containsType(String qualifiedName);
 
   void addToSpecialTypeUses( String strType );
+
+  public boolean isSupportRelativePackageResolution();
+  public void setSupportRelativePackageResolution( boolean bSupportRelativePackageResolution );
 }

@@ -13,7 +13,12 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.filters.ElementFilter;
-import gw.lang.parser.*;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.Keyword;
 import gw.lang.reflect.IBlockType;
 import gw.lang.reflect.IEnumType;
 import gw.lang.reflect.IType;
@@ -73,6 +78,9 @@ public class SymbolCompletionHandler extends AbstractCompletionHandler {
 
         int weight = 1;
 
+        // Second invocation of completion (Ctrl-Space)
+        boolean bSecondControlSpace = _params.getInvocationCount() >= 2;
+
         if (isAllowed(psiFile, CompletionVoter.Type.SYMBOL)) {
           maybeAddSymbols(symbolTable, weight--);
         }
@@ -86,7 +94,7 @@ public class SymbolCompletionHandler extends AbstractCompletionHandler {
           maybeAddKeywords(weight--);
         }
         if (isAllowed(psiFile, CompletionVoter.Type.TYPE)) {
-          maybeAddTypes(weight--);
+          maybeAddTypes(weight--, bSecondControlSpace);
         }
       }
     }
@@ -99,19 +107,27 @@ public class SymbolCompletionHandler extends AbstractCompletionHandler {
     return psiFile instanceof CompletionVoter && ((CompletionVoter) psiFile).isCompletionAllowed(type);
   }
 
-  private void maybeAddTypes(int weight) {
-    // If there are no proposals, add all types
-    if (getTotalCompletions() == 0) {
+  private void maybeAddTypes( int weight, boolean bSecondControlSpace ) {
+    if (bSecondControlSpace ) {
+      // If it's the second Ctrl-Space, add ALL types
       new TypeCompletionHandler(_params, getResult(),
           new ElementFilter() {
             @Override
             public boolean isAcceptable(Object element, PsiElement context) {
-              if (element instanceof PsiClass) {
-                PsiClass element1 = (PsiClass) element;
-                String name = element1.getName();
-                return name.startsWith(getResult().getPrefixMatcher().getPrefix());
+              String fqn;
+              if( element instanceof PsiClass ) {
+                PsiClass element1 = (PsiClass)element;
+                fqn = element1.getQualifiedName();
               }
-              return false;
+              else if( element instanceof CharSequence ) {
+                fqn = element.toString();
+              }
+              else {
+                return false;
+              }
+              int iLastDot = fqn.lastIndexOf( '.' );
+              String simpleName = iLastDot > 0 ? fqn.substring( iLastDot + 1 ) : fqn;
+              return simpleName.startsWith( getResult().getPrefixMatcher().getPrefix() );
             }
 
             @Override
@@ -119,32 +135,14 @@ public class SymbolCompletionHandler extends AbstractCompletionHandler {
               return true;
             }
           }, weight).handleCompletePath();
-    } else {
-      // If there are proposals, add only types that are avaible locally
+    } else if( getTotalCompletions() == 0 ) {
+      // If there are no other completions available, add local types
       PsiFile file = getContext().getPosition().getContainingFile();
       if (file != null) {
         if (_thisType instanceof IGosuClass) {
           final ITypeUsesMap typeUsesMap = ((IGosuClass) _thisType).getTypeUsesMap();
           if (typeUsesMap != null) {
-            new TypeCompletionHandler(_params, getResult(), new ElementFilter() {
-              @Override
-              public boolean isAcceptable(Object element, PsiElement context) {
-                if (element instanceof PsiClass) {
-                  PsiClass element1 = (PsiClass) element;
-                  String name = element1.getName();
-                  if (name.startsWith(getResult().getPrefixMatcher().getPrefix())) {
-                    String qualifiedName = element1.getQualifiedName();
-                    return typeUsesMap.containsType(qualifiedName);
-                  }
-                }
-                return false;
-              }
-
-              @Override
-              public boolean isClassAcceptable(Class hintClass) {
-                return true;
-              }
-            }, weight).handleCompletePath();
+            new TypeCompletionHandler(_params, getResult(), weight).handleCompletePath();
           }
         }
       }
@@ -153,7 +151,7 @@ public class SymbolCompletionHandler extends AbstractCompletionHandler {
 
   private void maybeAddKeywords(int weight) {
     for (AdditionalSyntaxCompletionProposal kw : getKeywordsThatMakeSense()) {
-      if (_prefixMatcher == null || _prefixMatcher.prefixMatches(kw.getGenericName())) {
+      if (_prefixMatcher == null || _prefixMatcher.isStartMatch(kw.getGenericName())) {
         kw.setWeight(weight);
         addCompletion(kw);
       }

@@ -100,8 +100,7 @@ public abstract class XmlTypeData extends TypeInfoBase implements IXmlTypeData, 
 
   @Override
   public Accessibility getAccessibilityForType( IType whosaskin ) {
-//    maybeClearTypeInfo();
-    return Accessibility.PUBLIC;
+    return FeatureManager.getAccessibilityForClass(getOwnersType(), whosaskin);
   }
 
   @Override

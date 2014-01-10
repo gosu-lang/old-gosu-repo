@@ -314,16 +314,21 @@ public class ClassLord {
 
   public static boolean hasImplicitImport(String fqn, ITypeUsesMap usesMap) {
     String namespace = extractPackageName(fqn);
+    if (isNullOrEmpty(namespace)) {
+      return true;
+    }
     if ("gw.lang".equals(namespace)) {
       return true;
     }
     if (GOSU_IMPLICIT_IMPORTS.contains(fqn)) {
       return true;
     }
-    if (isNullOrEmpty(namespace) || inUsesMap(namespace, usesMap)) {
-      return true;
+
+    IType resolved = usesMap.resolveType(fqn);
+    if (resolved == null) {
+      return false;
     }
-    return false;
+    return usesMap.resolveType(resolved.getRelativeName()) == resolved;
   }
 
   public static boolean inUsesMap(String namespace, ITypeUsesMap usesMap) {

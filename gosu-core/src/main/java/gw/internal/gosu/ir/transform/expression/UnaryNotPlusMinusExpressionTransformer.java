@@ -4,15 +4,17 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.internal.gosu.parser.expressions.UnaryNotPlusMinusExpression;
-import gw.lang.ir.IRExpression;
-import gw.lang.ir.expression.IRNotExpression;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
+import gw.internal.gosu.parser.expressions.UnaryNotPlusMinusExpression;
+import gw.internal.gosu.runtime.GosuRuntimeMethods;
+import gw.lang.ir.IRExpression;
+import gw.lang.ir.expression.IRNotExpression;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.java.JavaTypes;
+
+import java.util.Collections;
 
 /**
  */
@@ -33,23 +35,23 @@ public class UnaryNotPlusMinusExpressionTransformer extends AbstractExpressionTr
   {
     IRExpression root = ExpressionTransformer.compile( _expr().getExpression(), _cc() );
 
+    IType type = _expr().getExpression().getType();
     if( _expr().isNot() )
     {
-      if( _expr().getExpression().getType() != JavaTypes.pBOOLEAN() )
+      if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() )
       {
-        throw new IllegalStateException(
-          "Logical not operator '!' requires boolean operand. Found: " +
-          _expr().getExpression().getType() );
+        return callStaticMethod( GosuRuntimeMethods.class, "logicalNot", new Class[] {Object.class}, Collections.singletonList( root ) );
+      }
+      else if( type != JavaTypes.pBOOLEAN() )
+      {
+        throw new IllegalStateException( "Logical not operator '!' requires boolean operand. Found: " + type );
       }
     }
     else if( _expr().isBitNot() )
     {
-      final IType type = _expr().getExpression().getType();
       if( type != JavaTypes.pINT() && type != JavaTypes.pLONG())
       {
-        throw new IllegalStateException(
-          "Bitwise not operator '~' requires int or long operand. Found: " +
-          _expr().getExpression().getType()  );
+        throw new IllegalStateException( "Bitwise not operator '~' requires int or long operand. Found: " + type );
       }
     }
 

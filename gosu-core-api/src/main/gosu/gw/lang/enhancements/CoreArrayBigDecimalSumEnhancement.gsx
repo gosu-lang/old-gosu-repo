@@ -14,7 +14,7 @@ enhancement CoreArrayBigDecimalSumEnhancement<T> : T[] {
    * Sums up the values of the target of the mapper argument
    */
   function sum( mapper(elt:T):BigDecimal ) : BigDecimal {
-    var sum  = new BigDecimal("0")
+    var sum  = BigDecimal.ZERO
     for( elt in this ) {
       sum += mapper( elt )
     }

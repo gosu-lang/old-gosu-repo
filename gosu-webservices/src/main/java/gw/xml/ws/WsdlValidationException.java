@@ -15,7 +15,6 @@ public class WsdlValidationException extends RuntimeException {
   /**
    * Constructor
    */
-  @gw.lang.InternalAPI
   public WsdlValidationException(String message){
     super( message );
   }
@@ -23,7 +22,6 @@ public class WsdlValidationException extends RuntimeException {
   /**
    * Constructor
    */
-  @gw.lang.InternalAPI
   public WsdlValidationException( String message, Throwable cause ) {
     super( message, cause );
   }

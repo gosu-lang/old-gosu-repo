@@ -142,7 +142,7 @@ public class RunGosuITCase {
             .run("hello.gsp");
     assertThat(gosu)
             .hasZeroExitCode()
-            //.hasNoStderr()
+            .hasNoStderr()
             .hasStdOut("hello!");
   }
 

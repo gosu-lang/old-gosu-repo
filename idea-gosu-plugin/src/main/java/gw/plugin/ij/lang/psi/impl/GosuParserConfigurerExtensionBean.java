@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.annotations.Attribute;
 import org.jetbrains.annotations.NotNull;
 
 public class GosuParserConfigurerExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<GosuParserConfigurerExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.gosuParserConfigurer");
+  static final ExtensionPointName<GosuParserConfigurerExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.gosuParserConfigurer");
 
   @Attribute("class")
   public String className;

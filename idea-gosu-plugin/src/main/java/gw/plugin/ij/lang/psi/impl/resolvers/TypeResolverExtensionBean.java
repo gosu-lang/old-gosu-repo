@@ -12,7 +12,7 @@ import gw.plugin.ij.lang.psi.api.ITypeResolver;
 import org.jetbrains.annotations.NotNull;
 
 public class TypeResolverExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<TypeResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.typeResolver");
+  static final ExtensionPointName<TypeResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.typeResolver");
 
   @Attribute("class")
   public String className;

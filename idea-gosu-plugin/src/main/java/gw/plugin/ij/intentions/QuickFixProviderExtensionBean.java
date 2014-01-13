@@ -20,7 +20,7 @@ import static java.util.Collections.unmodifiableList;
 public class QuickFixProviderExtensionBean extends AbstractExtensionPointBean {
 
   public static final ExtensionPointName<QuickFixProviderExtensionBean> EP_NAME =
-          new ExtensionPointName<>("com.guidewire.gosu-internal.quickFixProvider");
+          new ExtensionPointName<>("com.guidewire.gosu.quickFixProvider");
 
   @Attribute("class")
   public String className;

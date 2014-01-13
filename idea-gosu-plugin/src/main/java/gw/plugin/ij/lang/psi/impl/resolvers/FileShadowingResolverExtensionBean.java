@@ -12,7 +12,7 @@ import gw.plugin.ij.lang.psi.api.IFileShadowingResolver;
 import org.jetbrains.annotations.NotNull;
 
 public class FileShadowingResolverExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<FileShadowingResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.fileShadowingResolver");
+  static final ExtensionPointName<FileShadowingResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.fileShadowingResolver");
 
   @Attribute("class")
   public String className;

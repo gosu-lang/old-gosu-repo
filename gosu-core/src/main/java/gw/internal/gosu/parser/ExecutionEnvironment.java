@@ -27,16 +27,24 @@ import gw.lang.reflect.module.Dependency;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.IProject;
+import gw.util.GosuExceptionUtil;
+import gw.util.ILogger;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.security.CodeSource;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 public class ExecutionEnvironment implements IExecutionEnvironment
@@ -45,6 +53,15 @@ public class ExecutionEnvironment implements IExecutionEnvironment
   private static final Map<Object, ExecutionEnvironment> INSTANCES = new WeakHashMap<Object, ExecutionEnvironment>();
   private static ExecutionEnvironment THE_ONE;
   public static final String CLASS_REDEFINER_THREAD = "Gosu class redefiner";
+
+  /**
+   * "Special" java classes that will be used to locate "special" JARs which should be
+   * included in the classpath. This is a replacement to old SPECIAL_FILES variable.
+   */
+  private static final List<String> SPECIAL_CLASSES = Arrays.asList(
+          "javax.servlet.Servlet",
+          "javax.servlet.http.HttpServletRequest"
+  );
 
   private IProject _project;
   private List<IModule> _modules;
@@ -557,6 +574,7 @@ public class ExecutionEnvironment implements IExecutionEnvironment
     List<String> vals = new ArrayList<String>();
     vals.add(System.getProperty("java.class.path", ""));
     vals.add(CommonServices.getEntityAccess().getWebServerPaths());
+    vals.addAll(getJarsContainingSpecialClasses());
     vals.add(System.getProperty("sun.boot.class.path", ""));
     vals.add(System.getProperty("java.ext.dirs", ""));
     vals.add(CommonServices.getEntityAccess().getPluginRepositories().toString());
@@ -584,4 +602,73 @@ public class ExecutionEnvironment implements IExecutionEnvironment
   public boolean isShadowingMode() {
     return _project.isShadowMode();
   }
+
+  /**
+   * This method is a hack to resolve "special" system-like classes provided by execution environment.
+   * This is the replacement of old addSpecialJars() method
+   */
+  private static Set<String> getJarsContainingSpecialClasses() {
+    Set<String> paths = new HashSet<String>();
+    for (String className : SPECIAL_CLASSES) {
+      getLogger().debug("Searching JAR that provides " + className + ".");
+      Class<?> clazz;
+      try {
+        clazz = Class.forName(className);
+      } catch (ClassNotFoundException e) {
+        getLogger().error("Class " + className
+                + " could not be found. Gosu code might fail to compile at runtime.");
+        continue;
+      }
+      CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
+      if (codeSource == null) {
+        getLogger().error("Code source for " + clazz.getName()
+                + " is null. Gosu code might fail to compile at runtime.");
+        continue;
+      }
+      // url might be jar:<url>!/, e.g. jar:file:/gitmo/jboss-5.1.2/common/lib/servlet-api.jar!/
+      // or vfszip:<url> on JBoss
+      // or wsjar:<url> on WebSphere
+      URL jarUrl = codeSource.getLocation();
+
+      // in case of complex URL the path might be like this: "file:/gitmo/jboss-5.1.2/common/lib/servlet-api.jar!/"
+      String path = jarUrl.getPath();
+
+      // So removing optional "!/" suffix and "file:" prefix
+      if (path.endsWith("/")) {
+        path = path.substring(0, path.length() - 1);
+      }
+      if (path.endsWith("!")) {
+        path = path.substring(0, path.length() - 1);
+      }
+      if (path.startsWith("file:")) {
+        path = path.substring("file:".length());
+      }
+
+      // URLDecoder.decode() decodes string from application/x-www-form-urlencoded MIME format
+      // while we need to decode from RFC2396 format.
+      // I think the only difference between formats that application/x-www-form-urlencoded decodes "+"
+      // to space while RFC2396 does not.
+      // So before using URLDecoder.decode() encode "+" to its ASCII representation
+      // that will be decoded back to "+" by URLDecoder.decode()
+      path = path.replaceAll("\\+", "%2B");
+      try {
+        String decodedPath = URLDecoder.decode(path, "UTF-8");
+        if (new File(decodedPath).exists()) {
+          paths.add(path);
+        } else {
+          getLogger().error("Could not extract filesystem path from the url " + jarUrl.getPath()
+                  + ". Gosu code that requires classes from that JAR might fail to compile at runtime.");
+        }
+      } catch (UnsupportedEncodingException ex) {
+        // impossible
+        throw GosuExceptionUtil.forceThrow(ex);
+      }
+    }
+    return paths;
+  }
+
+  private static ILogger getLogger() {
+    return CommonServices.getEntityAccess().getLogger();
+  }
+
 }

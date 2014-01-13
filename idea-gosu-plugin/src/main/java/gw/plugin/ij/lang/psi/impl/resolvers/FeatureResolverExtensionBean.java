@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class FeatureResolverExtensionBean extends AbstractExtensionPointBean {
-  private static final ExtensionPointName<FeatureResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.featureResolver");
+  private static final ExtensionPointName<FeatureResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.featureResolver");
   private static final NotNullLazyValue<List<IFeatureResolver>> ALL_RESOLVERS = new NotNullLazyValue<List<IFeatureResolver>>() {
     @NotNull
     @Override

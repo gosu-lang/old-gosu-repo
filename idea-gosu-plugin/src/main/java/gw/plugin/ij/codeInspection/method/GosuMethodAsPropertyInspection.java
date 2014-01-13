@@ -4,7 +4,11 @@
 
 package gw.plugin.ij.codeInspection.method;
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.LocalInspectionToolSession;
+import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.codeInspection.ex.BaseLocalInspectionTool;
 import com.intellij.lang.ASTNode;
 import com.intellij.openapi.project.Project;
@@ -13,6 +17,7 @@ import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.PsiFile;
 import gw.internal.gosu.parser.statements.FunctionStatement;
 import gw.lang.parser.IParsedElement;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
@@ -21,14 +26,15 @@ import gw.plugin.ij.intentions.MethodAsPropertyFix;
 import gw.plugin.ij.lang.parser.GosuElementTypes;
 import gw.plugin.ij.lang.psi.api.statements.typedef.IGosuMethod;
 import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
-import gw.plugin.ij.lang.psi.impl.GosuPsiImplUtil;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuIdentifierImpl;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuModuleUtil;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
-public class GosuMethodAsPropertyInspection extends BaseLocalInspectionTool {
+public class GosuMethodAsPropertyInspection extends BaseLocalInspectionTool implements IWarningSuppressor {
+
+  public static final String SUPPRESS_WARNING_CODE = "MethodAsProperty";
 
   @Nls
   @NotNull
@@ -71,6 +77,9 @@ public class GosuMethodAsPropertyInspection extends BaseLocalInspectionTool {
         TypeSystem.pushModule(module);
         try {
           IParsedElement parsedElement = method.getParsedElement();
+          if( parsedElement.isSuppressed( GosuMethodAsPropertyInspection.this ) ) {
+            return;
+          }
           if (parsedElement instanceof FunctionStatement) {
             PsiElement ident = getMethodIdentifier(method);
             FunctionStatement functionStatement = (FunctionStatement) parsedElement;
@@ -116,6 +125,11 @@ public class GosuMethodAsPropertyInspection extends BaseLocalInspectionTool {
         return method;
       }
     };
+  }
+
+  @Override
+  public boolean isSuppressed( String warningCode ) {
+    return SUPPRESS_WARNING_CODE.equals( warningCode ) || "all".equals( warningCode );
   }
 
 

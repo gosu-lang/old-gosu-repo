@@ -4,9 +4,9 @@
 
 package gw.lang.ir.expression;
 
+import gw.lang.UnstableAPI;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRType;
-import gw.lang.UnstableAPI;
 
 import java.util.List;
 
@@ -26,7 +26,7 @@ public class IRMethodCallExpression extends IRExpression {
     _ownersType = ownersType;
     _interface = isInterface;
     _returnType = returnType;
-    _parameterTypes = parameterTypes;
+    _parameterTypes = maybeEraseStructuralTypes( ownersType, parameterTypes );
     _root = root;
     _args = args;
 

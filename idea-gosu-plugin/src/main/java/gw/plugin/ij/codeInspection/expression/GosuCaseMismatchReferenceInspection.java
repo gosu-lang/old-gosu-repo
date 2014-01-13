@@ -29,6 +29,7 @@ import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.ThisSymbol;
 import gw.internal.gosu.parser.TypeLoaderAccess;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.lang.GosuShop;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IHasInnerClass;
@@ -145,6 +146,16 @@ public class GosuCaseMismatchReferenceInspection extends BaseLocalInspectionTool
                 if( correctName != null ) {
                   holder.registerProblem( element, GosuBundle.message( "inspection.case.mismatch.reference", "Keyword: " + correctName ), ProblemHighlightType.GENERIC_ERROR_OR_WARNING, new CaseMismatchFix( element, correctName ) );
                 }
+              }
+            }
+          }
+          // Special handling for top level class/enum with wrong keyword case
+          else if( parent instanceof GosuRawPsiElement ) {
+            IParsedElement pe = ((GosuRawPsiElement)parent).getParsedElement();
+            if (pe instanceof INoOpStatement && pe.getParent() instanceof ClassStatement ) {
+              String correctName = findCorrectCaseKeyword( element.getText() );
+              if( correctName != null ) {
+                holder.registerProblem( element, GosuBundle.message( "inspection.case.mismatch.reference", "Keyword: " + correctName ), ProblemHighlightType.GENERIC_ERROR_OR_WARNING, new CaseMismatchFix( element, correctName ) );
               }
             }
           }

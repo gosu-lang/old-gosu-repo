@@ -12,6 +12,8 @@ import com.intellij.codeInsight.daemon.impl.MarkerType;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.project.IndexNotReadyException;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiIdentifier;
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
@@ -29,12 +31,26 @@ public class GosuLineMarkerProvider extends JavaLineMarkerProvider {
 
   @Override
   public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element ) {
-    LineMarkerInfo lmi = super.getLineMarkerInfo( element );
-    if( lmi != null ) {
-      return lmi;
-    }
+    try {
+      LineMarkerInfo lmi = super.getLineMarkerInfo( element );
+      if( lmi != null ) {
+        return lmi;
+      }
 
-    return handleFunnyCasesInJavaHierarchy( element );
+      return handleFunnyCasesInJavaHierarchy( element );
+    }
+    catch( ProcessCanceledException pce ) {
+      return null;
+    }
+    catch (IndexNotReadyException e) {
+      return null;
+    }
+    catch( RuntimeException pce ) {
+      if( pce.getCause() instanceof ProcessCanceledException ) {
+        return null;
+      }
+    }
+    return null;
   }
 
   // Handle odd cases where param types may not be directly equal in IJ's eyes

@@ -42,6 +42,7 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
   private int _iIdentifierOffset;
   private int _iIndexIdentifierOffset;
   private int _iIterOffset;
+  private boolean _bStructuralIterable;
 
   /**
    * Constructs a ForEachStatement given an ISymbolTable instance.
@@ -240,4 +241,12 @@ public final class ForEachStatement extends LoopStatement implements IForEachSta
     }
   }
 
+  public boolean isStructuralIterable()
+  {
+    return _bStructuralIterable;
+  }
+  public void setStructuralIterable( boolean bStructuralIterable )
+  {
+    _bStructuralIterable = bStructuralIterable;
+  }
 }

@@ -4,15 +4,15 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.config.CommonServices;
+import gw.internal.gosu.ir.nodes.IRMethodFactory;
+import gw.internal.gosu.ir.transform.ExpressionTransformer;
+import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.BeanAccess;
 import gw.internal.gosu.parser.expressions.AdditiveExpression;
 import gw.internal.gosu.parser.expressions.Identifier;
+import gw.internal.gosu.runtime.GosuRuntimeMethods;
 import gw.lang.ir.IRExpression;
-import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.lang.ir.expression.IRArithmeticExpression;
-import gw.internal.gosu.ir.transform.ExpressionTransformer;
-import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.lang.ir.expression.IRStringLiteralExpression;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
@@ -20,6 +20,10 @@ import gw.lang.parser.StandardSymbolTable;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.java.JavaTypes;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Collections;
 
 /**
  */
@@ -51,7 +55,15 @@ public class AdditiveExpressionTransformer extends AbstractExpressionTransformer
     {
       if( isSimpleAddition() )
       {
-        return simpleAddition( );
+        return simpleAddition();
+      }
+      else if( isBigDecimalAddition() )
+      {
+        return bigDecimalAddition();
+      }
+      else if( isBigIntegerAddition() )
+      {
+        return bigIntegerAddition();
       }
       else
       {
@@ -70,9 +82,44 @@ public class AdditiveExpressionTransformer extends AbstractExpressionTransformer
     }
   }
 
-  private IRStringLiteralExpression concatenate() {
-    return (IRStringLiteralExpression) pushConstant( StandardSymbolTable.toString( _expr().getLHS().evaluate() ) +
-                                                     StandardSymbolTable.toString( _expr().getRHS().evaluate() ) );
+  private boolean isBigDecimalAddition()
+  {
+    return !_expr().isNullSafe() &&
+           JavaTypes.BIG_DECIMAL().equals( _expr().getType() ) &&
+           JavaTypes.BIG_DECIMAL().equals( _expr().getLHS().getType() ) &&
+           JavaTypes.BIG_DECIMAL().equals( _expr().getRHS().getType() );
+  }
+  private IRExpression bigDecimalAddition( )
+  {
+    IType type = _expr().getType();
+
+    IRExpression lhs = ExpressionTransformer.compile( _expr().getLHS(), _cc() );
+    IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
+
+    return callMethod( BigDecimal.class, _expr().isAdditive() ? "add" : "subtract", new Class[] {BigDecimal.class}, lhs, Collections.singletonList( rhs ) );
+  }
+
+  private boolean isBigIntegerAddition()
+  {
+    return !_expr().isNullSafe() &&
+           JavaTypes.BIG_INTEGER().equals( _expr().getType() ) &&
+           JavaTypes.BIG_INTEGER().equals( _expr().getLHS().getType() ) &&
+           JavaTypes.BIG_INTEGER().equals( _expr().getRHS().getType() );
+  }
+  private IRExpression bigIntegerAddition( )
+  {
+    IType type = _expr().getType();
+
+    IRExpression lhs = ExpressionTransformer.compile( _expr().getLHS(), _cc() );
+    IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
+
+    return callMethod( BigInteger.class, _expr().isAdditive() ? "add" : "subtract", new Class[] {BigInteger.class}, lhs, Collections.singletonList( rhs ) );
+  }
+
+  private IRStringLiteralExpression concatenate()
+  {
+    return (IRStringLiteralExpression) pushConstant( GosuRuntimeMethods.toString( _expr().getLHS().evaluate() ) +
+                                                     GosuRuntimeMethods.toString( _expr().getRHS().evaluate() ) );
   }
 
   private IRExpression simpleAddition( )

@@ -43,8 +43,8 @@ import gw.plugin.ij.lang.psi.api.statements.IGosuStatement;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuIdentifierImpl;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiTypeResolver;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.InjectedElementEditor;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
 import org.jetbrains.annotations.NotNull;
@@ -355,7 +355,7 @@ public class GosuBaseElementImpl<E extends IParsedElement, T extends StubElement
 
   private void verifyFileSource(@NotNull String fileSource, String parsedSource) {
     if (!fileSource.equals(parsedSource)) {
-      IDEAUtil.showDiffWindow(fileSource, parsedSource, "File Source", "Parsed Source", "File source does not match parsed source", getProject());
+      ExceptionUtil.showDiffWindow(fileSource, parsedSource, "File Source", "Parsed Source", "File source does not match parsed source", getProject());
     }
   }
 
@@ -363,7 +363,7 @@ public class GosuBaseElementImpl<E extends IParsedElement, T extends StubElement
     final String psiText = getText();
     final String parsedText = parsedSource.substring(location.getOffset(), location.getExtent() + 1);
     if (!psiText.equals(parsedText)) {
-      IDEAUtil.showDiffWindow(psiText, parsedText, "Psi Text", "Parsed Text", "Psi text does not match parsed text", getProject());
+      ExceptionUtil.showDiffWindow(psiText, parsedText, "Psi Text", "Parsed Text", "Psi text does not match parsed text", getProject());
     }
   }
 

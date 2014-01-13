@@ -65,13 +65,13 @@ public class InjectedElementEditor {
 
 
   public static boolean areInEquivalentFiles(PsiElement m1, PsiElement m2) {
-    final String name1 = IDEAUtil.getContainingClass(m1).getName();
-    final String name2 = IDEAUtil.getContainingClass(m2).getName();
+    final String name1 = getContainingClass(m1).getName();
+    final String name2 = getContainingClass(m2).getName();
     return name1.equals(name2 + EDITOR) || name2.equals(name1 + EDITOR);
   }
 
   public static boolean isInEmbeddedEditor(PsiElement element) {
-    final PsiClass psiClass = IDEAUtil.getContainingClass(element);
+    final PsiClass psiClass = getContainingClass(element);
     return psiClass != null &&
             psiClass.getName().endsWith(EDITOR) &&
             psiClass.getContainingFile().getVirtualFile() != null &&   //this is for copy for GosuIdentifier <name>IntellijRulezz
@@ -101,4 +101,11 @@ public class InjectedElementEditor {
   }
 
 
+  @Nullable
+  public static PsiClass getContainingClass(@Nullable PsiElement element) {
+    while (element != null && !(element instanceof PsiClass)) {
+      element = element.getParent();
+    }
+    return (PsiClass) element;
+  }
 }

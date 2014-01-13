@@ -4,6 +4,7 @@
 
 package gw.lang.parser;
 
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.resources.ResourceKey;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
@@ -91,4 +92,6 @@ public interface IParsedElement
   IGosuClass getGosuClass();
 
   boolean isCompileTimeConstant();
+
+  boolean isSuppressed( IWarningSuppressor suppressor );
 }

@@ -4,7 +4,6 @@
 
 package gw.lang.ir;
 
-import gw.lang.reflect.IType;
 import gw.lang.UnstableAPI;
 
 import java.lang.reflect.Array;
@@ -118,4 +117,13 @@ public class SyntheticIRArrayType implements IRType {
     return false;
   }
 
+  @Override
+  public boolean isStructural() {
+    return false;
+  }
+
+  @Override
+  public boolean isStructuralAndErased( IRType ownersType ) {
+    return false;
+  }
 }

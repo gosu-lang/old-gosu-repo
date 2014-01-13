@@ -66,7 +66,7 @@ public class ClassKeywordsHandler extends AbstractCompletionHandler {
 
     // TODO: use Keywords class from core Gosu
     List<String> keywords = Lists.newArrayList(
-        "class", "interface", "enum",
+        "class", "interface", "structure", "enum",
         "private", "public", "protected", "internal",
         "abstract", "final");
 

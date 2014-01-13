@@ -21,6 +21,7 @@ import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeRef;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.BytecodeOptions;
+import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.module.Dependency;
 import gw.lang.reflect.module.IExecutionEnvironment;
@@ -489,6 +490,11 @@ public class ExecutionEnvironment implements IExecutionEnvironment
                     IType type = TypeSystem.getByFullNameIfValid(name);
                     if (type != null) {
                       TypeSystem.refresh((ITypeRef) type);
+                      // Also update enhancement index if type is an enhancement
+                      if( type instanceof IGosuEnhancementInternal ) {
+                        ((GosuClassTypeLoader)type.getTypeLoader()).getEnhancementIndex().addEntry(
+                          ((IGosuEnhancementInternal)type).getEnhancedType(), (IGosuEnhancementInternal)type );
+                      }
                     }
                   }
                 }

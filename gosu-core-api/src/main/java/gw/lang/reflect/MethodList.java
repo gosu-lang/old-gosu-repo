@@ -4,6 +4,7 @@
 
 package gw.lang.reflect;
 
+import gw.lang.parser.StandardCoercionManager;
 import gw.util.DynamicArray;
 
 import java.util.Collection;
@@ -136,4 +137,54 @@ public class MethodList extends DynamicArray<IMethodInfo> {
     throw new RuntimeException("Not supported");
   }
 
+  public IMethodInfo findAssignableMethod( IMethodInfo miTo ) {
+    IMethodInfo foundMethod = null;
+    String mname = miTo.getDisplayName();
+    IParameterInfo[] toParams = miTo.getParameters();
+    int iTopScore = 0;
+    outer:
+    for( IMethodInfo miFrom : this ) {
+      if( miFrom.getDisplayName().equals( mname ) ) {
+        IType fromReturnType = miFrom.getReturnType();
+        IType toReturnType = miTo.getReturnType();
+        fromReturnType = TypeSystem.replaceTypeVariableTypeParametersWithBoundingTypes( fromReturnType, miFrom.getOwnersType() );
+        toReturnType = TypeSystem.replaceTypeVariableTypeParametersWithBoundingTypes( toReturnType, miTo.getOwnersType() );
+        if( !toReturnType.equals( fromReturnType ) &&
+            !toReturnType.isAssignableFrom( fromReturnType ) &&
+            !StandardCoercionManager.arePrimitiveTypesAssignable( toReturnType, fromReturnType ) ) {
+          continue;
+        }
+        IParameterInfo[] fromParams = miFrom.getParameters();
+        if( fromParams.length == toParams.length ) {
+          if( fromParams.length == 0 ) {
+            foundMethod = miFrom;
+          }
+          int iScore = 0;
+          for( int ip = 0; ip < fromParams.length; ip++ ) {
+            IParameterInfo fromParam = fromParams[ip];
+            IParameterInfo toParam = toParams[ip];
+            IType fromParamType = TypeSystem.replaceTypeVariableTypeParametersWithBoundingTypes( fromParam.getFeatureType(), miFrom.getOwnersType() );
+            IType toParamType = TypeSystem.replaceTypeVariableTypeParametersWithBoundingTypes( toParam.getFeatureType(), miTo.getOwnersType() );
+            if( fromParamType.equals( toParamType ) ) {
+              // types are the same
+              iScore += 2;
+            }
+            else if( fromParamType.isAssignableFrom( toParamType ) ||
+                     StandardCoercionManager.arePrimitiveTypesAssignable( fromParamType, toParamType ) ) {
+              // types are contravariant
+              iScore += 1;
+            }
+            else {
+              continue outer;
+            }
+          }
+          if( iTopScore < iScore ) {
+            foundMethod = miFrom;
+            iTopScore = iScore;
+          }
+        }
+      }
+    }
+    return foundMethod;
+  }
 }

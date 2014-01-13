@@ -5,17 +5,20 @@
 package gw.internal.gosu.parser;
 
 import gw.config.CommonServices;
+import gw.internal.gosu.parser.expressions.AnnotationExpression;
 import gw.internal.gosu.parser.expressions.Program;
 import gw.internal.gosu.parser.statements.ClassFileStatement;
 import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.NoOpStatement;
 import gw.internal.gosu.parser.statements.UsesStatement;
+import gw.lang.parser.IExpression;
 import gw.lang.parser.IParseIssue;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IParsedElementWithAtLeastOneDeclaration;
 import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.IToken;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.exceptions.ParseException;
 import gw.lang.parser.exceptions.ParseIssue;
 import gw.lang.parser.exceptions.ParseWarning;
@@ -162,31 +165,46 @@ public abstract class ParsedElement implements IParsedElement
   public List<IParseIssue> getParseIssues()
   {
     List<IParseIssue> issues = new ArrayList<IParseIssue>();
-    getParseExceptions(issues);
-    getParseWarnings(issues);
-    if (issues.isEmpty()) {
+    getParseExceptions( issues );
+    getParseWarnings( issues );
+    if( issues.isEmpty() )
+    {
       issues = Collections.emptyList();
-    } else {
-      ((ArrayList) issues).trimToSize();
+    }
+    else
+    {
+      ((ArrayList)issues).trimToSize();
     }
     return issues;
   }
 
   @Override
-  public List<IParseIssue> getImmediateParseIssues() {
+  public List<IParseIssue> getImmediateParseIssues()
+  {
     ArrayList<IParseIssue> issues = null;
-    if (_lnf != null) {
-      if (_lnf._parseExceptions != null && _lnf._parseExceptions.size() > 0) {
-        if(issues == null) {
+    if( _lnf != null )
+    {
+      if( _lnf._parseExceptions != null && _lnf._parseExceptions.size() > 0 )
+      {
+        if( issues == null )
+        {
           issues = new ArrayList<IParseIssue>();
         }
-        issues.addAll(_lnf._parseExceptions);
+        issues.addAll( _lnf._parseExceptions );
       }
-      if (_lnf._parseWarnings != null && _lnf._parseWarnings.size() > 0) {
-        if(issues == null) {
+      if( _lnf._parseWarnings != null && _lnf._parseWarnings.size() > 0 )
+      {
+        if( issues == null )
+        {
           issues = new ArrayList<IParseIssue>();
         }
-        issues.addAll(_lnf._parseWarnings);
+        for( IParseIssue exc : _lnf._parseWarnings )
+        {
+          if( !isSuppressed( exc ) )
+          {
+            issues.add( exc );
+          }
+        }
       }
     }
     return issues != null ? issues : Collections.<IParseIssue>emptyList();
@@ -359,6 +377,27 @@ public abstract class ParsedElement implements IParsedElement
     return null;
   }
 
+  public void removeParseWarningRecursively( ResourceKey keyToRemove )
+  {
+    //noinspection StatementWithEmptyBody,ThrowableResultOfMethodCallIgnored
+    while( _lnf != null && removeParseWarning( keyToRemove ) != null );
+
+    ParseTree location = getLocation();
+    List<IParseTree> children = location == null ? null : location.getChildren();
+    if( children != null )
+    {
+      for( int i = 0; i < children.size(); i++ )
+      {
+        IParseTree child = children.get( i );
+        IParsedElement pe = child.getParsedElement();
+        if( pe != null )
+        {
+          ((ParsedElement)pe).removeParseWarningRecursively( keyToRemove );
+        }
+      }
+    }
+  }
+
   private <E extends IParseIssue> E removeParseIssue( ResourceKey keyToRemove, List<E> issues )
   {
     E pe = null;
@@ -522,7 +561,13 @@ public abstract class ParsedElement implements IParsedElement
   {
     if( _lnf != null )
     {
-      allWarnings.addAll( _lnf._parseWarnings );
+      for( IParseIssue exc : _lnf._parseWarnings )
+      {
+        if( !isSuppressed( exc ) )
+        {
+          allWarnings.add( exc );
+        }
+      }
     }
 
     ParseTree location = getLocation();
@@ -569,7 +614,7 @@ public abstract class ParsedElement implements IParsedElement
       return false;
     }
 
-    for( IParseIssue pw : _lnf._parseWarnings )
+    for( IParseIssue pw : getParseWarnings() )
     {
       if( GosuObjectUtil.equals( pw.getTokenStart(), pi.getTokenStart() ) &&
           pw.getMessageKey() == pi.getMessageKey() &&
@@ -581,7 +626,7 @@ public abstract class ParsedElement implements IParsedElement
 
     for( IParseIssue pe : _lnf._parseExceptions )
     {
-      if( pe.getTokenStart() != null && pe.getTokenStart().equals(pi.getTokenStart()) &&
+      if( pe.getTokenStart() != null && pe.getTokenStart().equals( pi.getTokenStart() ) &&
           pe.getMessageKey() == pi.getMessageKey() &&
           GosuObjectUtil.equals( pe.getPlainMessage(), pi.getPlainMessage() ) )
       {
@@ -590,6 +635,80 @@ public abstract class ParsedElement implements IParsedElement
     }
 
     return false;
+  }
+
+  public boolean isSuppressed( IParseIssue issue )
+  {
+    return issue instanceof IWarningSuppressor &&
+           isSuppressed( (IWarningSuppressor)issue );
+  }
+  public boolean isSuppressed( IWarningSuppressor suppressor )
+  {
+    IModule mod = getGosuClass() == null ? null : getModule();
+    if( mod != null ) {
+      TypeSystem.pushModule( mod );
+    }
+    try
+    {
+      for( IGosuAnnotation anno: getAnnotations() )
+      {
+        if( anno.getType() == TypeSystem.get( SuppressWarnings.class ) )
+        {
+          IExpression annoExpr = anno.getExpression();
+          if( annoExpr instanceof AnnotationExpression )
+          {
+            if( ((AnnotationExpression)annoExpr).getArgs() != null )
+            {
+              for( Expression expr : ((AnnotationExpression)annoExpr).getArgs() )
+              {
+                Object value = expr.evaluate();
+                if( value instanceof String )
+                {
+                  if( suppressor.isSuppressed( (String)value ) )
+                  {
+                    return true;
+                  }
+                }
+                else if( value instanceof Object[] )
+                {
+                  for( Object o: (Object[])value )
+                  {
+                    if( suppressor.isSuppressed( (String)o ) )
+                    {
+                      return true;
+                    }
+                  }
+                }
+                else if( value instanceof List )
+                {
+                  for( Object o: (List)value )
+                  {
+                    if( suppressor.isSuppressed( (String)o ) )
+                    {
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      ParsedElement parent = (ParsedElement)getParent();
+      return parent != null && parent.isSuppressed( suppressor );
+    }
+    finally
+    {
+      if( mod != null )
+      {
+        TypeSystem.popModule( mod );
+      }
+    }
+  }
+
+  public List<IGosuAnnotation> getAnnotations()
+  {
+    return Collections.emptyList();
   }
 
   public boolean isCompileTimeConstant()

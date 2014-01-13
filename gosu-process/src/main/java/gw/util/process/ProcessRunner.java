@@ -36,6 +36,15 @@ public class ProcessRunner {
   private List<OutputHandler> _stdErrHandlers = new ArrayList<OutputHandler>();
   private String _charset = "UTF-8";
 
+  public static String execWithCharset(String charset, String... command) {
+    return new ProcessRunner(command)
+            .withStdOutBuffered()
+            .withCharset(charset)
+            .withCMD()
+            .exec()
+            .getBuffer();
+  }
+
   public static String exec(String... command) {
     return new ProcessRunner(command)
             .withStdOutBuffered()

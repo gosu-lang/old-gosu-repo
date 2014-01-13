@@ -8,6 +8,7 @@ import gw.config.BaseService;
 import gw.config.CommonServices;
 import gw.fs.IFile;
 import gw.fs.IResource;
+import gw.internal.gosu.compiler.SingleServingGosuClassLoader;
 import gw.internal.gosu.module.Module;
 import gw.lang.GosuShop;
 import gw.lang.gosuc.Gosuc;
@@ -41,7 +42,6 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.TypeSystemShutdownListener;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IGenericTypeVariable;
-import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuClassLoader;
 import gw.lang.reflect.gs.IGosuEnhancement;
 import gw.lang.reflect.java.IJavaClassInfo;
@@ -452,6 +452,8 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
         MetaType.clearCaches();
       }
 
+      SingleServingGosuClassLoader.clearCache();
+
       _defaultTypes = null;
     }
     finally
@@ -508,7 +510,7 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
             if (topLevelType != null) {
               typesToRefresh.add(topLevelType);
             }
-            if (type instanceof IGosuEnhancement && ((IGosuClass) type).isHeaderCompiled()) {
+            if (type instanceof IGosuEnhancement) {
               // add the current enhanced type
               IGosuEnhancement enhancement = (IGosuEnhancement) type;
               IType enhancedType = enhancement.getEnhancedType();
@@ -1072,10 +1074,10 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
     IModule module = ExecutionEnvironment.instance().getModule(file);
     // The module will be null for files that are not part of any source root
     if (module != null) {
-      boolean refreshed = ((ITypeLoaderStackInternal) module.getModuleTypeLoader()).refresh(file, typeName, refreshKind);
-      if (!refreshed) {
-        getGlobalModuleTypeLoader().refresh(file, typeName, refreshKind);
-      }
+      ((ITypeLoaderStackInternal) module.getModuleTypeLoader()).refresh(file, typeName, refreshKind);
+      // We need to refresh the global loaders as well because the modification of a Java class belonging
+      // to an entity needs to refresh the entity
+      getGlobalModuleTypeLoader().refresh(file, typeName, refreshKind);
     }
   }
 
@@ -1279,7 +1281,7 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
   }
 
   public String getNameWithQualifiedTypeVariables(IType type) {
-    return TypeLord.getNameWithQualifiedTypeVariables(type);
+    return TypeLord.getNameWithQualifiedTypeVariables(type, false);
   }
 
   public IType getDefaultParameterizedType(IType type) {
@@ -1373,6 +1375,11 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
   public void dumpGosuClassLoader() {
     DefaultTypeLoader loader = (DefaultTypeLoader) getCurrentModule().getTypeLoaders(IDefaultTypeLoader.class).get(0);
     loader.dumpGosuClassLoader();
+  }
+
+  @Override
+  public IType replaceTypeVariableTypeParametersWithBoundingTypes( IType type, IType enclosingType ) {
+    return TypeLord.replaceTypeVariableTypeParametersWithBoundingTypes( type, enclosingType );
   }
 
   @Override

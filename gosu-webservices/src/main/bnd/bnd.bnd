@@ -1,4 +1,0 @@
-Fragment-Host=org.gosu-lang.gosu.core-api
-Export-Package=!gw.internal.ext.*,gw.*
-Gosu-Typeloaders=gw.internal.xml.ws.typeprovider.WsdlTypeLoader
-Contains-Sources=gs,gsx,xsd

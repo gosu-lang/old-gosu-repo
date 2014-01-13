@@ -22,11 +22,15 @@ import gw.lang.parser.exceptions.ErrantGosuClassException;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INewExpression;
+import gw.lang.reflect.BaseFeatureInfo;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IAttributedFeatureInfo;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IFeatureInfo;
+import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
@@ -115,6 +119,10 @@ public class GosuAnnotationInfo implements IAnnotationInfo
           List annotations = featureMap.get( getFeatureName() );
           if( annotations == null )
           {
+            if( _owner.isProxy() )
+            {
+              return getFromJavaType();
+            }
             throw new IllegalStateException( "Could not resolve feature map for " + getFeatureName() );
           }
           if( _index >= annotations.size() )
@@ -131,6 +139,18 @@ public class GosuAnnotationInfo implements IAnnotationInfo
       }
     }
     return _value;
+  }
+
+  private Object getFromJavaType()
+  {
+    IJavaType javaType = _owner.getJavaType();
+    IRelativeTypeInfo typeInfo = (IRelativeTypeInfo)javaType.getTypeInfo();
+    if( _container instanceof IPropertyInfo )
+    {
+      return typeInfo.getProperty( javaType, _container.getDisplayName() ).getAnnotation( getType() ).getInstance();
+    }
+    return typeInfo.getMethod( javaType, _container.getDisplayName(),
+                               BaseFeatureInfo.getParamTypes( ((IMethodInfo)_container).getParameters() ) ).getAnnotation( getType() ).getInstance();
   }
 
 //  @Override

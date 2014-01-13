@@ -33,8 +33,8 @@ import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.lang.psi.stubs.GosuFileStub;
 import gw.plugin.ij.lang.psi.stubs.GosuFileStubBuilder;
 import gw.plugin.ij.util.ExceptionUtil;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -80,7 +80,7 @@ public class GosuStubFileElementType extends IStubFileElementType<GosuFileStub> 
     try {
       //TODO-dp remove TypeSystem.getCurrentCompilingType() != null which was put in to avoid reentrancy of the Gosu parser
       String content = psiFile.getText();
-      if (CommonServices.getPlatformHelper().isPathIgnored(IDEAUtil.getFileFromPsi(psiFile).getPath()) ||
+      if (CommonServices.getPlatformHelper().isPathIgnored(FileUtil.getFileFromPsi(psiFile).getPath()) ||
         isDoNotVerify( content ) ||
         TypeSystem.getCurrentCompilingType() != null) {
         return new PlainTextASTFactory().createLeaf(PlainTextTokenTypes.PLAIN_TEXT, psiFile.getText());

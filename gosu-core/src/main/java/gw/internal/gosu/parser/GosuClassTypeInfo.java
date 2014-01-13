@@ -464,9 +464,6 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
       }
       else
       {
-        if( _gsClass.getName().equals( "gw.plugin.contact.ValidateABContactCreationPluginImpl" ) ) {
-          System.out.println( "delete me" );
-        }
         List<DynamicFunctionSymbol> mapConstructors = _gsClass.getConstructorFunctions();
         if( mapConstructors != null )
         {

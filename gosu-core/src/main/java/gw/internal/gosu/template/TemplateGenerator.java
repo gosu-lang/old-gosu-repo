@@ -4,62 +4,69 @@
 
 package gw.internal.gosu.template;
 
-import gw.lang.parser.GosuParserTypes;
-import gw.lang.parser.exceptions.ParseResultsException;
-import gw.lang.parser.TypelessScriptPartId;
+import gw.internal.gosu.parser.CommonSymbolsScope;
+import gw.internal.gosu.parser.CompiledGosuClassSymbolTable;
+import gw.internal.gosu.parser.ContextInferenceManager;
+import gw.internal.gosu.parser.DynamicFunctionSymbol;
+import gw.internal.gosu.parser.GosuParser;
+import gw.internal.gosu.parser.IGosuClassInternal;
+import gw.internal.gosu.parser.IGosuEnhancementInternal;
+import gw.internal.gosu.parser.Symbol;
+import gw.internal.gosu.parser.TypeLoaderAccess;
+import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.expressions.Program;
-import gw.internal.gosu.parser.expressions.BlockExpression;
-import gw.internal.gosu.parser.*;
-import gw.lang.parser.expressions.IProgram;
-import gw.lang.parser.template.IEscapesAllContent;
-import gw.lang.reflect.FunctionType;
-import gw.lang.reflect.TypeSystem;
+import gw.lang.parser.ExternalSymbolMapForMap;
 import gw.lang.parser.GosuParserFactory;
-import gw.lang.parser.IFileContext;
-import gw.lang.parser.IGosuParser;
-import gw.lang.parser.ISymbol;
-import gw.lang.parser.ISymbolTable;
-import gw.lang.parser.ScriptabilityModifiers;
-import gw.lang.parser.IParseTree;
-import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IFunctionSymbol;
-import gw.lang.parser.Keyword;
+import gw.lang.parser.IGosuParser;
+import gw.lang.parser.IParseTree;
 import gw.lang.parser.IScriptPartId;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.Keyword;
 import gw.lang.parser.ScriptPartId;
-import gw.lang.parser.ExternalSymbolMapForMap;
+import gw.lang.parser.ScriptabilityModifiers;
+import gw.lang.parser.TypelessScriptPartId;
+import gw.lang.parser.exceptions.ParseResultsException;
+import gw.lang.parser.expressions.IProgram;
 import gw.lang.parser.resources.Res;
+import gw.lang.parser.template.IEscapesAllContent;
 import gw.lang.parser.template.ITemplateGenerator;
-import gw.lang.parser.template.TemplateParseException;
 import gw.lang.parser.template.StringEscaper;
+import gw.lang.parser.template.TemplateParseException;
+import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.TypeSystemShutdownListener;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
-import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IExternalSymbolMap;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.gs.ITemplateType;
+import gw.lang.reflect.java.JavaTypes;
 import gw.util.GosuClassUtil;
-import gw.util.Stack;
 import gw.util.GosuEscapeUtil;
-import gw.util.StreamUtil;
 import gw.util.GosuStringUtil;
+import gw.util.Stack;
+import gw.util.StreamUtil;
 import gw.util.concurrent.LockingLazyVar;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashMap;
-import java.util.Collections;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * A template generator employing Gosu.
@@ -80,7 +87,6 @@ public class TemplateGenerator implements ITemplateGenerator
   public static final char DIRECTIVE_SUFFIX = '@';
   public static final String COMMENT_BEGIN = "<%--";
   public static final String COMMENT_END = "--%>";
-
   public static final String ALTERNATE_EXPRESSION_BEGIN = "${";
   public static final String ALTERNATE_EXPRESSION_END = "}";
 
@@ -106,16 +112,28 @@ public class TemplateGenerator implements ITemplateGenerator
       }
     }
   };
+  public static final LockingLazyVar<ISymbol> PRINT_RANGE_SYMBOL = new LockingLazyVar<ISymbol>() {
+    protected ISymbol init() {
+      try {
+        return new Symbol( PRINT_RANGE_METHOD,
+                           new FunctionType( PRINT_RANGE_METHOD, GosuParserTypes.NULL_TYPE(), new IType[]{JavaTypes.pINT(), JavaTypes.pINT()} ),
+                           TemplateGenerator.class.getMethod( PRINT_RANGE_METHOD, int.class, int.class ) );
+      } catch (NoSuchMethodException e) {
+        throw new RuntimeException( e );
+      }
+    }
+  };
   static
   {
     TypeSystem.addShutdownListener(new TypeSystemShutdownListener() {
       public void shutdown() {
         PRINT_CONTENT_SYMBOL.clear();
+        PRINT_RANGE_SYMBOL.clear();
       }
     });
   }
     
-  private static ThreadLocal<Stack<WriterEscaperPair>> g_writerEscaperPair = new ThreadLocal<Stack<WriterEscaperPair>>();
+  private static ThreadLocal<Stack<RuntimeData>> g_runtimeData = new ThreadLocal<Stack<RuntimeData>>();
 
   private String _fqn;
   private String _scriptStr;
@@ -128,6 +146,7 @@ public class TemplateGenerator implements ITemplateGenerator
   private boolean _disableAlternative;
   private boolean _hasOwnSymbolScope;
   private ContextInferenceManager _ctxInferenceMgr;
+  private boolean _bStringLiteralTemplate;
 
   /**
    * Generates a template of any format having embedded Gosu.
@@ -180,29 +199,29 @@ public class TemplateGenerator implements ITemplateGenerator
     return _program;
   }
 
-  private static WriterEscaperPair getWriterEscaperPair()
+  private static RuntimeData getRuntimeData()
   {
-    Stack stack = g_writerEscaperPair.get();
+    Stack stack = g_runtimeData.get();
     if( stack != null && stack.size() > 0 )
     {
-      return (WriterEscaperPair)stack.peek();
+      return (RuntimeData)stack.peek();
     }
     return null;
   }
 
-  private static void pushWriterEscaperPair( WriterEscaperPair pair )
+  private static void pushRuntimeData( RuntimeData pair )
   {
-    Stack<WriterEscaperPair> stack = g_writerEscaperPair.get();
+    Stack<RuntimeData> stack = g_runtimeData.get();
     if( stack == null )
     {
-      g_writerEscaperPair.set( stack = new Stack<WriterEscaperPair>() );
+      g_runtimeData.set( stack = new Stack<RuntimeData>() );
     }
     stack.push( pair );
   }
 
-  private static void popWriter()
+  private static void popRuntimeData()
   {
-    Stack<WriterEscaperPair> stack = g_writerEscaperPair.get();
+    Stack<RuntimeData> stack = g_runtimeData.get();
     stack.pop();
   }
 
@@ -236,15 +255,17 @@ public class TemplateGenerator implements ITemplateGenerator
     try
     {
       symTable.putSymbol( PRINT_CONTENT_SYMBOL.get() );
+      symTable.putSymbol( PRINT_RANGE_SYMBOL.get() );
       if(_supertype != null) {
         symTable.putSymbol(new Symbol("this", _supertype, null));
       }
-      pushWriterEscaperPair( new WriterEscaperPair(writer, escaper) );
+      pushRuntimeData( new RuntimeData( writer, escaper ) );
       try
       {
-        synchronized (this) {
-          if( _program == null )
-          {
+        if( _program == null ) {
+          TypeSystem.lock();
+          try {
+            if( _program == null ) {
             List<TemplateParseException> exceptions = new ArrayList<TemplateParseException>();
             strCompiledSource = transformTemplate(_scriptStr, exceptions);
             if (!exceptions.isEmpty()) {
@@ -258,11 +279,15 @@ public class TemplateGenerator implements ITemplateGenerator
             _program.getGosuProgram().setThrowaway( true );
           }
         }
+          finally {
+            TypeSystem.unlock();
+          }
+        }
         _program.evaluate(extractExternalSymbols( _compileTimeSymbolTable, symTable ));
       }
       finally
       {
-        popWriter();
+        popRuntimeData();
       }
     }
     catch( ParseResultsException e )
@@ -277,7 +302,7 @@ public class TemplateGenerator implements ITemplateGenerator
 
   public void compile(ISymbolTable symTable) throws TemplateParseException
   {
-    compile( new java.util.Stack<IScriptPartId>(), symTable, new HashMap<String, Set<IFunctionSymbol>>(), null, null, _ctxInferenceMgr );
+    compile(new java.util.Stack<IScriptPartId>(), symTable, new HashMap<String, Set<IFunctionSymbol>>(), null, null, _ctxInferenceMgr);
   }
 
   public void compile( java.util.Stack<IScriptPartId> scriptPartIdStack, ISymbolTable symTable, Map<String, Set<IFunctionSymbol>> dfsDeclByName, ITypeUsesMap typeUsesMap, Stack<BlockExpression> blocks, ContextInferenceManager ctxInferenceMgr) throws TemplateParseException {
@@ -289,10 +314,12 @@ public class TemplateGenerator implements ITemplateGenerator
     try
     {
       symTable.putSymbol( PRINT_CONTENT_SYMBOL.get() );
+      symTable.putSymbol( PRINT_RANGE_SYMBOL.get() );
 
-      synchronized (this) {
-        if( _program == null )
-        {
+      if( _program == null ) {
+        TypeSystem.lock();
+        try {
+          if( _program == null ) {
           List<TemplateParseException> exceptions = new ArrayList<TemplateParseException>();
           strCompiledSource = transformTemplate(_scriptStr, exceptions);
           if (!exceptions.isEmpty()) {
@@ -306,7 +333,10 @@ public class TemplateGenerator implements ITemplateGenerator
           _compileTimeSymbolTable = symTable.copy();
         }
       }
-
+        finally {
+          TypeSystem.unlock();
+        }
+      }
     }
     catch( ParseResultsException e )
     {
@@ -369,7 +399,7 @@ public class TemplateGenerator implements ITemplateGenerator
       for (Entry<String, Set<IFunctionSymbol>> dfsDecls : parser.getDfsDecls().entrySet()) {
         for (Iterator<IFunctionSymbol> it = dfsDecls.getValue().iterator(); it.hasNext(); ) {
           IFunctionSymbol fs = it.next();
-          if (fs instanceof Symbol && ((Symbol) fs).isPrivate()) {
+          if (fs instanceof Symbol && fs.isPrivate()) {
             it.remove();
           }
         }
@@ -385,44 +415,17 @@ public class TemplateGenerator implements ITemplateGenerator
     {
       scriptPart = new TypelessScriptPartId( GS_TEMPLATE_PARSED );
     }
-    IFileContext context =
-      _fqn != null
-      ? new IFileContext()
-        {
-          public String getClassName()
-          {
-            // The base name for the Gosu class we generate
-            return _fqn;
-          }
-
-          public String getContextString()
-          {
-            // Suffix to distinguish the Gosu class we generate from the actual Gosu template type
-            return "_generated_program_for_template_";
-          }
-
-          public String getFilePath()
-          {
-            // Ensure the bytecode class we generate for this has the file ref for debugging
-
-            ITemplateType templateType = (ITemplateType)TypeSystem.getByFullNameIfValid( _fqn );
-            return templateType != null
-                   ? templateType.getSourceFileHandle().getFileName()
-                   : null;
-          }
-        }
-      : null;
     Program program = (Program)parser.parseProgram( scriptPart, null, null, true );
     program.clearParseTreeInformation();
     return program;
   }
 
   private void addStaticSymbols(ISymbolTable symbolTable, GosuParser parser, IGosuClassInternal supertype) {
-    supertype.putClassMembers((GosuParser) parser, symbolTable, supertype, true);
+    supertype.putClassMembers( parser, symbolTable, supertype, true );
     for(Object entryObj : symbolTable.getSymbols().entrySet()) {
       @SuppressWarnings({"unchecked"})
       Entry<CharSequence, ISymbol> entry = (Entry<CharSequence, ISymbol>) entryObj;
-      if(((Symbol)entry.getValue()).isPrivate()) {
+      if((entry.getValue()).isPrivate()) {
         symbolTable.removeSymbol(entry.getKey());
       }
     }
@@ -467,18 +470,6 @@ public class TemplateGenerator implements ITemplateGenerator
     }
   }
 
-  public IProgram verifyAndGetProgram( IGosuParser parser )
-  {
-    try
-    {
-      return verify( parser, true );
-    }
-    catch( ParseResultsException e )
-    {
-      throw new IllegalStateException( "Should not have thrown ParseResultsException: " + e );
-    }
-  }
-
   public void verify( IGosuParser parser ) throws ParseResultsException
   {
     verify( parser, false );
@@ -487,11 +478,16 @@ public class TemplateGenerator implements ITemplateGenerator
   private IProgram verify( IGosuParser parser, boolean bDoNotThrowParseResultException ) throws ParseResultsException
   {
     HashMap<String, Set<IFunctionSymbol>> dfsMap = new HashMap<String, Set<IFunctionSymbol>>();
-    dfsMap.put( (String)PRINT_METHOD, Collections.<IFunctionSymbol>singleton(new DynamicFunctionSymbol(parser.getSymbolTable(),
+    dfsMap.put( PRINT_METHOD, Collections.<IFunctionSymbol>singleton(new DynamicFunctionSymbol(parser.getSymbolTable(),
             PRINT_METHOD,
             new FunctionType(PRINT_METHOD, GosuParserTypes.NULL_TYPE(), new IType[]{GosuParserTypes.STRING_TYPE(), GosuParserTypes.BOOLEAN_TYPE()}),
             Arrays.<ISymbol>asList(new Symbol("content", GosuParserTypes.STRING_TYPE(), null), new Symbol("escape", GosuParserTypes.BOOLEAN_TYPE(), null)),
             (IExpression)null)));
+    dfsMap.put(PRINT_RANGE_METHOD, Collections.<IFunctionSymbol>singleton(new DynamicFunctionSymbol(parser.getSymbolTable(),
+        PRINT_RANGE_METHOD,
+        new FunctionType(PRINT_RANGE_METHOD, GosuParserTypes.NULL_TYPE(), new IType[]{GosuParserTypes.STRING_TYPE(), JavaTypes.pINT(), JavaTypes.pINT()}),
+        Arrays.<ISymbol>asList(new Symbol("start", JavaTypes.pINT(), null), new Symbol("end", JavaTypes.pINT(), null)),
+        (IExpression) null)));
     return verify( parser, dfsMap, null, bDoNotThrowParseResultException );
   }
 
@@ -501,107 +497,141 @@ public class TemplateGenerator implements ITemplateGenerator
     return exceptions;
   }
 
-  @SuppressWarnings("ThrowableInstanceNeverThrown")
+  @SuppressWarnings({"ThrowableInstanceNeverThrown", "ConstantConditions"})
   private String transformTemplate(String strSource, List<TemplateParseException> exceptions)
   {
     _params.clear();
-    StringBuilder strTarget = new StringBuilder(strSource.length());
-    strSource = strip( strSource, COMMENT_BEGIN, COMMENT_END );
+    StringBuilder sbTarget = new StringBuilder( strSource.length() );
     int iIndex = 0;
     while( true )
     {
       int iIndex2 = strSource.indexOf( SCRIPTLET_BEGIN, iIndex );
       int altIndex2 = strSource.indexOf( ALTERNATE_EXPRESSION_BEGIN, iIndex );
       if( iIndex2 >= 0 || altIndex2 >= 0 ) {
-        if (iIndex2 >= 0 && (altIndex2 < 0 || iIndex2 < altIndex2)) {
-          if (iIndex2 > 0 && strSource.charAt(iIndex2 - 1) == '\\') {
-            addText(strTarget, strSource.substring(iIndex, iIndex2 - 1));
-            addText(strTarget, SCRIPTLET_BEGIN.substring(0, 1));
+        if( iIndex2 >= 0 && (altIndex2 < 0 || iIndex2 < altIndex2) ) {
+          if( iIndex2 > 0 && strSource.charAt( iIndex2 - 1 ) == '\\' ) {
+            // Handle escaped "\<%"
+            addRefText( sbTarget, iIndex, iIndex2 - 1 );
+            addText( sbTarget, SCRIPTLET_BEGIN.substring( 0, 1 ) );
             iIndex = iIndex2 + 1;
-          } else {
-            addText(strTarget, strSource.substring(iIndex, iIndex2));
+          }
+          else {
+            boolean bPrecedingContentEndsWithNewLine = iIndex2-iIndex <= 0 || strSource.charAt( iIndex2-1 ) == '\n';
+            addRefText( sbTarget, iIndex, iIndex2 );
             iIndex = iIndex2 + SCRIPTLET_BEGIN_LEN;
-            if (iIndex < strSource.length()) {
-              boolean bExpression = strSource.charAt(iIndex) == EXPRESSION_SUFFIX;
-              boolean bDeclaration = strSource.charAt(iIndex) == DECLARATION_SUFFIX;
-              boolean bDirective = strSource.charAt(iIndex) == DIRECTIVE_SUFFIX;
+            boolean bExpression = false;
+            if( iIndex < strSource.length() ) {
+              if( strSource.indexOf( "--", iIndex ) == iIndex ) {
+                int iEndComment = strSource.indexOf( COMMENT_END, iIndex+2 );
+                if( iEndComment > 0 ) {
+                  iIndex = iEndComment + COMMENT_END_LEN;
+                  continue;
+                }
+                else {
+                  return sbTarget.toString();
+                }
+              }
+              bExpression = strSource.charAt( iIndex ) == EXPRESSION_SUFFIX;
+              boolean bDeclaration = strSource.charAt( iIndex ) == DECLARATION_SUFFIX;
+              boolean bDirective = strSource.charAt( iIndex ) == DIRECTIVE_SUFFIX;
               iIndex += ((bExpression || bDeclaration || bDirective) ? 1 : 0);
 
-              iIndex2 = strSource.indexOf(SCRIPTLET_END, iIndex);
-              if (iIndex2 < 0) {
-                int iLineNumber = GosuStringUtil.getLineNumberForIndex(strSource, iIndex);
-                int iColumn = getColumnForIndex(strSource, iIndex);
-                exceptions.add(new TemplateParseException(bExpression ? Res.MSG_TEMPLATE_MISSING_END_TAG_EXPRESSION : Res.MSG_TEMPLATE_MISSING_END_TAG_SCRIPTLET, iLineNumber, iColumn, iIndex));
-                return strTarget.toString();
+              iIndex2 = strSource.indexOf( SCRIPTLET_END, iIndex );
+              if( iIndex2 < 0 ) {
+                int iLineNumber = GosuStringUtil.getLineNumberForIndex( strSource, iIndex );
+                int iColumn = getColumnForIndex( strSource, iIndex );
+                exceptions.add( new TemplateParseException( bExpression ? Res.MSG_TEMPLATE_MISSING_END_TAG_EXPRESSION : Res.MSG_TEMPLATE_MISSING_END_TAG_SCRIPTLET, iLineNumber, iColumn, iIndex ) );
+                return sbTarget.toString();
               }
 
-              String strScript = strSource.substring(iIndex, iIndex2);
-              if (bExpression) {
-                addExpression(strTarget, strScript);
-              } else if (bDirective) {
+              String strScript = strSource.substring( iIndex, iIndex2 );
+              if( bExpression ) {
+                addExpression( sbTarget, strScript );
+              }
+              else if( bDirective ) {
                 try {
-                  int iLineNumber = GosuStringUtil.getLineNumberForIndex(strSource, iIndex);
-                  int iColumn = getColumnForIndex(strSource, iIndex);
-                  processDirective(strScript, iLineNumber, iColumn, iIndex);
-                } catch (TemplateParseException e) {
-                  exceptions.add(e);
+                  int iLineNumber = GosuStringUtil.getLineNumberForIndex( strSource, iIndex );
+                  int iColumn = getColumnForIndex( strSource, iIndex );
+                  processDirective( strScript, iLineNumber, iColumn, iIndex );
                 }
-              } else {
-                addScriptlet(strTarget, strScript);
+                catch( TemplateParseException e ) {
+                  exceptions.add( e );
+                }
+              }
+              else {
+                addScriptlet( sbTarget, strScript );
               }
             }
 
             iIndex = iIndex2 + SCRIPTLET_END_LEN;
+            if( !bExpression && bPrecedingContentEndsWithNewLine ) {
+              iIndex = ignoreTrailingLineSeparator( strSource, iIndex );
           }
-        } else if (_disableAlternative && altIndex2 > 0 && strSource.charAt(altIndex2 - 1) != '\\') {
-          addText(strTarget, strSource.substring(iIndex, altIndex2 - 1));
-          addText(strTarget, "\\" + ALTERNATE_EXPRESSION_BEGIN.substring(0, 1));
+        }
+        }
+        else if( _disableAlternative && altIndex2 > 0 && strSource.charAt( altIndex2 - 1 ) != '\\' ) {
+          addRefText( sbTarget, iIndex, altIndex2 - 1 );
+          addText( sbTarget, "\\" + ALTERNATE_EXPRESSION_BEGIN.substring( 0, 1 ) );
           iIndex = altIndex2 + 1;
-        } else {
-          if (altIndex2 > 0 && strSource.charAt(altIndex2 - 1) == '\\') {
-            addText(strTarget, strSource.substring(iIndex, altIndex2 - 1));
-            addText(strTarget, ALTERNATE_EXPRESSION_BEGIN.substring(0, 1));
+        }
+        else {
+          if( altIndex2 > 0 && strSource.charAt( altIndex2 - 1 ) == '\\' ) {
+            addRefText( sbTarget, iIndex, altIndex2 - 1 );
+            addText( sbTarget, ALTERNATE_EXPRESSION_BEGIN.substring( 0, 1 ) );
             iIndex = altIndex2 + 1;
-          } else {
-            addText(strTarget, strSource.substring(iIndex, altIndex2));
+          }
+          else {
+            addRefText( sbTarget, iIndex, altIndex2 );
             iIndex = altIndex2 + ALTERNATE_EXPRESSION_BEGIN_LEN;
 
-            altIndex2 = strSource.indexOf(ALTERNATE_EXPRESSION_END, iIndex);
-            int nextOpen = strSource.indexOf("{", iIndex);
-            if (nextOpen != -1 && nextOpen < altIndex2) {
+            altIndex2 = strSource.indexOf( ALTERNATE_EXPRESSION_END, iIndex );
+            int nextOpen = strSource.indexOf( "{", iIndex );
+            if( nextOpen != -1 && nextOpen < altIndex2 ) {
               int numOpen = 2;
-              while (numOpen > 1 && altIndex2 != -1) {
-                nextOpen = strSource.indexOf("{", Math.min(nextOpen, altIndex2) + 1);
-                if (nextOpen != -1 && nextOpen < altIndex2) {
+              while( numOpen > 1 && altIndex2 != -1 ) {
+                nextOpen = strSource.indexOf( "{", Math.min( nextOpen, altIndex2 ) + 1 );
+                if( nextOpen != -1 && nextOpen < altIndex2 ) {
                   numOpen++;
-                } else {
+                }
+                else {
                   numOpen--;
-                  altIndex2 = strSource.indexOf("}", altIndex2 + ALTERNATE_EXPRESSION_END_LEN);
+                  altIndex2 = strSource.indexOf( "}", altIndex2 + ALTERNATE_EXPRESSION_END_LEN );
                 }
               }
             }
-            if (altIndex2 < 0) {
-              int iLineNumber = GosuStringUtil.getLineNumberForIndex(strSource, iIndex);
-              int iColumn = getColumnForIndex(strSource, iIndex);
-              exceptions.add(new TemplateParseException(Res.MSG_TEMPLATE_MISSING_END_TAG_EXPRESSION_ALT, iLineNumber, iColumn, iIndex));
-              return strTarget.toString();
+            if( altIndex2 < 0 ) {
+              int iLineNumber = GosuStringUtil.getLineNumberForIndex( strSource, iIndex );
+              int iColumn = getColumnForIndex( strSource, iIndex );
+              exceptions.add( new TemplateParseException( Res.MSG_TEMPLATE_MISSING_END_TAG_EXPRESSION_ALT, iLineNumber, iColumn, iIndex ) );
+              return sbTarget.toString();
             }
 
-            String strScript = strSource.substring(iIndex, altIndex2);
-            addExpression(strTarget, strScript);
+            String strScript = strSource.substring( iIndex, altIndex2 );
+            addExpression( sbTarget, strScript );
 
             iIndex = altIndex2 + ALTERNATE_EXPRESSION_END_LEN;
           }
         }
       }
-      else
-      {
-        addText( strTarget, strSource.substring( iIndex ) );
+      else {
+        addRefText( sbTarget, iIndex, strSource.length() );
         break;
       }
     }
 
-    return strTarget.toString();
+    return sbTarget.toString();
+  }
+
+  private int ignoreTrailingLineSeparator( String strSource, int iIndex ) {
+    if( iIndex < strSource.length() ) {
+      if( strSource.charAt( iIndex ) == '\n' ) {
+        iIndex++;
+      }
+      else if( strSource.startsWith( System.lineSeparator(), iIndex ) ) {
+        iIndex += System.lineSeparator().length();
+      }
+    }
+    return iIndex;
   }
 
   private void processDirective(String strScript, int lineNumber, int column, int offset) throws TemplateParseException {
@@ -653,39 +683,28 @@ public class TemplateGenerator implements ITemplateGenerator
     }
   }
 
-
-  private String strip( String strSource, String strBeginDelim, String strEndDelim )
+  private void addText( StringBuilder strTarget, String strText )
   {
-    String strTarget = "";
-
-    int iIndex = 0;
-    while( true )
+    if( !GosuStringUtil.isEmpty( strText ) )
     {
-      int iIndex2 = strSource.indexOf( strBeginDelim, iIndex );
-      if( iIndex2 >= 0 )
-      {
-        strTarget += strSource.substring( iIndex, iIndex2 );
-        iIndex2 = strSource.indexOf( strEndDelim, iIndex );
-        if(iIndex2 == -1) {
-          break;
-        }
-        iIndex = iIndex2 + strEndDelim.length();
-      }
-      else
-      {
-        strTarget += strSource.substring( iIndex );
-        break;
-      }
+      strText = escapeForGosuStringLiteral( strText );
+      strTarget.append( PRINT_METHOD ).append( "(\"" ).append( strText ).append( "\", false)\r\n" );
     }
-
-    return strTarget;
   }
 
-  private void addText( StringBuilder strTarget, String strText ) {
-    if(!GosuStringUtil.isEmpty(strText))
+  private void addRefText( StringBuilder sbTarget, int iStart, int iEnd )
+  {
+    if( isForStringLiteral() )
     {
-      strText = escapeForGosuStringLiteral(strText);
-      strTarget.append(PRINT_METHOD).append("((\"").append(strText).append("\") as String, false)\r\n");
+      addText( sbTarget, _scriptStr.substring( iStart, iEnd ) );
+    }
+    else if( iEnd - iStart > 0 )
+    {
+      sbTarget.append( PRINT_RANGE_METHOD )
+        .append( "(" )
+        .append( iStart ).append( "," )
+        .append( iEnd )
+        .append( ")" );
     }
   }
 
@@ -693,13 +712,13 @@ public class TemplateGenerator implements ITemplateGenerator
   {
     if( strExpression.trim().length() != 0 )
     {
-      strTarget.append(PRINT_METHOD).append("((").append(strExpression).append(") as String, true)\r\n");
+      strTarget.append( PRINT_METHOD ).append( "((" ).append( strExpression ).append( ") as String, true)\r\n" );
     }
   }
 
   private void addScriptlet( StringBuilder strTarget, String strScript )
   {
-    strTarget.append(strScript).append("\r\n");
+    strTarget.append( strScript ).append( "\r\n" );
   }
 
   private String escapeForGosuStringLiteral( String strText )
@@ -735,7 +754,7 @@ public class TemplateGenerator implements ITemplateGenerator
   {
     try
     {
-      WriterEscaperPair pair = getWriterEscaperPair();
+      RuntimeData pair = getRuntimeData();
       Writer writer = pair._writer;
 
       if (escape && pair._esc != null) {
@@ -752,6 +771,22 @@ public class TemplateGenerator implements ITemplateGenerator
     }
   }
 
+  @SuppressWarnings("UnusedDeclaration")
+  public static void printRange( int iStart, int iEnd )
+  {
+    try
+    {
+      RuntimeData runtimeData = getRuntimeData();
+      String strContent = runtimeData._templateSource.substring( iStart, iEnd );
+      Writer writer = runtimeData._writer;
+      writer.write( strContent );
+    }
+    catch( IOException e )
+    {
+      throw new RuntimeException( e );
+    }
+  }
+
   public void setDisableAlternative(boolean disableAlternative) {
     _disableAlternative = disableAlternative;
   }
@@ -761,12 +796,22 @@ public class TemplateGenerator implements ITemplateGenerator
     _ctxInferenceMgr = ctxInferenceMgr.copy();
   }
 
-  private static class WriterEscaperPair{
+  public void setForStringLiteral( boolean bForStringLiteralTemplate ) {
+    _bStringLiteralTemplate = bForStringLiteralTemplate;
+  }
+  public boolean isForStringLiteral() {
+    return _bStringLiteralTemplate;
+  }
+
+  private class RuntimeData {
     Writer _writer;
     StringEscaper _esc;
-    public WriterEscaperPair(Writer writer, StringEscaper esc) {
+    String _templateSource;
+
+    public RuntimeData( Writer writer, StringEscaper esc ) {
       _writer = writer;
       _esc = esc;
+      _templateSource = getSource();
     }
   }
 

@@ -64,6 +64,11 @@ public class Suite<T extends Suite> extends junit.framework.TestSuite {
   public static final String GOSU_SUITE_INCLUDE_TYPES = "gs.suite.tests";
 
   public Suite() {
+    Integer splitPartition = readIntegerSystemProperty("split.partition");
+    if(splitPartition != null && splitPartition > 1){
+      throw new UnsupportedOperationException("V3 tests doesn't support more than one split");
+    }
+
     // By default, use a standard TestEnvironment to set things up, in case the specific suite class doesn't
     // bother to set one up
     _testEnvironment = new TestEnvironment();

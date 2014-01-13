@@ -68,7 +68,7 @@ public class InnerClassFileSystemSourceFileHandle implements ISourceFileHandle
   public String getFilePath()
   {
     IFileRepositoryBasedType enclosingType = (IFileRepositoryBasedType) TypeSystem.getByFullNameIfValid(_strEnclosingType);
-    return enclosingType.getSourceFileHandle().getFilePath();
+    return enclosingType == null ? null : enclosingType.getSourceFileHandle().getFilePath();
   }
 
   @Override

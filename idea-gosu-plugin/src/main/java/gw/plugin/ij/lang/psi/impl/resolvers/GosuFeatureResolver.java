@@ -4,9 +4,7 @@
 
 package gw.plugin.ij.lang.psi.impl.resolvers;
 
-import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.infos.CandidateInfo;
 import com.intellij.psi.util.PsiTreeUtil;
 import gw.lang.parser.IBlockClass;
 import gw.lang.parser.ICapturedSymbol;
@@ -35,9 +33,9 @@ import gw.plugin.ij.lang.psi.impl.expressions.GosuReferenceExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.statements.GosuVariableImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.GosuClassDefinitionImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.members.GosuMethodImpl;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.InjectedElementEditor;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
+import gw.plugin.ij.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,7 +64,7 @@ public class GosuFeatureResolver extends AbstractFeatureResolver {
   }
 
   public static PsiElement resolveProperty(IType ownersType, String propertyName, PsiElement context) {
-    ownersType = IDEAUtil.getConcreteType(ownersType);
+    ownersType = TypeUtil.getConcreteType(ownersType);
     PsiElement resolved = null;
     if (IGosuClass.ProxyUtil.isProxyClass(ownersType.getName())) {
       PsiElement proxiedPsiClass = PsiTypeResolver.getProxiedPsiClass(ownersType, context);
@@ -74,7 +72,7 @@ public class GosuFeatureResolver extends AbstractFeatureResolver {
         return findInheritedPropertyAcrossProxy((PsiClass) proxiedPsiClass,propertyName, context);
       }
     } else if ("outer".equals(propertyName)) {
-      resolved = PsiTypeResolver.resolveType(IDEAUtil.getTrueEnclosingType(ownersType), context);
+      resolved = PsiTypeResolver.resolveType(TypeUtil.getTrueEnclosingType(ownersType), context);
     } else {
       PsiElement psiClass = PsiTypeResolver.resolveType(ownersType, context);
       if (psiClass instanceof PsiClass) {
@@ -408,8 +406,8 @@ public class GosuFeatureResolver extends AbstractFeatureResolver {
   }
 
   protected PsiElement resolveOuter(IGosuClass gsClass, PsiElement context) {
-    IType namedEnclosingType = gsClass instanceof IBlockClass ? IDEAUtil.getTrueEnclosingType(gsClass) : gsClass;
-    return PsiTypeResolver.resolveType(IDEAUtil.getTrueEnclosingType(namedEnclosingType), context);
+    IType namedEnclosingType = gsClass instanceof IBlockClass ? TypeUtil.getTrueEnclosingType(gsClass) : gsClass;
+    return PsiTypeResolver.resolveType(TypeUtil.getTrueEnclosingType(namedEnclosingType), context);
   }
 
   protected boolean isMemberOnEnclosingType(@NotNull IGosuClass gsClass, IGosuClass symbolClass) {

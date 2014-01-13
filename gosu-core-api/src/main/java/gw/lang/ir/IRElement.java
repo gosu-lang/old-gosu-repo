@@ -4,7 +4,11 @@
 
 package gw.lang.ir;
 
+import gw.lang.GosuShop;
 import gw.lang.UnstableAPI;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @UnstableAPI
 public abstract class IRElement {
@@ -47,5 +51,40 @@ public abstract class IRElement {
     if( !isImplicit() ) {
       _iLineNumber = iLineNumber;
     }
+  }
+
+  protected IRType maybeEraseStructuralType( IRType type ) {
+    return maybeEraseStructuralType( null, type );
+  }
+  protected IRType maybeEraseStructuralType( IRType ownersType, IRType type ) {
+    if( ownersType == null ? type.isStructural() : type.isStructuralAndErased( ownersType ) ) {
+      return GosuShop.getIRTypeResolver().getDescriptor( Object.class );
+    }
+    return type;
+  }
+
+  protected List<IRType> maybeEraseStructuralTypes( IRType ownersType, List<IRType> types ) {
+    List<IRType> altTypes = null;
+    for( IRType csr: types ) {
+      if( csr.isStructuralAndErased( ownersType ) ) {
+        IRType type = GosuShop.getIRTypeResolver().getDescriptor( Object.class );
+        if( altTypes == null ) {
+          altTypes = new ArrayList<IRType>( types );
+        }
+        altTypes.set( types.indexOf( csr ), type );
+      }
+    }
+    return altTypes == null ? types : altTypes;
+  }
+
+  protected List<IRSymbol> maybeEraseStructuralSymbolTypes( List<IRSymbol> parameters ) {
+    for( IRSymbol sym: parameters ) {
+      IRType type = sym.getType();
+      if( type.isStructural() ) {
+        type = GosuShop.getIRTypeResolver().getDescriptor( Object.class );
+        sym.setType( type );
+      }
+    }
+    return parameters;
   }
 }

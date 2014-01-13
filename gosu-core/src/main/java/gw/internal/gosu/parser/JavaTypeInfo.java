@@ -579,7 +579,7 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
   @Override
   public Accessibility getAccessibilityForType( IType whosaskin )
   {
-    return getAccessibilityForClass( _type, whosaskin == null ? getCompilingClass() : whosaskin );
+    return getAccessibilityForClass( _type, whosaskin == null ? getCompilingClass( _type ) : whosaskin );
   }
 
   @Override
@@ -832,11 +832,11 @@ public class JavaTypeInfo extends JavaBaseFeatureInfo implements IJavaTypeInfo
     return Accessibility.PUBLIC;
   }
 
-  private IType getCompilingClass()
+  public static IType getCompilingClass( IType type )
   {
     if( GosuClassTypeInfo.isIncludeAll() )
     {
-      return _type;
+      return type;
     }
 
     IType compilingClass = GosuClassCompilingStack.getCurrentCompilingType();

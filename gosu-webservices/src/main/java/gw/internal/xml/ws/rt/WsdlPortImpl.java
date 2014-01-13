@@ -137,11 +137,12 @@ public class WsdlPortImpl implements IGosuObject, IWsdlPort {
 
   /** This will invoke an operation
    *
+   *
    * @param opTypeData data about the operation, its name, its inputType, its outputType, its unwrapped outputtype
    * @param args the arguements for the operation  @return the returned object if any
    * @return the object returned from the call
    */
-  public Object invoke( IType expectedSoapHeadersType, final WsdlOperationInfo opTypeData, Object... args ) {
+  public Object invoke(final WsdlOperationInfo opTypeData, Object... args) {
     final long timeBefore = System.currentTimeMillis(); //Calculate the round trip
     try {
       AsyncResponseInternal response = invokeAsync( opTypeData, args );

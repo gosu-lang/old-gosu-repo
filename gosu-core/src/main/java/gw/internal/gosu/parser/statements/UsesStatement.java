@@ -4,14 +4,11 @@
 
 package gw.internal.gosu.parser.statements;
 
-import gw.lang.parser.IParsedElement;
-import gw.lang.parser.Keyword;
-import gw.lang.parser.statements.IClassFileStatement;
-import gw.lang.parser.statements.IUsesStatement;
-import gw.lang.parser.statements.IUsesStatementList;
-import gw.lang.reflect.module.IModule;
-import gw.lang.parser.statements.ITerminalStatement;
 import gw.internal.gosu.parser.Statement;
+import gw.lang.parser.Keyword;
+import gw.lang.parser.statements.ITerminalStatement;
+import gw.lang.parser.statements.IUsesStatement;
+import gw.lang.reflect.module.IModule;
 
 /**
  */
@@ -64,10 +61,6 @@ public class UsesStatement extends Statement implements IUsesStatement
   }
 
   public IModule getModule() {
-    IParsedElement parent = getParent();
-    if (parent instanceof IUsesStatementList) {
-      parent = parent.getParent();
-    }
-    return ((IClassFileStatement)parent).getClassStatement().getModule();
+    return getGosuClass().getClassStatement().getModule();
   }
 }

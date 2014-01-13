@@ -276,16 +276,6 @@ public class SourceCodeTokenizer implements ISourceCodeTokenizer
     _internal.eolIsSignificant( bFlag );
   }
 
-  public void slashStarComments( boolean bFlag )
-  {
-    _internal.slashStarComments( bFlag );
-  }
-
-  public void slashSlashComments( boolean bFlag )
-  {
-    _internal.slashSlashComments( bFlag );
-  }
-
   public void lowerCaseMode( boolean bLowerCaseMode )
   {
     _internal.lowerCaseMode( bLowerCaseMode );

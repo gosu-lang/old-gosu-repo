@@ -57,6 +57,9 @@ public class WsiServiceInfo {
         for ( IExceptionInfo exceptionInfo : m.getExceptions() ) {
           _thrownExceptions.add( exceptionInfo.getExceptionType() );
         }
+        for ( IType exceptionType : WsiUtilities.EXCEPTIONS_THROWN_BY_INFRASTRUCTURE.get() ) {
+          _thrownExceptions.add( exceptionType );
+        }
       }
     }
   }

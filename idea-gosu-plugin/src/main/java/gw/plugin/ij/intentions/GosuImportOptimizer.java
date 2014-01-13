@@ -32,6 +32,10 @@ public class GosuImportOptimizer implements ImportOptimizer {
     }
 
     public void run() {
+      if(_gosuFile.getName().endsWith(".gst")) {
+        //todo: see PL-27628
+        return;
+      }
       final PsiDocumentManager documentManager = PsiDocumentManager.getInstance(_gosuFile.getProject());
       final Document document = documentManager.getDocument(_gosuFile);
       if (document != null) {

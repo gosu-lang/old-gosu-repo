@@ -25,7 +25,6 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NotNullLazyValue;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.impl.PsiDocumentTransactionListener;
-import com.intellij.psi.impl.PsiManagerImpl;
 import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.ui.UIUtil;
 import gw.config.CommonServices;
@@ -33,13 +32,12 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.IProject;
 import gw.plugin.ij.actions.java.CreateClassAction;
-import gw.plugin.ij.compiler.CompilerLogger;
 import gw.plugin.ij.compiler.DependencyCacheCleaner;
 import gw.plugin.ij.compiler.GosuCompiler;
 import gw.plugin.ij.filetypes.GosuCodeFileType;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -117,8 +115,7 @@ public class PluginLoaderUtil {
             ImmutableSet.<FileType>of(StdFileTypes.JAVA, GosuCodeFileType.INSTANCE), // input
             ImmutableSet.<FileType>of(StdFileTypes.JAVA, GosuCodeFileType.INSTANCE)); // output
 
-    CompilerLogger compilerLogger = new CompilerLogger(_project);
-    compilerLogger.start();
+//    new CompilerLogger(_project).start();
 
     manager.addBeforeTask(new DependencyCacheCleaner());
   }
@@ -151,8 +148,6 @@ public class PluginLoaderUtil {
     }
   }
 
-  private static final boolean DEBUG = false;
-
   private void addEditorSourceProvider() {
     IDEAPlatformHelper platformHelper = (IDEAPlatformHelper) CommonServices.getPlatformHelper();
     _projectConnection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, platformHelper);
@@ -170,7 +165,7 @@ public class PluginLoaderUtil {
   }
 
   public void uninitGosuPlugin() {
-    IDEAUtil.closeAllGosuEditors(_project, null);
+    gw.plugin.ij.util.UIUtil.closeAllGosuEditors(_project, null);
 
     //DebuggerManager.getInstance( _project ).unregisterPositionManagerFactory( _positionManager );
     removeCompiler();
@@ -201,7 +196,7 @@ public class PluginLoaderUtil {
     } else {
       _failureReason = PluginFailureReason.EXCEPTION;
     }
-    IDEAUtil.showError(GosuBundle.message("error.plugin_could_not_start"), e);
+    ExceptionUtil.showError(GosuBundle.message("error.plugin_could_not_start"), e);
   }
 
   private void disablePlugin() {
@@ -235,15 +230,15 @@ public class PluginLoaderUtil {
 
   public void startPLugin() {
     if (hasRanPreviously() && isGuidewireApp()) {
-      IDEAUtil.showError(GosuBundle.message("error.plugin_disabled"),
-              GosuBundle.message("error.plugin_disabled.description"));
+      ExceptionUtil.showError(GosuBundle.message("error.plugin_disabled"),
+          GosuBundle.message("error.plugin_disabled.description"));
       return;
     }
 
     for (ITypeSystemStartupContributor contributor : getStartupContributors()) {
       String message = contributor.accepts(_project);
       if (message != null) {
-        IDEAUtil.showInfo(GosuBundle.message("info.plugin.not.started"), message);
+        ExceptionUtil.showInfo(GosuBundle.message("info.plugin.not.started"), message);
         return;
       }
     }
@@ -303,7 +298,7 @@ public class PluginLoaderUtil {
             pluginListener.afterPluginShutdown(_project);
           }
         } catch (Exception e) {
-          IDEAUtil.showNonFatalError("Exception during Gosu plugin shutdown.", e);
+          ExceptionUtil.showNonFatalError("Exception during Gosu plugin shutdown.", e);
         }
       }
     } finally {
@@ -322,7 +317,7 @@ public class PluginLoaderUtil {
 
   public boolean projectOpened() {
 //    if (ProjectManager.getInstance().getOpenProjects().length > 1) {
-//      IDEAUtil.showWarning("Gosu support disabled.", "Gosu cannot support multiple simultaneously open projects.");
+//      ExceptionAUtil.showWarning("Gosu support disabled.", "Gosu cannot support multiple simultaneously open projects.");
 //      stopPLugin(_project, PluginFailureReason.MULTIPLE_PROJECTS_OPEN);
 //      return false;
 //    }
@@ -338,7 +333,7 @@ public class PluginLoaderUtil {
     });
     StartupManagerImpl.getInstance(_project).registerPostStartupActivity(new Runnable() {
       public void run() {
-        IDEAUtil.printTiming("Indexing", 0, t1[0]);
+        System.out.printf("Indexing done in %.3fs.\n", (System.nanoTime() - t1[0]) * 1e-9);
       }
     });
     return true;

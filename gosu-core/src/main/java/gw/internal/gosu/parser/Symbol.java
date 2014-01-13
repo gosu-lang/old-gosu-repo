@@ -4,16 +4,26 @@
 package gw.internal.gosu.parser;
 
 import gw.lang.function.IBlock;
-import gw.lang.parser.*;
-
+import gw.lang.parser.GlobalScope;
+import gw.lang.parser.ICapturedSymbol;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IFunctionSymbol;
+import gw.lang.parser.IReducedSymbol;
+import gw.lang.parser.IScope;
+import gw.lang.parser.IScriptPartId;
+import gw.lang.parser.IStackProvider;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.Keyword;
+import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
-import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.util.GosuExceptionUtil;
 import gw.util.MutableBoolean;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * Base class for all symbols in the symbol table.
@@ -442,6 +452,11 @@ public class Symbol implements IFunctionSymbol
   public int getModifiers()
   {
     return _modifiers.getModifiers();
+  }
+
+  public List<IGosuAnnotation> getAnnotations()
+  {
+    return getModifierInfo().getAnnotations();
   }
 
   @Override

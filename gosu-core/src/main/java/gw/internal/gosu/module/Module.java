@@ -7,12 +7,14 @@ package gw.internal.gosu.module;
 import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IResource;
+import gw.internal.gosu.dynamic.DynamicTypeLoader;
 import gw.internal.gosu.parser.DefaultTypeLoader;
 import gw.internal.gosu.parser.FileSystemGosuClassRepository;
 import gw.internal.gosu.parser.IModuleClassLoader;
 import gw.internal.gosu.parser.ModuleClassLoader;
 import gw.internal.gosu.parser.ModuleTypeLoader;
 import gw.internal.gosu.properties.PropertiesTypeLoader;
+import gw.lang.parser.ILanguageLevel;
 import gw.lang.reflect.ITypeLoader;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.TypeSystemShutdownListener;
@@ -145,10 +147,11 @@ public class Module implements IModule
 
   private static void scanPaths(List<IDirectory> paths, Set<String> extensions, List<IDirectory> roots) {
     extensions.add(".java");
+    extensions.add(".xsd");
     extensions.addAll(Arrays.asList(GosuClassTypeLoader.ALL_EXTS));
     for (IDirectory root : paths) {
-      List<String> sourceFileExtensions = Extensions.getExtensions(root, Extensions.CONTAINS_SOURCES);
-      if (!sourceFileExtensions.isEmpty()) {
+      // roots without manifests are considered source roots
+      if (!Extensions.containsManifest(root) || !Extensions.getExtensions(root, Extensions.CONTAINS_SOURCES).isEmpty()) {
         roots.add(root);
       }
     }
@@ -257,6 +260,9 @@ public class Module implements IModule
   {
     CommonServices.getTypeSystem().pushTypeLoader( this, new GosuClassTypeLoader( this, _fileRepository ) );
     CommonServices.getTypeSystem().pushTypeLoader( this, new PropertiesTypeLoader( this ) );
+    if( ILanguageLevel.Util.DYNAMICE_TYPE() ) {
+      CommonServices.getTypeSystem().pushTypeLoader( this, new DynamicTypeLoader( this ) );
+    }
   }
 
   protected void maybeCreateModuleTypeLoader() {

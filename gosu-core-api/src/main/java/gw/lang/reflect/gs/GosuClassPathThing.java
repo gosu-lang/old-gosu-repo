@@ -26,7 +26,7 @@ public class GosuClassPathThing {
   private static void addGosuClassProtocolToClasspath() {
     try {
       URLClassLoaderWrapper urlLoader = findUrlLoader();
-      URL url = makeURL(urlLoader);
+      URL url = makeURL();
       if (!urlLoader.getURLs().contains(url)) {
         urlLoader.addURL(url);
       }
@@ -36,8 +36,8 @@ public class GosuClassPathThing {
     }
   }
 
-  private static URL makeURL(URLClassLoaderWrapper urlLoader) throws MalformedURLException {
-    String protocol =  isOSGi(urlLoader.getWrappedClassLoader()) ? "gosuclassosgi" : "gosuclass";
+  private static URL makeURL() throws MalformedURLException {
+    String protocol = "gosuclass";
     URL url;
     try {
       url = new URL( null, protocol + "://honeybadger/" );
@@ -51,18 +51,6 @@ public class GosuClassPathThing {
       url = new URL( null, protocol + "://honeybadger/" );
     }
     return url;
-  }
-
-  private static boolean isOSGi(ClassLoader loader) {
-/*
-    while (loader != null) {
-      if (loader.getClass().getName().equals("org.eclipse.osgi.internal.baseadaptor.DefaultClassLoader") ) {
-        return true;
-      }
-      loader = loader.getParent();
-    }
-*/
-    return false;
   }
 
   private static void addOurProtocolHandler() {
@@ -167,10 +155,6 @@ public class GosuClassPathThing {
     URLClassLoaderWrapper(ClassLoader loader, Class classLoaderClass) {
       _loader = loader;
       _classLoaderClass = classLoaderClass;
-    }
-
-    ClassLoader getWrappedClassLoader() {
-      return _loader;
     }
 
     abstract void addURL(URL url);

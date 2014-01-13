@@ -122,6 +122,21 @@ class HandleUnnecessaryCoercionFixTest extends GosuTestCase {
     test({f}, "i.Alpha")
   }
 
+  function testUnnecessaryCoercion06() {
+    var f = new GosuClassFile (
+        "package some.pkg\n" +
+            "uses java.lang.*\n" +
+            "uses java.util.*\n" +
+            "class Test {\n" +
+            "\n" +
+            "  function foo() {\n" +
+            "    var j = [[^^'foo'.substring(1).length() as int]]\n" +
+            "    }\n" +
+            "  }\n" +
+            "}")
+    test({f}, "'foo'.substring(1).length()")
+  }
+
   function test(resources: GosuTestingResource[], replace: String) {
     var markers = getAllMarkers(resources.map(\r -> configureByText(r.fileName, r.content)))
     var initialCaret = markers.getCaret(MarkerType.CARET1)

@@ -75,7 +75,7 @@ public class TypeRefFactory implements ITypeRefFactory
       throw new UnsupportedOperationException( "Type references are not supported for nonloadable types: " + type.getName() );
     }
 
-    String strTypeName = TypeLord.getNameWithQualifiedTypeVariables( type );
+    String strTypeName = TypeLord.getNameWithQualifiedTypeVariables( type, true );
     if( strTypeName == null || strTypeName.length() == 0 )
     {
       throw new IllegalStateException( "Type has no name" );
@@ -527,7 +527,7 @@ public class TypeRefFactory implements ITypeRefFactory
       throw new UnsupportedOperationException( "Type references are not supported for nonloadable types: " + type.getName() );
     }
 
-    String strTypeName = TypeLord.getNameWithQualifiedTypeVariables( type );
+    String strTypeName = TypeLord.getNameWithQualifiedTypeVariables( type, true );
     if( strTypeName == null || strTypeName.length() == 0 )
     {
       throw new IllegalStateException( "Type has no name" );

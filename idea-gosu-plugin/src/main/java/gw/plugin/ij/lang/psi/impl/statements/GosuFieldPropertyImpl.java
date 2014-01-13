@@ -4,7 +4,10 @@
 
 package gw.plugin.ij.lang.psi.impl.statements;
 
+import com.intellij.navigation.ColoredItemPresentation;
 import com.intellij.navigation.ItemPresentation;
+import com.intellij.openapi.editor.colors.CodeInsightColors;
+import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiElementVisitor;
@@ -114,8 +117,8 @@ public class GosuFieldPropertyImpl extends GosuDeclaredElementImpl<INameInDeclar
   }
 
   @Override
-  public ItemPresentation getPresentation() {
-    return new ItemPresentation() {
+  public ColoredItemPresentation getPresentation() {
+    return new ColoredItemPresentation() {
       public String getPresentableText() {
         return getName();
       }
@@ -129,6 +132,15 @@ public class GosuFieldPropertyImpl extends GosuDeclaredElementImpl<INameInDeclar
       @Nullable
       public Icon getIcon(boolean open) {
         return GosuFieldPropertyImpl.this.getIcon(ICON_FLAG_VISIBILITY | ICON_FLAG_READ_STATUS);
+      }
+
+      @Nullable
+      @Override
+      public TextAttributesKey getTextAttributesKey() {
+        if (isDeprecated()) {
+          return CodeInsightColors.DEPRECATED_ATTRIBUTES;
+        }
+        return null;
       }
     };
   }

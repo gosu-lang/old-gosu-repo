@@ -5,6 +5,7 @@
 package gw.plugin.ij.intentions;
 
 import com.google.common.base.Preconditions;
+import com.intellij.codeInsight.CodeInsightUtilBase;
 import com.intellij.codeInsight.daemon.QuickFixBundle;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
@@ -51,6 +52,9 @@ public class GosuAddTypeCastFix extends BaseIntentionAction {
 
   @Override
   public void invokeImpl(@NotNull Project project, Editor editor, @NotNull PsiFile file) throws IncorrectOperationException {
+    if (!CodeInsightUtilBase.prepareFileForWrite(file)) {
+      return;
+    }
     final PsiElement realExpression = expression instanceof GosuTypeAsExpressionImpl ? ((GosuTypeAsExpressionImpl) expression).getLhs() : expression;
     if(realExpression == null) {
       return;

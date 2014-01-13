@@ -4,9 +4,10 @@
 
 package gw.internal.gosu.ir.compiler.bytecode;
 
-import gw.lang.ir.IRType;
-import gw.lang.ir.IRSymbol;
 import gw.internal.ext.org.objectweb.asm.Label;
+import gw.internal.gosu.ir.nodes.JavaClassIRType;
+import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
 
 public class IRCompilerLocalVar {
   private String _name;
@@ -19,7 +20,7 @@ public class IRCompilerLocalVar {
 
   public IRCompilerLocalVar(IRSymbol symbol, int index, IRCompilerScope scope) {
     _name = symbol.getName();
-    _type = symbol.getType();
+    _type = maybeEraseStructuralType( symbol.getType() );
     _temp = symbol.isTemp();
     _index = index;
     _scope = scope;
@@ -67,5 +68,12 @@ public class IRCompilerLocalVar {
 
   public int getWidth() {
     return (_type.getName().equals("long") || _type.getName().equals("double") ? 2 : 1);
+  }
+
+  private static IRType maybeEraseStructuralType( IRType type ) {
+    if( type.isStructural() ) {
+      return JavaClassIRType.get( Object.class );
+    }
+    return type;
   }
 }

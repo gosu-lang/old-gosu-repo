@@ -12,16 +12,15 @@ import gw.lang.gosuc.IGosuc;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.TypeVarToTypeMap;
-import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.parser.exceptions.ParseResultsException;
+import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.reflect.gs.IGosuClassLoader;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.IJavaClassInfo;
+import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
 import gw.lang.reflect.module.IProject;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -248,6 +247,8 @@ public interface ITypeSystem extends IService
   void pushModule(IModule gosuModule);
 
   void popModule(IModule gosuModule);
+
+  IType replaceTypeVariableTypeParametersWithBoundingTypes( IType iType, IType type );
 
   IGosuc makeGosucCompiler( String gosucProjectFile, ICustomParser custParser );
 }

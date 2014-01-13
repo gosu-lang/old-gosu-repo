@@ -15,6 +15,7 @@ import gw.internal.gosu.module.GlobalModule;
 import gw.internal.gosu.module.Module;
 import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.expressions.NullExpression;
+import gw.internal.gosu.runtime.GosuRuntimeMethods;
 import gw.internal.gosu.template.GosuTemplateType;
 import gw.internal.gosu.template.SimpleTemplateHost;
 import gw.internal.gosu.template.TemplateGenerator;
@@ -28,7 +29,21 @@ import gw.lang.init.ModuleFileUtil;
 import gw.lang.ir.IRClassCompiler;
 import gw.lang.ir.IRTypeResolver;
 import gw.lang.javadoc.IJavaDocFactory;
-import gw.lang.parser.*;
+import gw.lang.parser.EvaluationException;
+import gw.lang.parser.IConstructorInfoFactory;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.IParserPart;
+import gw.lang.parser.IReducedDynamicFunctionSymbol;
+import gw.lang.parser.IScope;
+import gw.lang.parser.ISourceCodeTokenizer;
+import gw.lang.parser.IStackProvider;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITokenizerInstructor;
+import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.StandardSymbolTable;
 import gw.lang.parser.exceptions.ParseException;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INullExpression;
@@ -64,7 +79,6 @@ import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.gs.ITemplateType;
 import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
@@ -236,6 +250,11 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
   }
 
   @Override
+  public IGosuClass getGosuClassFrom( IType fromType ) {
+    return IGosuClassInternal.Util.getGosuClassFrom( fromType );
+  }
+
+  @Override
   public IModule createGlobalModule(IExecutionEnvironment execEnv) {
     return new GlobalModule( execEnv, IExecutionEnvironment.GLOBAL_MODULE_NAME);
   }
@@ -329,7 +348,7 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
   }
 
   @Override
-  public Class getBlockToInterfaceConversionClass(IJavaType typeToCoerceTo) {
+  public Class getBlockToInterfaceConversionClass(IType typeToCoerceTo) {
     return FunctionToInterfaceClassGenerator.getBlockToInterfaceConversionClass( typeToCoerceTo );
   }
 
@@ -385,5 +404,15 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
   @Override
   public ITemplateObserver.ITemplateObserverManager makeTemplateObserverManager() {
     return new TemplateObserverAccess();
+  }
+
+  @Override
+  public void print( Object ret ) {
+    GosuRuntimeMethods.print( ret );
+  }
+
+  @Override
+  public String toString( Object val ) {
+    return GosuRuntimeMethods.toString( val );
   }
 }

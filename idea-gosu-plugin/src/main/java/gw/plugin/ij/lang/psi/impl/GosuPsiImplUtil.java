@@ -23,7 +23,6 @@ import gw.plugin.ij.lang.psi.impl.expressions.GosuMethodCallExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.LightGosuIdentifierImpl;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.GosuClassDefinitionImpl;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

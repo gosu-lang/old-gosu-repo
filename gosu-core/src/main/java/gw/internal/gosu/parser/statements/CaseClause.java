@@ -10,6 +10,7 @@ import gw.internal.gosu.parser.Statement;
 import java.util.List;
 
 import gw.lang.parser.statements.ICaseClause;
+import gw.lang.reflect.java.JavaTypes;
 
 /**
  */
@@ -22,6 +23,7 @@ public final class CaseClause extends Expression implements ICaseClause
   {
     _expression = e;
     _statements = statements;
+    setType( JavaTypes.pVOID() );
   }
 
   public Expression getExpression()

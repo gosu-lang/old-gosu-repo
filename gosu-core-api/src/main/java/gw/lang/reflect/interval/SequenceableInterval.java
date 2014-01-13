@@ -86,6 +86,10 @@ public class SequenceableInterval<E extends ISequenceable<E, S, U> & Comparable<
     @Override
     public boolean hasNext()
     {
+      if( _csr == null )
+      {
+        return false;
+      }
       int iComp = _csr.compareTo( getRightEndpoint() );
       return iComp < 0 || (isRightClosed() && iComp == 0);
     }
@@ -127,6 +131,11 @@ public class SequenceableInterval<E extends ISequenceable<E, S, U> & Comparable<
     @Override
     public boolean hasNext()
     {
+      if( _csr == null )
+      {
+        return false;
+      }
+
       int iComp = _csr.compareTo( getLeftEndpoint() );
       return iComp > 0 || (isLeftClosed() && iComp == 0);
     }

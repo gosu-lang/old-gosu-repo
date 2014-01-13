@@ -80,10 +80,6 @@ public interface ISourceCodeTokenizer
 
   void eolIsSignificant( boolean bFlag );
 
-  void slashStarComments( boolean bFlag );
-
-  void slashSlashComments( boolean bFlag );
-
   void lowerCaseMode( boolean bLowerCaseMode );
 
   boolean isUnterminatedString();

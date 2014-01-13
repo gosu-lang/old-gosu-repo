@@ -83,7 +83,7 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
         {
           adapterClass = GosuClassProxyFactory.instance().createImmediately( type );
         }
-        if( type.isParameterizedType() )
+        if( adapterClass != null && type.isParameterizedType() )
         {
           return (IGosuClassInternal)adapterClass.getParameterizedType( type.getTypeParameters() );
         }
@@ -99,6 +99,8 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
 
 
   void setInterface( boolean bInterface );
+
+  void setStructure( boolean bStructure );
 
   void setEnum();
 

@@ -22,60 +22,55 @@ import gw.lang.reflect.*;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
-import gw.plugin.ij.core.PluginLoaderUtil;
 import gw.plugin.ij.lang.psi.IGosuFileBase;
 import gw.plugin.ij.lang.psi.api.IFileShadowingResolver;
 import gw.plugin.ij.lang.psi.api.ITypeResolver;
 import gw.plugin.ij.lang.psi.api.statements.typedef.IGosuAnonymousClassDefinition;
-import gw.plugin.ij.lang.psi.custom.CustomGosuClass;
 import gw.plugin.ij.lang.psi.impl.CustomPsiClassCache;
 import gw.plugin.ij.lang.psi.impl.GosuProgramFileImpl;
 import gw.plugin.ij.lang.psi.impl.GosuScratchpadFileImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuBlockExpressionImpl;
-import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.FileUtil;
+import gw.plugin.ij.util.SafeCallable;
 import gw.plugin.ij.util.InjectedElementEditor;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
-import gw.util.concurrent.LocklessLazyVar;
+import gw.plugin.ij.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.concurrent.Callable;
 
 public class DefaultTypeResolver implements ITypeResolver {
 
   @Nullable
   public PsiElement resolveType(@NotNull final IType theType, @NotNull final PsiElement context) {
-    if (theType instanceof ICompoundType || TypeSystem.isDeleted(theType)) {
+    if (theType instanceof ICompoundType) {
       return null;
     }
 
     ProgressManager.checkCanceled();
 
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(context) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         IType type = theType;
         if (type instanceof IMetaType) {
           return null;
-//          type = TypeSystem.getByFullName("gw.internal.gosu.parser.MetaType", GosuModuleUtil.findModuleForPsiElement(context).getExecutionEnvironment().getGlobalModule());
         }
 
-        type = IDEAUtil.getConcreteType(type);
+        type = TypeUtil.getConcreteType(type);
         if (type instanceof ITypeVariableType) {
-          return PsiTypeResolver.resolveTypeVariable( (ITypeVariableType) type, context );
-        }
-        else if ( type instanceof ILocationAwareFeature ) {
+          return PsiTypeResolver.resolveTypeVariable((ITypeVariableType) type, context);
+        } else if (type instanceof ILocationAwareFeature) {
           ILocationAwareFeature feature = (ILocationAwareFeature) type;
           LocationInfo location = feature.getLocationInfo();
-          return IDEAUtil.resolveFeatureAtLocation( context, location );
-        }
-        else {
+          return PsiFeatureResolver.resolveFeatureAtLocation(context, location);
+        } else {
           return resolveType(type.getName(), context);
         }
       }
-    }, context);
+    });
   }
 
   @Nullable
@@ -83,9 +78,9 @@ public class DefaultTypeResolver implements ITypeResolver {
     if (strFullName == null) {
       return null;
     }
-    return IDEAUtil.runInModule(new Callable<PsiClass>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiClass>(ctx) {
       @Nullable
-      public PsiClass call() throws Exception {
+      public PsiClass execute() throws Exception {
         String fqn = getNonProxyClassName(strFullName);
         PsiElement aClass = resolveJavaType(fqn, ctx.getResolveScope());
         if (aClass == null) {
@@ -99,7 +94,7 @@ public class DefaultTypeResolver implements ITypeResolver {
             aClass = resolveGosuType(type, ctx.getProject(), ctx, ctx.getResolveScope());
           }
         }
-        if (aClass == null && strFullName.contains(IDEAUtil.MAGIC_INJECTED_SUFFIX)) {
+        if (aClass == null && strFullName.contains(FileUtil.MAGIC_INJECTED_SUFFIX)) {
           PsiClass psiClass = ((IGosuFileBase) ctx.getContainingFile()).getPsiClass();
           //do not uncomment this "if" as it return false for injected fragment and corresponding injected editor, but should return true
 //          if (strFullName.equals(psiClass.getQualifiedName()))
@@ -111,7 +106,7 @@ public class DefaultTypeResolver implements ITypeResolver {
         }
         return aClass instanceof PsiClass ? (PsiClass) aClass : null;
       }
-    }, ctx);
+    });
   }
 
   // private
@@ -181,7 +176,7 @@ public class DefaultTypeResolver implements ITypeResolver {
         return classes[0];
       }
       for(PsiClass c : classes) {
-        IFile f = IDEAUtil.toIFile(c.getContainingFile().getVirtualFile());
+        IFile f = FileUtil.toIFile(c.getContainingFile().getVirtualFile());
         if(f.equals(match)) {
           return c;
         }

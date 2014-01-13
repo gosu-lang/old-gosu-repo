@@ -5,15 +5,23 @@
 package gw.plugin.ij.lang.psi.impl.resolvers;
 
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.impl.PsiDocumentManagerImpl;
+import com.intellij.psi.impl.PsiManagerImpl;
+import gw.config.CommonServices;
+import gw.fs.IFile;
 import gw.lang.parser.IFunctionSymbol;
 import gw.lang.parser.IReducedSymbol;
 import gw.lang.reflect.*;
 import gw.lang.reflect.gs.IGosuClass;
+import gw.plugin.ij.filesystem.IDEAResource;
 import gw.plugin.ij.lang.psi.api.IFeatureResolver;
 import gw.plugin.ij.lang.psi.api.IGosuResolveResult;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuReferenceExpressionImpl;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -109,5 +117,23 @@ public class PsiFeatureResolver {
       }
     }
     return null;
+  }
+
+  public static PsiElement resolveFeatureAtLocation( PsiElement context, LocationInfo location ) {
+    if ( location == null ) {
+      return null;
+    }
+    final IFile file = CommonServices.getFileSystem().getIFile(location.getFileUrl());
+    Project project = context.getProject();
+    VirtualFile vfile = ((IDEAResource) file ).getVirtualFile();
+    if (vfile == null) {
+      return null;
+    }
+    final PsiFile psiFile = PsiManagerImpl.getInstance(project).findFile( vfile );
+    final Document document = PsiDocumentManagerImpl.getInstance(project).getDocument( psiFile );
+    final int offset = document.getLineStartOffset( location.getLineNumber() - 1 ) + location.getColumnNumber() - 2;
+    PsiElement element = psiFile.findElementAt( offset ); // empty element end
+    element = element.getParent(); // element definition that contains the empty element end
+    return element;
   }
 }

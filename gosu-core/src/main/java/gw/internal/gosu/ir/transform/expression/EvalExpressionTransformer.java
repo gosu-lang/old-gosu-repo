@@ -4,38 +4,40 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.internal.gosu.parser.expressions.EvalExpression;
-import gw.internal.gosu.parser.IGosuProgramInternal;
+import gw.config.CommonServices;
+import gw.internal.gosu.compiler.SingleServingGosuClassLoader;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
+import gw.internal.gosu.parser.IGosuProgramInternal;
+import gw.internal.gosu.parser.expressions.EvalExpression;
+import gw.internal.gosu.util.LRUMap;
 import gw.lang.ir.IRExpression;
+import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.ICapturedSymbol;
+import gw.lang.parser.IGosuProgramParser;
+import gw.lang.parser.IParseResult;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbolTable;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.ICompilableType;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.IProgramInstance;
-import gw.lang.reflect.IType;
-import gw.lang.parser.IGosuProgramParser;
-import gw.lang.parser.GosuParserFactory;
-import gw.lang.parser.ICapturedSymbol;
-import gw.lang.parser.IParseResult;
-import gw.config.CommonServices;
 import gw.util.GosuExceptionUtil;
 import gw.util.GosuStringUtil;
 
-import java.util.HashMap;
-import java.util.List;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.lang.reflect.Constructor;
 
 /**
  */
 public class EvalExpressionTransformer extends EvalBasedTransformer<EvalExpression>
 {
-  public static final Map<String, EvalExpression> EVAL_EXPRESSIONS = Collections.synchronizedMap( new HashMap<String, EvalExpression>() );
+  @SuppressWarnings("unchecked")
+  public static final Map<String, EvalExpression> EVAL_EXPRESSIONS = Collections.synchronizedMap( new LRUMap( 2000 ) );
 
   public static IRExpression compile( TopLevelTransformationContext cc, EvalExpression expr )
   {
@@ -112,6 +114,7 @@ public class EvalExpressionTransformer extends EvalBasedTransformer<EvalExpressi
     }
 
     Class<?> javaClass = gp.getBackingClass();
+    assert javaClass.getClassLoader() instanceof SingleServingGosuClassLoader;
     List<Object> args = new ArrayList<Object>();
     if( !gp.isStatic() )
     {

@@ -4,16 +4,21 @@
 
 package gw.internal.gosu.runtime;
 
+import gw.config.CommonServices;
 import gw.internal.gosu.ir.transform.AbstractElementTransformer;
 import gw.internal.gosu.parser.TypeLord;
+import gw.lang.reflect.IExpando;
 import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.ReflectUtil;
 import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.java.JavaTypes;
 import gw.util.GosuExceptionUtil;
 
 import java.lang.reflect.InvocationTargetException;
@@ -21,10 +26,58 @@ import java.lang.reflect.Method;
 
 public class GosuRuntimeMethods {
 
-  public static Object getProperty( Object rootObject, IType type, String propertyName )
+  public static Object getProperty( Object root, IType type, String propertyName )
   {
-    IPropertyInfo propertyInfo = getPropertyInfo( rootObject, type, propertyName );
-    return propertyInfo.getAccessor().getValue( rootObject );
+    if( root != null && IExpando.class.isAssignableFrom( root.getClass() ) )
+    {
+      return ((IExpando)root).getFieldValue( propertyName );
+    }
+
+    if( isDynamic( type ) )
+    {
+      type = TypeSystem.getFromObject( root );
+    }
+
+    Object ret = invokePropertyGetter( "$getProperty", root, type, propertyName );
+    if( ret != IPlaceholder.UNHANDLED )
+    {
+      return ret;
+    }
+
+    IPropertyInfo propertyInfo = getPropertyInfo( root, type, propertyName );
+    if( propertyInfo == null )
+    {
+      ret = invokePropertyGetter( "$getMissingProperty", root, type, propertyName );
+      if( ret == IPlaceholder.UNHANDLED )
+      {
+        throw new IllegalArgumentException( "No property named " + propertyName + " found on type " + type.getName() );
+      }
+      return ret;
+    }
+    return propertyInfo.getAccessor().getValue( root );
+  }
+
+  private static boolean isDynamic( IType type )
+  {
+    return (type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder()) ||
+           (type instanceof IGosuClass && ((IGosuClass)type).isStructure());
+  }
+
+  private static Object invokePropertyGetter( String dispatchName, Object root, IType type, String propertyName )
+  {
+    ITypeInfo typeInfo = type.getTypeInfo();
+    IMethodInfo method;
+    if( typeInfo instanceof IRelativeTypeInfo )
+    {
+      method = ((IRelativeTypeInfo) typeInfo).getMethod( type, dispatchName, JavaTypes.STRING() );
+    }
+    else
+    {
+      method = typeInfo.getMethod( dispatchName, JavaTypes.STRING() );
+    }
+    return method == null
+           ? IPlaceholder.UNHANDLED
+           : method.getCallHandler().handleCall( root, propertyName );
   }
 
   public static Object getPropertyDynamically(Object rootObject, String propertyName) {
@@ -34,10 +87,53 @@ public class GosuRuntimeMethods {
     return getProperty(rootObject, TypeSystem.getFromObject(rootObject), propertyName);
   }
 
-  public static void setProperty( Object rootObject, IType type, String propertyName, Object value )
+  public static void setProperty( Object root, IType type, String propertyName, Object value )
   {
-    IPropertyInfo propertyInfo = getPropertyInfo( rootObject, type, propertyName );
-    propertyInfo.getAccessor().setValue( rootObject, value );
+    if( root != null && IExpando.class.isAssignableFrom( root.getClass() ) )
+    {
+      ((IExpando)root).setFieldValue( propertyName, value );
+      return;
+    }
+
+    if( isDynamic( type ) )
+    {
+      type = TypeSystem.getFromObject( root );
+    }
+
+    Object ret = invokePropertySetter( "$setProperty", root, type, propertyName );
+    if( ret != IPlaceholder.UNHANDLED )
+    {
+      return;
+    }
+
+    IPropertyInfo propertyInfo = getPropertyInfo( root, type, propertyName );
+    if( propertyInfo == null )
+    {
+      ret = invokePropertySetter( "$setMissingProperty", root, type, propertyName );
+      if( ret == IPlaceholder.UNHANDLED )
+      {
+        throw new IllegalArgumentException( "No property named " + propertyName + " found on type " + type.getName() );
+      }
+      return;
+    }
+    propertyInfo.getAccessor().setValue( root, value );
+  }
+
+  private static Object invokePropertySetter( String dispatchName, Object root, IType type, String propertyName, Object... args )
+  {
+    ITypeInfo typeInfo = type.getTypeInfo();
+    IMethodInfo method;
+    if( typeInfo instanceof IRelativeTypeInfo )
+    {
+      method = ((IRelativeTypeInfo) typeInfo).getMethod( type, dispatchName, JavaTypes.STRING(), JavaTypes.OBJECT() );
+    }
+    else
+    {
+      method = typeInfo.getMethod( dispatchName, JavaTypes.STRING(), JavaTypes.OBJECT() );
+    }
+    return method == null
+           ? IPlaceholder.UNHANDLED
+           : method.getCallHandler().handleCall( root, propertyName, args );
   }
 
   public static void setPropertyDynamically(Object rootObject, String propertyName, Object value) {
@@ -55,7 +151,7 @@ public class GosuRuntimeMethods {
       propertyInfo = ReflectUtil.findProperty( TypeSystem.getFromObject( rootObject ), propertyName );
       if( propertyInfo == null )
       {
-        throw new IllegalArgumentException( "No property named " + propertyName + " found on type " + type.getName() );
+        return null;
       }
     }
     return propertyInfo;
@@ -101,20 +197,94 @@ public class GosuRuntimeMethods {
     }
   }
 
-  public static Object invokeMethodInfo( IType type, String methodName, IType[] parameterTypes, Object root, Object[] args ) {
+  public static Object invokeMethodInfo( IType type, String methodName, IType[] parameterTypes, Object root, Object[] args )
+  {
+    if( root instanceof IExpando )
+    {
+      return ((IExpando)root).invoke( methodName, args );
+    }
+
+    boolean bDynamicType = isDynamic( type );
+    if( bDynamicType )
+    {
+      type = TypeSystem.getFromObject( root );
+    }
+
+    Object ret = invokeMethodInvoker( "$invokeMethod", root, type, methodName, args );
+    if( ret != IPlaceholder.UNHANDLED )
+    {
+      return ret;
+    }
+
     ITypeInfo typeInfo = type.getTypeInfo();
     IMethodInfo method;
-    if (typeInfo instanceof IRelativeTypeInfo) {
-      method = ((IRelativeTypeInfo) typeInfo).getMethod( type, methodName, parameterTypes );
-    } else {
-      method = typeInfo.getMethod( methodName, parameterTypes );
+    if( bDynamicType )
+    {
+      IType[] runtimeTypes = ReflectUtil.extractRuntimeTypes( args );
+      method = ReflectUtil.findCallableMethod( methodName, runtimeTypes, type );
+    }
+    else
+    {
+      parameterTypes = replaceDynamicTypesWithRuntimeTypes( parameterTypes, args );
+      if( typeInfo instanceof IRelativeTypeInfo )
+      {
+        method = ((IRelativeTypeInfo)typeInfo).getMethod( type, methodName, parameterTypes );
+      }
+      else
+      {
+        method = typeInfo.getMethod( methodName, parameterTypes );
+      }
     }
 
     if( method == null )
     {
-      throw new IllegalStateException( "Could not find method for " + methodName + " on " + type.getName() + " with specified param types" );
+      ret = invokeMethodInvoker( "$invokeMissingMethod", root, type, methodName, args );
+      if( ret == IPlaceholder.UNHANDLED )
+      {
+        throw new IllegalStateException( "Could not find method for " + methodName + " on " + type.getName() + " with specified param types" );
+      }
+      return ret;
+    }
+    if( bDynamicType )
+    {
+      args = ReflectUtil.coerceArgsIfNecessary( method.getParameters(), args );
     }
     return method.getCallHandler().handleCall( root, args );
+  }
+
+  private static IType[] replaceDynamicTypesWithRuntimeTypes( IType[] parameterTypes, Object[] args ) {
+    if( parameterTypes ==  null ) {
+      return null;
+    }
+    IType[] ret = null;
+    for( int i = 0; i < parameterTypes.length; i++ ) {
+      IType type = parameterTypes[i];
+      if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() ) {
+        if( ret == null ) {
+          ret = new IType[parameterTypes.length];
+          System.arraycopy( parameterTypes, 0, ret, 0, ret.length );
+        }
+        ret[i] = args[i] == null ? ret[i] : TypeSystem.getFromObject( args[i] );
+      }
+    }
+    return ret == null ? parameterTypes : ret;
+  }
+
+  private static Object invokeMethodInvoker( String dispatchName, Object root, IType type, String methodName, Object... args )
+  {
+    ITypeInfo typeInfo = type.getTypeInfo();
+    IMethodInfo method;
+    if( typeInfo instanceof IRelativeTypeInfo )
+    {
+      method = ((IRelativeTypeInfo)typeInfo).getMethod( type, dispatchName, JavaTypes.STRING(), JavaTypes.OBJECT().getArrayType() );
+    }
+    else
+    {
+      method = typeInfo.getMethod( dispatchName, JavaTypes.STRING(), JavaTypes.OBJECT().getArrayType() );
+    }
+    return method == null
+           ? IPlaceholder.UNHANDLED
+           : method.getCallHandler().handleCall( root, methodName, args );
   }
 
   public static Class lookUpClass( String className ) {
@@ -125,7 +295,7 @@ public class GosuRuntimeMethods {
 
     try
     {
-      return Class.forName(className);
+      return Class.forName(className, false, GosuRuntimeMethods.class.getClassLoader());
     }
     catch( ClassNotFoundException e )
     {
@@ -155,6 +325,14 @@ public class GosuRuntimeMethods {
       type = TypeLord.getDefaultParameterizedType( type );
     }
     return type;
+  }
+
+  public static boolean logicalNot( Object o )
+  {
+    if( o instanceof Boolean ) {
+      return !((Boolean)o).booleanValue();
+    }
+    return !CommonServices.getCoercionManager().makePrimitiveBooleanFrom( o );
   }
 
   public static void invokeUnlockOrDisposeOrCloseMethod( Object o )
@@ -190,63 +368,47 @@ public class GosuRuntimeMethods {
     }
   }
 
-  /*//
-    // rootType
-    // .getTypeInfo()
-    // .getProperty( propertyName ) or getProperty( type, propertyName )
-    // .getAccessor()
-    // .getValue( ctx )
-    //
+  public static void print( Object obj )
+  {
+    System.out.println( toString( obj ) );
+  }
 
-    MethodVisitor mv = _cc().getMethodVisitor();
-    int iRootExprIndex = -1;
-    if( _expr().getRootExpression() != null && !(pi instanceof ITypeInfoPropertyInfo) )
+  public static String toString( Object obj ) {
+    if ( obj == null )
     {
-      // Must get root type from root expression when getting property dynamically
-      // i.e., the property may not exist on the static root type
-      iRootExprIndex = _cc().getStatementCompiler().makeAndIndexTempSymbol( rootType );
-      mv.visitVarInsn( Opcodes.ASTORE, iRootExprIndex );
-      mv.visitVarInsn( Opcodes.ALOAD, iRootExprIndex );
-      callStaticMethod( TypeSystem.class, "getFromObject", Object.class );
+      return "null";
     }
-    else if (pi instanceof ITypeInfoPropertyInfo) {
-      // We want to get the MetaType . . . but calling TypeSystem.getFromObject will return the literal version
-      // of the MetaType, which doesn't have all the properties we want . . . sooooooo
-      // there's this gigantic hack in here to directly invoke MetaType.get
-      iRootExprIndex = _cc().getStatementCompiler().makeAndIndexTempSymbol( rootType );
-      mv.visitVarInsn( Opcodes.ASTORE, iRootExprIndex );
-      mv.visitVarInsn( Opcodes.ALOAD, iRootExprIndex );
-      callStaticMethod( MetaType.class, "get", IType.class );
-    }
-    else
+    if ( obj instanceof Byte )
     {
-      pushType( rootType );
+      int value = (Byte) obj;
+      if ( value < 0 ) {
+        value = 256 + value;
+      }
+      return "0x" + Integer.toHexString( value );
     }
-    callInstanceMethod( IType.class, "getTypeInfo" );
+    IType type = TypeSystem.getFromObject( obj );
+    if ( type.isArray() )
+    {
+      StringBuilder sb = new StringBuilder();
+      sb.append( '[' );
+      int arrayLength = type.getArrayLength(obj);
+      for ( int idx = 0; idx < arrayLength; idx++ )
+      {
+        if ( idx > 0 )
+        {
+          sb.append( ", " );
+        }
+        sb.append( toString( type.getArrayComponent( obj, idx ) ) );
+      }
+      sb.append( ']' );
+      return sb.toString();
+    }
+    return obj.toString();
+  }
 
-    boolean relativeTypeInfo = pi != null && pi.getOwnersType().getTypeInfo() instanceof IRelativeTypeInfo;
-    if( relativeTypeInfo )
-    {
-      checkCast( IRelativeTypeInfo.class );
-      pushType( rootType );
-      pushPropertyName( pi );
-      callInstanceMethod( IRelativeTypeInfo.class, "getProperty", IType.class, CharSequence.class );
-    }
-    else
-    {
-      pushPropertyName( pi );
-      callInstanceMethod( ITypeInfo.class, "getProperty", CharSequence.class );
-    }
-
-    callInstanceMethod( IPropertyInfo.class, "getAccessor" );
-
-    if( iRootExprIndex >= 0 )
-    {
-      mv.visitVarInsn( Opcodes.ALOAD, iRootExprIndex );
-    }
-    else
-    {
-      pushRootExpression( rootType, rootExpr, pi );
-    }
-    callInstanceMethod( IPropertyAccessor.class, "getValue", Object.class );*/
+  public static void error( Object strError )
+  {
+    System.out.println( strError );
+    throw new Error( String.valueOf( strError ) );
+  }
 }

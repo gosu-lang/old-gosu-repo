@@ -4,14 +4,17 @@
 
 package gw.plugin.ij.util;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.intellij.injected.editor.VirtualFileWindow;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.module.ModuleUtil;
+import com.intellij.openapi.module.impl.ModuleManagerImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.InheritedJdkOrderEntry;
 import com.intellij.openapi.roots.ModuleJdkOrderEntry;
+import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.roots.OrderEntry;
 import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.roots.ProjectRootManager;
@@ -34,7 +37,9 @@ import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IJreModule;
 import gw.lang.reflect.module.IModule;
 import gw.lang.IModuleAware;
+import gw.plugin.ij.core.IJModuleNode;
 import gw.plugin.ij.core.PluginLoaderUtil;
+import gw.plugin.ij.core.UnidirectionalCyclicGraph;
 import gw.plugin.ij.filetypes.GosuProgramFileProvider;
 import gw.plugin.ij.lang.psi.api.statements.typedef.IGosuClassDefinition;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
@@ -335,5 +340,25 @@ public class GosuModuleUtil {
       return moduleInstance;
     }
     return env.getGlobalModule();
+  }
+
+  @Nullable
+  public static String getCircularModuleDependency(@NotNull Project project) {
+    final UnidirectionalCyclicGraph<Module> graph = new UnidirectionalCyclicGraph<>();
+    final ModuleManagerImpl instance = (ModuleManagerImpl) ModuleManagerImpl.getInstance(project);
+    for (Module module : instance.getModules()) {
+      final IJModuleNode node = new IJModuleNode(module);
+      graph.registerNode(node.getId(), node);
+    }
+    try {
+      graph.resolveLinks();
+      return null;
+    } catch (Exception e) {
+      return e.getMessage();
+    }
+  }
+
+  public static List<Module> getDependencies(@NotNull Module module) {
+    return ImmutableList.copyOf(ModuleRootManager.getInstance(module).getDependencies());
   }
 }

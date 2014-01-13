@@ -30,14 +30,14 @@ import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
 import gw.plugin.ij.lang.psi.impl.statements.typedef.GosuSyntheticClassDefinitionImpl;
 import gw.plugin.ij.lang.psi.util.ElementTypeMatcher;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 
 
 public class GosuFieldAccessExpressionImpl extends GosuReferenceExpressionImpl<IMemberAccessExpression>
@@ -85,9 +85,9 @@ public class GosuFieldAccessExpressionImpl extends GosuReferenceExpressionImpl<I
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         IMemberAccessExpression parsedElement = getParsedElement();
         if (parsedElement == null) {
           return null;
@@ -96,12 +96,12 @@ public class GosuFieldAccessExpressionImpl extends GosuReferenceExpressionImpl<I
         if (type instanceof INamespaceType) {
           String packageName = type.getName();
           PsiPackage aPackage = JavaPsiFacade.getInstance(getProject()).findPackage(packageName);
-          return  (aPackage == null || !aPackage.isValid()) ? null : aPackage;
+          return (aPackage == null || !aPackage.isValid()) ? null : aPackage;
         }
         final IPropertyInfo pi = getPropertyInfo(parsedElement);
         return pi != null ? PsiFeatureResolver.resolveProperty(pi, GosuFieldAccessExpressionImpl.this) : null;
       }
-    }, this);
+    });
   }
 
   @Nullable

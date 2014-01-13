@@ -28,6 +28,9 @@ public class IRSymbol {
   public IRType getType() {
     return _type;
   }
+  public void setType( IRType type ) {
+    _type = type;
+  }
 
   public boolean isTemp() {
     return _temp;

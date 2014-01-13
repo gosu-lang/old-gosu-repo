@@ -56,8 +56,8 @@ import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeLiteralImpl;
 import gw.plugin.ij.lang.psi.stubs.elements.GosuStubFileElementType;
 import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
 import gw.plugin.ij.util.ExceptionUtil;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.InjectedElementEditor;
 import gw.util.fingerprint.FP64;
 import org.jetbrains.annotations.NonNls;
@@ -170,7 +170,7 @@ public abstract class AbstractGosuClassFileImpl extends PsiFileBase implements I
 
   // "package" + "." + "class"
   public String getQualifiedClassNameFromFile() {
-    VirtualFile psiFile = IDEAUtil.getFileFromPsi( this );
+    VirtualFile psiFile = FileUtil.getFileFromPsi(this);
     if( psiFile == null ) {
       return "#Err#NullFile";
     }
@@ -178,7 +178,7 @@ public abstract class AbstractGosuClassFileImpl extends PsiFileBase implements I
     if( module == null ) {
       return "Err#NullModule";
     }
-    return IDEAUtil.getSourceQualifiedName( psiFile, getModule());
+    return FileUtil.getSourceQualifiedName(psiFile, getModule());
   }
 
   // TODO: merge into getModule() ?
@@ -190,14 +190,14 @@ public abstract class AbstractGosuClassFileImpl extends PsiFileBase implements I
     if (provider instanceof InjectedFileViewProvider) {
       VirtualFile file = provider.getVirtualFile();
       if (file instanceof VirtualFileWindow) {
-        file = IDEAUtil.getOriginalFile((VirtualFileWindow) file);
+        file = FileUtil.getOriginalFile((VirtualFileWindow) file);
       }
       targetFile = PsiManager.getInstance(getProject()).findFile(file);
     }
 
     IModule module = GosuModuleUtil.findModuleForPsiElement(targetFile);
     if (module == null) {
-      final VirtualFile file = IDEAUtil.getFileFromPsi(targetFile);
+      final VirtualFile file = FileUtil.getFileFromPsi(targetFile);
       if (file != null) {
         module = GosuModuleUtil.findModuleForFile(file, getProject());
       }
@@ -302,13 +302,13 @@ public abstract class AbstractGosuClassFileImpl extends PsiFileBase implements I
 
   @Nullable
   protected IDEAFile getFilePath() {
-    final VirtualFile file = IDEAUtil.getFileFromPsi(this);
-    return file != null ? IDEAUtil.toIFile(file) : null;
+    final VirtualFile file = FileUtil.getFileFromPsi(this);
+    return file != null ? FileUtil.toIFile(file) : null;
   }
 
   @Nullable
   public String getFileExtension() {
-    final VirtualFile file = IDEAUtil.getFileFromPsi(this);
+    final VirtualFile file = FileUtil.getFileFromPsi(this);
     return file.getExtension();
   }
 

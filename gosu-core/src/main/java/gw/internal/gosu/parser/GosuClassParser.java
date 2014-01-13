@@ -65,11 +65,13 @@ import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IEnhanceableType;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IFunctionType;
+import gw.lang.reflect.IInvocableType;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfo;
+import gw.lang.reflect.ITypeVariableType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ClassType;
@@ -995,10 +997,12 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       int iOffset = getTokenizer().getTokenStart();
       int iLineNum = getTokenizer().getLineNumber();
       int iColumn = getTokenizer().getTokenColumn();
-      ModifierInfo modifiers = parseModifiers();
-      if( match( t, SourceCodeTokenizer.TT_WORD ) )
+
+      if( match( t, null, SourceCodeTokenizer.TT_WORD, true ) &&
+          !Keyword.isKeyword( t._strValue ) &&
+          match( t, SourceCodeTokenizer.TT_WORD ) )
       {
-        VarStatement varStmt = parseEnumConstantDecl( modifiers, t._strValue );
+        VarStatement varStmt = parseEnumConstantDecl( t._strValue );
         varStmt.setNameOffset( t.getTokenStart(), t._strValue );
         setLocation( iOffset, iLineNum, iColumn );
         popStatement();
@@ -1017,16 +1021,11 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     }
   }
 
-  private VarStatement parseEnumConstantDecl( ModifierInfo modifiers, String strIdentifier )
+  private VarStatement parseEnumConstantDecl( String strIdentifier )
   {
     VarStatement varStmt = new VarStatement();
+    ModifierInfo modifiers = new ModifierInfo( Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL );
 
-    verifyNoAbstractHideOverrideStaticModifierDefined( varStmt, false, modifiers.getModifiers(), Keyword.KW_static );
-    verifyNoAccessibilityModifierDefined( varStmt, false, modifiers.getModifiers(), Keyword.KW_public );
-    verify( varStmt, !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, Keyword.KW_final );
-    verify( varStmt, modifiers.getAnnotations().size() == 0, Res.MSG_ENUM_CANNOT_HAVE_ANNOTATIONS );
-
-    modifiers.setModifiers( Modifier.PUBLIC | Modifier.STATIC | Modifier.FINAL );
     varStmt.setModifierInfo( modifiers );
 
     verify( varStmt, getSymbolTable().getSymbol( strIdentifier ) == null, Res.MSG_VARIABLE_ALREADY_DEFINED, strIdentifier );
@@ -1077,7 +1076,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
   void processPropertySymbol( DynamicPropertySymbol dps, ICompilableTypeInternal gsClass )
   {
     getSymbolTable().putSymbol( dps );
-    dps.addMemberSymbols( gsClass );
+      dps.addMemberSymbols( gsClass );
   }
 
   private void addOuterMember( ICompilableTypeInternal gsClass )
@@ -1269,7 +1268,13 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
               IMethodInfo mi = typeInfo instanceof IRelativeTypeInfo
                                ? ((IRelativeTypeInfo)typeInfo).getMethod( enhancement, func.getFunctionName(), func.getDynamicFunctionSymbol().getArgTypes() )
                                : typeInfo.getMethod( func.getFunctionName(), func.getDynamicFunctionSymbol().getArgTypes() );
-              if( (mi != null) && (!featureIsOwnedByEnhancement( enhancement, mi ) || (enhancedType != JavaTypes.OBJECT() && GosuClass.isObjectMethod( mi ))) )
+              if( overridesMethodWithDefaultParams(func, typeInfo) )
+              {
+                ParseException parseException = new ParseException( stmt.getLineNum(), 1, stmt.getLocation().getColumn(), stmt.getLocation().getOffset(), stmt.getLocation().getExtent(),
+                                                                    getSymbolTable(), Res.MSG_OVERLOADING_NOT_ALLOWED_WITH_OPTIONAL_PARAMS, mi.getDisplayName(), enhancedType.getRelativeName() );
+                stmt.addParseException( parseException );
+              }
+              else if( (mi != null) && (!featureIsOwnedByEnhancement( enhancement, mi ) || (enhancedType != JavaTypes.OBJECT() && GosuClass.isObjectMethod( mi ))) )
               {
                 ParseException parseException = new ParseException( stmt.getLineNum(), 1, stmt.getLocation().getColumn(), stmt.getLocation().getOffset(), stmt.getLocation().getExtent(),
                                                                     getSymbolTable(), Res.MSG_CANNOT_OVERRIDE_FUNCTIONS_IN_ENHANCEMENTS, mi.getDisplayName(), enhancedType.getRelativeName() );
@@ -1317,8 +1322,30 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     }
   }
 
-  private boolean featureIsOwnedByEnhancement( IGosuEnhancementInternal enhancement, IFeatureInfo iMethodInfo )
+  private boolean overridesMethodWithDefaultParams(FunctionStatement func, ITypeInfo typeInfo) {
+    if( !(typeInfo instanceof IRelativeTypeInfo) )
+    {
+      return false;
+    }
+    IRelativeTypeInfo rti = (IRelativeTypeInfo) typeInfo;
+    for( IMethodInfo mi : rti.getMethods( func.getGosuClass() ) )
+    {
+      if( mi.getDisplayName().equals( func.getFunctionName() ) && mi instanceof GosuMethodInfo && !featureIsOwnedByEnhancement( func.getGosuClass(), mi ) )
+      {
+        final ReducedDynamicFunctionSymbol dfs0 = ((GosuMethodInfo) mi).getDfs();
+        final DynamicFunctionSymbol dfs1 = func.getDynamicFunctionSymbol();
+        return dfs0 != null && dfs1 != null && (((IInvocableType) dfs0.getType()).hasOptionalParams() || dfs1.hasOptionalParameters());
+      }
+    }
+    return false;
+  }
+
+  private boolean featureIsOwnedByEnhancement( IGosuClass enhancement, IFeatureInfo iMethodInfo )
   {
+    if( !(enhancement instanceof IGosuEnhancementInternal) )
+    {
+      return false;
+    }
     IType ownerType = iMethodInfo.getOwnersType();
     if( ownerType != null && ownerType.isParameterizedType() )
     {
@@ -1485,7 +1512,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         if( !bIsAnonymous )
         {
           classType = parseClassType( gsClass, true );
-          if( classType == ClassType.Interface )
+          if( classType == ClassType.Interface || classType == ClassType.Structure )
           {
             ((ModifierInfo)gsClass.getModifierInfo()).addModifiers( Modifier.ABSTRACT );
           }
@@ -1714,6 +1741,17 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         gsClass.setModifierInfo(modifiers);
       }
     }
+    else if( match( null, Keyword.KW_structure ) )
+    {
+      classType = ClassType.Structure;
+      if( bSetModifiers )
+      {
+        verify( getClassStatement(), !Modifier.isHide( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, classType.name() );
+        verify( getClassStatement(), !Modifier.isOverride( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, classType.name() );
+        verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
+        gsClass.setModifierInfo(modifiers);
+      }
+    }
     else if( match( null, Keyword.KW_class ) )
     {
       classType = ClassType.Class;
@@ -1769,7 +1807,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
 //          makeSyntheticClassDeclaration( gsClass.getRelativeName(), true );
 //        }
 
-        IType type = parseEnhancedOrImplementedType( gsClass, false );
+        IType type = parseEnhancedOrImplementedType( gsClass, false, Collections.<IType>emptyList() );
         gsClass.setSuperType( type );
       }
       strClassName = gsClass.getName();
@@ -1792,8 +1830,10 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     }
     else
     {
-      boolean bInterface = classType.equals( ClassType.Interface );
-      gsClass.setInterface( bInterface );
+      boolean bStructure = classType.equals( ClassType.Structure );
+      boolean bInterface = bStructure || classType.equals( ClassType.Interface );
+      gsClass.setInterface( bInterface || bStructure );
+      gsClass.setStructure( bStructure );
 
       int iOffset = getTokenizer().getTokenStart();
       int iLineNum = getTokenizer().getLineNumber();
@@ -1812,7 +1852,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       strClassName = GosuStringUtil.isEmpty(strNamespace)
                      ? strClassName
                      : strNamespace + '.' + strClassName;
-      if( gsClass.getEnclosingTypeReference() == null && !strClassName.equals( gsClass.getName() ) )
+      if( gsClass.getEnclosingTypeReference() == null && strClassName != null && !strClassName.equals( gsClass.getName() ) )
       {
         verify( getClassStatement(), false, Res.MSG_WRONG_CLASSNAME, strClassName, gsClass.getName() );
       }
@@ -1839,7 +1879,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
 
       if( !bInterface && (match( null, Keyword.KW_extends ) || gsClass.isEnum()) )
       {
-        IType superType = parseEnhancedOrImplementedType( gsClass, true );
+        IType superType = parseEnhancedOrImplementedType( gsClass, true, Collections.<IType>emptyList() );
 
         if( superType instanceof IGosuClassInternal )
         {
@@ -1849,6 +1889,12 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
           }
         }
         gsClass.setSuperType( superType );
+
+        if( gsClass.getCompilationState().isCompilingDeclarations() &&
+            gsClass.isGenericType() )
+        {
+          verify( getClassStatement(), !JavaTypes.THROWABLE().isAssignableFrom( superType ) , Res.MSG_INVALID_GENERIC_EXCEPTION );
+        }
 
         SuperTypeClause extendsClause = new SuperTypeClause( superType );
         pushExpression( extendsClause );
@@ -1871,7 +1917,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         List<IType> interfaces = new ArrayList<IType>();
         do
         {
-          IType type = parseEnhancedOrImplementedType( gsClass, bInterface );
+          IType type = parseEnhancedOrImplementedType( gsClass, bInterface, interfaces );
           gsClass.addInterface( type );
           interfaces.add( type );
         } while( match( null, ',' ) );
@@ -1882,7 +1928,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         popExpression();
       }
 
-      if( classType == ClassType.Class || classType == ClassType.Interface )
+      if( classType == ClassType.Class || classType == ClassType.Interface || classType == ClassType.Structure )
       {
         IGosuClassInternal gsObjectInterace = gosuObjectInterface;
         if( (!gsClass.isInterface() || !interfaceExtendsGosuObject( gsClass, gsObjectInterace )) && !gsClass.getName().startsWith( IGosuClass.PROXY_PREFIX ) )
@@ -2048,9 +2094,11 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       ? ClassType.Class
       : Keyword.KW_interface.equals( strValue )
         ? ClassType.Interface
-        : Keyword.KW_enum.toString().equals( strValue )
-          ? ClassType.Enum
-          : null;
+        : Keyword.KW_structure.equals( strValue )
+          ? ClassType.Structure
+          : Keyword.KW_enum.toString().equals( strValue )
+            ? ClassType.Enum
+            : null;
   }
 
   private void advanceToClassBodyStart()
@@ -2153,7 +2201,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     gsClass.setGenericTypeVariables((List)typeVarLiteralList);
 
     verify( getClassStatement(), match( null, ":", SourceCodeTokenizer.TT_OPERATOR ), Res.MSG_EXPECTING_COLON_ENHANCEMENT );
-    IType enhancedType = parseEnhancedOrImplementedType( gsClass, true );
+    IType enhancedType = parseEnhancedOrImplementedType( gsClass, true, Collections.<IType>emptyList() );
     if( !(enhancedType instanceof ErrorType ||
           enhancedType instanceof IEnhanceableType) )
     {
@@ -2161,10 +2209,69 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     }
     gsClass.setEnhancedType( enhancedType );
 
+    ensureEnhancedTypeUsesTypeVarsOfEnhancement( typeVarLiteralList, enhancedType );
+
     return strClassName;
   }
 
-  private IType parseEnhancedOrImplementedType( IGosuClassInternal gsClass, boolean bExtended )
+  private void ensureEnhancedTypeUsesTypeVarsOfEnhancement( List<ITypeVariableDefinitionExpression> typeVarLiteralList, IType enhancedType )
+  {
+    if( typeVarLiteralList.isEmpty() )
+    {
+      return;
+    }
+
+
+    for( ITypeVariableDefinitionExpression expr: typeVarLiteralList )
+    {
+      boolean bReferencedByOtherTypeVar = false;
+      for( ITypeVariableDefinitionExpression expr2: typeVarLiteralList )
+      {
+        if( expr2 != expr )
+        {
+          if( hasTypeVar( expr2.getTypeVarDef().getBoundingType(), expr.getTypeVarDef().getType() ) )
+          {
+            bReferencedByOtherTypeVar = true;
+            break;
+          }
+        }
+      }
+      verify( getClassStatement(), bReferencedByOtherTypeVar || hasTypeVar( enhancedType, expr.getTypeVarDef().getType() ), Res.MSG_ENHANCED_TYPE_MUST_USE_ENHANCEMENT_TYPEVARS );
+    }
+  }
+
+  private boolean hasTypeVar( IType type, ITypeVariableType typeVar )
+  {
+    if( type == null )
+    {
+      return false;
+    }
+
+    if( type.isArray() )
+    {
+      type = TypeLord.getCoreType( type );
+    }
+
+    if( type == null || type.equals( typeVar ) )
+    {
+      return true;
+    }
+
+    if( type.isParameterizedType() )
+    {
+      for( IType typeParam: type.getTypeParameters() )
+      {
+        if( hasTypeVar( typeParam, typeVar  ) )
+        {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private IType parseEnhancedOrImplementedType( IGosuClassInternal gsClass, boolean bExtended, List<IType> interfaces )
   {
     IType extendedType = null;
 
@@ -2204,6 +2311,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
           }
           verify( extendedTypeExpr, !extendedType.isPrimitive(), Res.MSG_CANNOT_EXTEND_PRIMITIVE_TYPE );
           verify( extendedTypeExpr, !extendedType.isFinal(), Res.MSG_CANNOT_EXTEND_FINAL_TYPE, extendedType.getName() );
+          verify( extendedTypeExpr, !interfaces.contains( extendedType ), Res.MSG_DUPLICATE_CLASS_FOUND, extendedType.getRelativeName() );
 
           if( isCyclicInheritance( extendedType, gsClass ) )
           {
@@ -2294,6 +2402,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
     Token T = new Token();
 
     ModifierInfo modifiers;
+    boolean bInterface = gsClass.isInterface();
     while( true )
     {
       modifiers = parseUntilMemberKeyword( T, false, -1, location );
@@ -2303,8 +2412,13 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       }
       if( Keyword.KW_class.toString().equals( T._strValue ) ||
           Keyword.KW_interface.equals( T._strValue ) ||
+          Keyword.KW_structure.equals( T._strValue ) ||
           Keyword.KW_enum.equals( T._strValue ) )
       {
+        if( bInterface && Keyword.KW_enum.equals( T._strValue ))
+        {
+          verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, Keyword.KW_enum );
+        }
         parseInnerClassDeclartion( T );
       }
       else
@@ -2313,7 +2427,6 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       }
     }
 
-    boolean bInterface = gsClass.isInterface();
     if( bInterface )
     {
       modifiers.addModifiers( Modifier.PUBLIC );
@@ -2371,6 +2484,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         {
           verifyNoCombinedFinalStaticModifierDefined( fs, false, modifiers.getModifiers() );
           verify( fs, !gsClass.isInterface() || !Modifier.isStatic( modifiers.getModifiers() ),Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_static, Keyword.KW_function );
+          verify( fs, !gsClass.isInterface() || !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, Keyword.KW_function );
         }
       }
 
@@ -2390,6 +2504,8 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       FunctionStatement fs = new FunctionStatement();
       if( bInterface )
       {
+        verify( fs, !Modifier.isStatic( modifiers.getModifiers() ),Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_static, Keyword.KW_property );
+        verify( fs, !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, Keyword.KW_property );
         modifiers.setModifiers( Modifier.setAbstract( modifiers.getModifiers(), true ) );
       }
       verify( fs, !Modifier.isAbstract( modifiers.getModifiers() ) || gsClass.isAbstract(), Res.MSG_ABSTRACT_MEMBER_NOT_IN_ABSTRACT_CLASS );
@@ -3026,11 +3142,6 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         }
         else if( match( null, Keyword.KW_property ) )
         {
-          // This scope exists in compile time only -- since we putClassMembers()
-          // in only during compilation. At runtime these resolve indirectly via
-          // AbstractDynamicSymbols using 'this' ref which is on the stack's
-          // current isolated scope (pushed in compile time when this property's
-          // function is parsed (parseBaseFunctionDefinition)).
           pushClassSymbols( bStatic, scopeCache );
           try
           {
@@ -3100,6 +3211,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         }
         else if( match( T, Keyword.KW_class ) ||
                  match( T, Keyword.KW_interface ) ||
+                 match( T, Keyword.KW_structure ) ||
                  match( T, Keyword.KW_enum ) )
         {
           // Pop the modifier list from the declaration phase, otherwise we'll have duplicates
@@ -3301,8 +3413,9 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       int iLineNum = getTokenizer().getLineNumber();
       int iColumn = getTokenizer().getTokenColumn();
 
-      parseModifiers();
-      if( match(t, SourceCodeTokenizer.TT_WORD) )
+      if( match( t, null, SourceCodeTokenizer.TT_WORD, true ) &&
+          !Keyword.isKeyword( t._strValue ) &&
+          match( t, SourceCodeTokenizer.TT_WORD ) )
       {
         parseEnumConstant( t._strValue, scopeCache, constants.contains( t._strValue ) );
         setLocation(iOffset, iLineNum, iColumn);
@@ -3583,6 +3696,11 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         dps.setParent( (DynamicPropertySymbol)symbol );
       }
       return dps;
+    }
+    else if( !(symbol instanceof DynamicPropertySymbol) )
+    {
+      // Error already applied from declaration phase
+      return new DynamicPropertySymbol( dfs, bGetter );
     }
 
     assert symbol instanceof DynamicPropertySymbol;

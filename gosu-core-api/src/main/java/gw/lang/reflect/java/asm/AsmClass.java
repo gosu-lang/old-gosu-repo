@@ -243,7 +243,7 @@ public class AsmClass implements IAsmType, IGeneric {
       _version = version;
       _modifiers = access;
       if( outerClass != null ) {
-        _modifiers = outerClass.getInnerClasses().get( _type.getName() ).getModifiers(); // barf
+        barf( outerClass );
       }
       _superClass = Modifier.isInterface( access ) ? null : (superName != null ? AsmUtil.makeType( superName ) : null);
       _innerClasses = Collections.emptyMap();
@@ -254,6 +254,13 @@ public class AsmClass implements IAsmType, IGeneric {
       assignGenericInfo( signature );
     }
 
+    private void barf( AsmClass outerClass ) {
+      AsmInnerClassType innerClass = outerClass.getInnerClasses().get( _type.getName() );
+      if( innerClass !=  null ) {
+        _modifiers = innerClass.getModifiers();
+      }
+    }
+
     private AsmClass ensureOuterIsLoadedFirst() {
       String typeName = _type.getName();
       int iDollar = typeName.lastIndexOf( '$' );
@@ -262,8 +269,8 @@ public class AsmClass implements IAsmType, IGeneric {
         IJavaClassInfo classInfo = TypeSystem.getJavaClassInfo( outerName, (IModule)_module );
         if( classInfo != null ) {
           _enclosingType = AsmUtil.makeType( outerName );
+          return (AsmClass)((IAsmJavaClassInfo)classInfo).getAsmType();
         }
-        return (AsmClass)((IAsmJavaClassInfo)classInfo).getAsmType();
       }
       return null;
     }
@@ -348,10 +355,11 @@ public class AsmClass implements IAsmType, IGeneric {
 
     private void assignInterfaces( String[] interfaces ) {
       if( interfaces != null ) {
-        _interfaces = new ArrayList<AsmType>( interfaces.length );
+        List<AsmType> ifaces = new ArrayList<AsmType>( interfaces.length );
         for( int i = 0; i < interfaces.length; i++ ) {
-          _interfaces.add( AsmUtil.makeType( interfaces[i] ) );
+          ifaces.add( AsmUtil.makeType( interfaces[i] ) );
         }
+        _interfaces = ifaces;
       }
       else {
         _interfaces = Collections.emptyList();

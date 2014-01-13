@@ -372,7 +372,6 @@ public class XmlElement extends XmlBase implements IXmlMixedContent {
     super.setTypeInstance( xmlTypeInstance );
   }
 
-  @gw.lang.InternalAPI
   @Override
   public IType getIntrinsicType() {
     return _type == null ? JavaTypes.getSystemType( getClass() ) : _type;

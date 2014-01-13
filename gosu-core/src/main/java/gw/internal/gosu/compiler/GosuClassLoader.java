@@ -14,6 +14,7 @@ import gw.internal.gosu.parser.ModuleClassLoader;
 import gw.internal.gosu.parser.NewIntrospector;
 import gw.internal.gosu.parser.TypeLord;
 import gw.lang.reflect.IGosuClassLoadingObserver;
+import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.BytecodeOptions;
@@ -151,7 +152,7 @@ public class GosuClassLoader implements IGosuClassLoader
       }
 
       // there is no point in defining eval classes in a single serving class loader (it wastes memory)
-      if( useSingleServingLoader /*|| isEvalProgram( gsClass )*/ || isThrowawayProgram( gsClass ) )
+      if( useSingleServingLoader || TypeLord.isEvalProgram( gsClass ) || isThrowawayProgram( gsClass ) || isEnclosingTypeInSingleServingLoader( gsClass ) )
       {
         // These classes are "fire and forget"; they need to be disposable after they run,
         // so we load them in a separate class loader so we can unload them -- it's the only
@@ -165,6 +166,13 @@ public class GosuClassLoader implements IGosuClassLoader
     {
       throw GosuExceptionUtil.forceThrow( e, gsClass.getName() );
     }
+  }
+
+  private boolean isEnclosingTypeInSingleServingLoader( ICompilableTypeInternal gsClass )
+  {
+    ICompilableTypeInternal enclosingType = gsClass.getEnclosingType();
+    ClassLoader enclosingLoader = getClassLoader( enclosingType );
+    return enclosingLoader instanceof SingleServingGosuClassLoader;
   }
 
   private Class findOrDefineClass( ICompilableTypeInternal gsClass ) throws ClassNotFoundException
@@ -200,22 +208,53 @@ public class GosuClassLoader implements IGosuClassLoader
 
   private Class defineClassInLoader( ICompilableTypeInternal gsClass, boolean forceSingleServingLoader )
   {
-    if( shouldUseSingleServingLoader(gsClass) || forceSingleServingLoader || BytecodeOptions.isSingleServingLoader() )
+    if( forceSingleServingLoader || shouldUseSingleServingLoader( gsClass ) || BytecodeOptions.isSingleServingLoader() )
     {
-      SingleServingGosuClassLoader loader = new SingleServingGosuClassLoader( this );
-      Class<?> result = loader._defineClass( gsClass );
-      // Define all blocks, too. Otherwise, they eventually could be loaded through URL handler, which would
-      // cause them to be defined by a different classloader, defeating SingleServingGosuClassLoader purpose.
-      // Also, this removes the dependency on URL handler in certain cases.
-      for (int i = 0; i < gsClass.getBlockCount(); i++) {
-        loader._defineClass(gsClass.getBlock(i));
-      }
-      return result;
+      ICompilableTypeInternal enclosingType = gsClass.getEnclosingType();
+      ClassLoader enclosingLoader = getClassLoader( enclosingType );
+      SingleServingGosuClassLoader loader = enclosingLoader instanceof SingleServingGosuClassLoader
+                                            ? (SingleServingGosuClassLoader)enclosingLoader
+                                            : new SingleServingGosuClassLoader( this );
+      return defineClassInSingleServingLoader( gsClass, loader );
     }
     else
     {
       return defineAndMaybeVerify( gsClass );
     }
+  }
+
+  private ClassLoader getClassLoader( ICompilableTypeInternal enclosingType ) {
+    if( enclosingType == null ) {
+      return null;
+    }
+    Class cached = SingleServingGosuClassLoader.getCached( enclosingType );
+    if( cached != null ) {
+      return cached.getClassLoader();
+    }
+    return enclosingType instanceof IJavaBackedType
+           ? ((IJavaBackedType)enclosingType).getBackingClass().getClassLoader()
+           : enclosingType instanceof IHasJavaClass
+             ? ((IHasJavaClass)enclosingType).getBackingClass().getClassLoader()
+             : null;
+  }
+
+  private Class<?> defineClassInSingleServingLoader( ICompilableTypeInternal gsClass, SingleServingGosuClassLoader loader ) {
+    Class<?> result = loader._defineClass( gsClass );
+    // Define all inner classes and blocks, too. Otherwise, they eventually could be loaded through URL handler.
+    for (int i = 0; i < gsClass.getBlockCount(); i++) {
+      defineClassInSingleServingLoader( (ICompilableTypeInternal)gsClass.getBlock(i), loader );
+    }
+    if( gsClass.getInnerClasses() != null ) {
+      for( IType inner: gsClass.getInnerClasses() ) {
+        try {
+          defineClassInSingleServingLoader( (ICompilableTypeInternal)inner, loader );
+        }
+        catch( LinkageError le ) {
+          // ignore case when we've already loaded the class
+        }
+      }
+    }
+    return result;
   }
 
   private boolean shouldUseSingleServingLoader(ICompilableTypeInternal gsClass) {

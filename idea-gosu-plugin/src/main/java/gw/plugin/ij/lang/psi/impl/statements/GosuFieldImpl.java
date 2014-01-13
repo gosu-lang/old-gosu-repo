@@ -4,7 +4,9 @@
 
 package gw.plugin.ij.lang.psi.impl.statements;
 
+import com.intellij.navigation.ColoredItemPresentation;
 import com.intellij.navigation.ItemPresentation;
+import com.intellij.openapi.editor.colors.CodeInsightColors;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
 import com.intellij.psi.*;
 import com.intellij.psi.impl.ElementPresentationUtil;
@@ -136,8 +138,8 @@ public class GosuFieldImpl extends GosuVariableBaseImpl<IVarStatement, GosuField
   }
 
   @Override
-  public ItemPresentation getPresentation() {
-    return new ItemPresentation() {
+  public ColoredItemPresentation getPresentation() {
+    return new ColoredItemPresentation() {
       public String getPresentableText() {
         return getName();
       }
@@ -160,6 +162,9 @@ public class GosuFieldImpl extends GosuVariableBaseImpl<IVarStatement, GosuField
 
       @Nullable
       public TextAttributesKey getTextAttributesKey() {
+        if (isDeprecated()) {
+          return CodeInsightColors.DEPRECATED_ATTRIBUTES;
+        }
         return null;
       }
     };

@@ -15,18 +15,6 @@ public class StandardLanguageLevel implements ILanguageLevel
   }
 
   @Override
-  public boolean allowNumericIteration()
-  {
-    return false;
-  }
-
-  @Override
-  public boolean allowGlobalNowSymbol()
-  {
-    return false;
-  }
-
-  @Override
   public boolean allowAllImplicitCoercions()
   {
     return false;
@@ -42,18 +30,6 @@ public class StandardLanguageLevel implements ILanguageLevel
   public boolean supportsNakedCatchStatements()
   {
     return true;
-  }
-
-  @Override
-  public boolean shouldVerifyPackageRelativeImport( String parsedNameSpace, String actualNameSpace )
-  {
-    return true;
-  }
-
-  @Override
-  public boolean allowPackageRelativeImports()
-  {
-    return false;
   }
 
   @Override

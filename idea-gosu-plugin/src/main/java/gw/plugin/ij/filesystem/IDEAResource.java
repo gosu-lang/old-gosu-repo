@@ -13,7 +13,7 @@ import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.fs.IResource;
 import gw.fs.ResourcePath;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ public abstract class IDEAResource implements IResource {
 
   public IDEAResource(@NotNull VirtualFile virtualFile) {
     this._virtualFile = checkNotNull(virtualFile);
-    this._path = checkNotNull(IDEAUtil.removeJarSeparator(virtualFile.getPath()));
+    this._path = checkNotNull(FileUtil.removeJarSeparator(virtualFile.getPath()));
   }
 
   public IDEAResource(String dir) {

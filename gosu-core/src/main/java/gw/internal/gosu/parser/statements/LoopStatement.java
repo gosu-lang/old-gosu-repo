@@ -12,7 +12,10 @@ import gw.internal.gosu.parser.TypeLoaderAccess;
 import gw.internal.gosu.parser.TypeLord;
 import gw.internal.gosu.parser.expressions.Literal;
 import gw.lang.parser.GosuParserTypes;
+import gw.lang.parser.StandardCoercionManager;
 import gw.lang.parser.statements.ILoopStatement;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
@@ -30,10 +33,11 @@ public abstract class LoopStatement extends Statement implements ILoopStatement
   {
     return typeIn.isArray() ||
            typeIn instanceof ErrorType ||
-           BeanAccess.isNumericType( typeIn ) ||
            JavaTypes.ITERABLE().isAssignableFrom( typeIn ) ||
+           StandardCoercionManager.isStructurallyAssignable_Laxed( JavaTypes.ITERABLE(), typeIn ) ||
            JavaTypes.ITERATOR().isAssignableFrom( typeIn ) ||
-           typeIn == GosuParserTypes.STRING_TYPE();
+           typeIn == GosuParserTypes.STRING_TYPE() ||
+           (typeIn instanceof IPlaceholder && ((IPlaceholder)typeIn).isPlaceholder());
   }
 
   public static IType getArrayComponentType( IType typeIn )
@@ -61,6 +65,10 @@ public abstract class LoopStatement extends Statement implements ILoopStatement
       {
         returnType = JavaTypes.pLONG();
       }
+      else if( typeIn instanceof IPlaceholder && ((IPlaceholder)typeIn).isPlaceholder() )
+      {
+        returnType = typeIn.getComponentType();
+      }
       else
       {
         if( typeIn.isGenericType() && !typeIn.isParameterizedType() )
@@ -81,7 +89,17 @@ public abstract class LoopStatement extends Statement implements ILoopStatement
           }
           else
           {
-            returnType = GosuParserTypes.GENERIC_BEAN_TYPE();
+            IMethodInfo iteratorMethod = typeIn.getTypeInfo().getMethod( "iterator" );
+            if( iteratorMethod != null && JavaTypes.ITERATOR().isAssignableFrom( iteratorMethod.getReturnType() ) )
+            {
+              // Structural Iterable match
+              IType retType = iteratorMethod.getReturnType();
+              returnType = retType.isParameterizedType() ? retType.getTypeParameters()[0] : JavaTypes.OBJECT();
+            }
+            else
+            {
+              returnType = JavaTypes.OBJECT();
+            }
           }
         }
       }

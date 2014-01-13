@@ -245,15 +245,17 @@ public class JavaFieldPropertyInfo extends JavaBaseFeatureInfo implements IJavaF
     }
     else if( field instanceof JavaSourceField ) {
       String rhs = ((JavaSourceField)field).getRhs();
-      IType owner = getOwnersType();
-      if (!(owner instanceof IJavaType)) {
-        return false; // FIXME: PL-26382 could be IEntityTypeInternal, which does have getBackingClassInfo!
+      if( rhs == null ) {
+        return false;
       }
-      IExpression pr = CompileTimeExpressionParser.parse( rhs, ((IJavaType) owner).getBackingClassInfo(), getFeatureType() );
+      IExpression pr = CompileTimeExpressionParser.parse( rhs, field.getEnclosingClass(), getFeatureType() );
       return pr.isCompileTimeConstant();
     }
+    else if( field instanceof AsmFieldJavaClassField &&
+             ((AsmFieldJavaClassField)field).getStaticValue() != null ) {
+      return true;
+    }
     else if( field instanceof FieldJavaClassField || field instanceof AsmFieldJavaClassField ) {
-      //## todo: we need to use ASM or something to examine the bytecode to see if the rhs expr is really compile-time const
       return field.isEnumConstant() ||
              field.getType().isPrimitive() ||
              field.getType().getName().equals( "java.lang.String" ) ||

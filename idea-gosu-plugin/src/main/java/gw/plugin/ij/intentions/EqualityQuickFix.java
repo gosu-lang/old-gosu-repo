@@ -6,11 +6,11 @@ package gw.plugin.ij.intentions;
 
 import com.intellij.codeInsight.CodeInsightUtilBase;
 import com.intellij.codeInspection.LocalQuickFixAndIntentionActionOnPsiElement;
-import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import gw.plugin.ij.lang.GosuTokenImpl;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.util.GosuBundle;
 import org.jetbrains.annotations.NotNull;
@@ -26,11 +26,7 @@ public class EqualityQuickFix extends LocalQuickFixAndIntentionActionOnPsiElemen
     if( !CodeInsightUtilBase.prepareFileForWrite( startElement.getContainingFile() ) ) {
       return;
     }
-    int i = startElement.getTextOffset();
-    Document document = startElement.getContainingFile().getViewProvider().getDocument();
-    String text = document.getText();
-    String newText = text.substring( 0, i ) + "!=" + text.substring( i + 2 );
-    document.setText( newText );
+    ((GosuTokenImpl) startElement).replaceWithText("!=");
     if( file instanceof AbstractGosuClassFileImpl ) {
       ((AbstractGosuClassFileImpl) file).reparsePsiFromContent();
     }

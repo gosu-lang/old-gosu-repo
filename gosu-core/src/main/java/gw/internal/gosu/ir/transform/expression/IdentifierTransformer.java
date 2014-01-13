@@ -179,11 +179,6 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
       IRExpression getterCall = callMethod( irProp.getGetterMethod(), root, Collections.<IRExpression>emptyList() );
       return castResultingTypeIfNecessary(getDescriptor(reducedSym.getType()), irProp.getType(), getterCall);
     }
-    else if( CommonSymbolsScope.LockedDownSymbol.class.isAssignableFrom( symClass ) )
-    {
-      // 'Global' static function call e.g., now
-      return callGlobalStaticFunction( reducedSym );
-    }
     else
     {
       throw new UnsupportedOperationException( "Don't know how to compile symbol: " + reducedSym.getClass().getSimpleName() + ": " + reducedSym.getName() + ": " + reducedSym.getType() );
@@ -222,17 +217,6 @@ public class IdentifierTransformer extends AbstractExpressionTransformer<IIdenti
       outer = enclosing;
     }
     return root;
-  }
-
-  private IRExpression callGlobalStaticFunction(IReducedSymbol symbol) {
-    if (symbol.getDisplayName().equals( StandardSymbolTable.NOW.getName() ) )
-    {
-      return callMethod( StandardSymbolTable.class, "now", new Class[0], null, exprList() );
-    }
-    else
-    {
-      throw new UnsupportedOperationException(symbol.getDisplayName());
-    }
   }
 
 }

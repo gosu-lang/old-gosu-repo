@@ -117,8 +117,15 @@ public class BasePrimitiveCoercer extends StandardCoercer implements IResolvingC
   public int getPriority( IType to, IType from )
   {
     int iPriority = 2;
-    if( (isFloatFamily( to ) && isFloatFamily( from )) ||
-        (isIntFamily( to ) && isIntFamily( from )) )
+    if(  to == from )
+    {
+      iPriority+=4;
+    }
+    else  if( isAWideingConversion( to, from ) )
+    {
+      iPriority+=3;
+    }
+    else if( hasLossOfPrecision(to, from) )
     {
       iPriority+=2;
     }
@@ -126,7 +133,95 @@ public class BasePrimitiveCoercer extends StandardCoercer implements IResolvingC
     {
       iPriority++;
     }
+
+    if( (isFloatFamily( to ) && isFloatFamily( from )) ||
+            (isIntFamily( to ) && isIntFamily( from )) )
+    {
+      iPriority++;
+    }
     return iPriority;
+  }
+
+  private boolean hasLossOfPrecision(IType to, IType from) {
+    boolean[][] tab =
+                      {                                        //TO
+                          //FROM       boolean char    byte    short   int     long    float   double
+                          /*boolean*/  {false,  false,  false,  false,  false,  false,  false,  false },
+                          /*char   */  {false,  false,  false,  false,  false,  false,  false,  false },
+                          /*byte   */  {false,  false,  false,  false,  false,  false,  false,  false },
+                          /*short  */  {false,  false,  false,  false,  false,  false,  false,  false },
+                          /*int    */  {false,  false,  false,  false,  false,  false,  true,   false },
+                          /*long   */  {false,  false,  false,  false,  false,  false,  true,   true  },
+                          /*float  */  {false,  false,  false,  false,  false,  false,  false,  false },
+                          /*double */  {false,  false,  false,  false,  false,  false,  false,  false }
+                      };
+
+    final int i = getIndex(from);
+    final int j = getIndex(to);
+    if(i == -1 || j == -1 )
+    {
+      return false;
+    }
+    return tab[i][j];
+  }
+
+  private int getIndex(IType type) {
+    if( type == JavaTypes.pBOOLEAN() || type == JavaTypes.BOOLEAN() )
+    {
+      return 0;
+    }
+    else if( type == JavaTypes.pCHAR() || type == JavaTypes.CHARACTER() )
+    {
+      return 1;
+    }
+    else if( type == JavaTypes.pBYTE() || type == JavaTypes.BYTE() )
+    {
+      return 2;
+    }
+    else if( type == JavaTypes.pSHORT() || type == JavaTypes.SHORT() )
+    {
+      return 3;
+    }
+    else if( type == JavaTypes.pINT() || type == JavaTypes.INTEGER() )
+    {
+      return 4;
+    }
+    else if( type == JavaTypes.pLONG() || type == JavaTypes.LONG() )
+    {
+      return 5;
+    }
+    else if( type == JavaTypes.pFLOAT() || type == JavaTypes.FLOAT() )
+    {
+      return 6;
+    }
+    else if( type == JavaTypes.pDOUBLE() || type == JavaTypes.DOUBLE() )
+    {
+      return 7;
+    }
+    return -1;
+  }
+
+  private boolean isAWideingConversion(IType to, IType from) {
+    boolean[][] tab =
+                        {                                   //TO
+                          //FROM       boolean  char    byte    short   int     long    float   double
+                          /*boolean*/  {true,   false,  false,  false,  false,  false,  false,  false},
+                          /*char   */  {false,  true,   false,  false,  true,   true,   true,   true },
+                          /*byte   */  {false,  false,  true,   true,   true,   true,   true,   true },
+                          /*short  */  {false,  false,  false,  true,   true,   true,   true,   true },
+                          /*int    */  {false,  false,  false,  false,  true,   true,   false,  true },
+                          /*long   */  {false,  false,  false,  false,  false,  true,   false,  false},
+                          /*float  */  {false,  false,  false,  false,  false,  false,  true,   true },
+                          /*double */  {false,  false,  false,  false,  false,  false,  false,  true }
+                        };
+
+    final int i = getIndex(from);
+    final int j = getIndex(to);
+    if(i == -1 || j == -1 )
+    {
+      return false;
+    }
+    return tab[i][j];
   }
 
   private boolean isFloatFamily( IType type )

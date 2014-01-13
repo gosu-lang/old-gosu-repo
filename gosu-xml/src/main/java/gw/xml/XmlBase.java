@@ -39,7 +39,6 @@ public abstract class XmlBase implements IGosuObject {
     _typeInstance = xmlTypeInstance;
   }
 
-  @gw.lang.InternalAPI
   public XmlTypeInstance getTypeInstance() {
     return _typeInstance;
   }

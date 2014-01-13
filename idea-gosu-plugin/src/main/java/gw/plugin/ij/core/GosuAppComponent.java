@@ -4,22 +4,26 @@
 
 package gw.plugin.ij.core;
 
+import com.intellij.ide.plugins.IdeaPluginDescriptor;
+import com.intellij.ide.plugins.PluginManager;
 import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.extensions.ExtensionPoint;
 import com.intellij.openapi.extensions.Extensions;
-import com.intellij.openapi.projectRoots.Sdk;
+import com.intellij.openapi.extensions.PluginId;
 import com.intellij.refactoring.rename.RenameHandler;
 import com.intellij.refactoring.rename.inplace.MemberInplaceRenameHandler;
 import gw.plugin.ij.lang.parser.GosuCodeParserDefinition;
-import gw.plugin.ij.sdk.ISDKCreator;
 import gw.plugin.ij.sdk.SDKCreatorExtensionBean;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 
 public class GosuAppComponent implements ApplicationComponent {
+  public static final PluginId EDITOR_PLUGIN_ID = PluginId.getId("com.guidewire.gosu-internal");
+  public static final PluginId OLD_EDITOR_PLUGIN_ID = PluginId.getId("Gosu");
+
   public GosuAppComponent() {
     new GosuCodeParserDefinition(); // force loading the class.
   }
@@ -58,7 +62,7 @@ public class GosuAppComponent implements ApplicationComponent {
       String path = res.getFile();
       int idx = path.indexOf("!/" + aClassInAltRtJar);
       String file = idx >= 0 ? path.substring(0, idx) : path;
-      IDEAUtil.showError(GosuBundle.message("error.system_classpath_problem"),
+      ExceptionUtil.showError(GosuBundle.message("error.system_classpath_problem"),
           GosuBundle.message("error.system_classpath_problem.description", file));
     }
   }
@@ -71,5 +75,10 @@ public class GosuAppComponent implements ApplicationComponent {
   @Override
   public String getComponentName() {
     return "Gosu App Component";
+  }
+
+  public static IdeaPluginDescriptor getEditorPlugin() {
+    final IdeaPluginDescriptor plugin = PluginManager.getPlugin(EDITOR_PLUGIN_ID);
+    return plugin != null ? plugin : PluginManager.getPlugin(OLD_EDITOR_PLUGIN_ID);
   }
 }

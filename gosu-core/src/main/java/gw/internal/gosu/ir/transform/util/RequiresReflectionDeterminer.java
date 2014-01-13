@@ -28,7 +28,7 @@ public class RequiresReflectionDeterminer
            isGosuClassAccessingProtectedOrInternalMethodOfClassInDifferentClassloader( compilingClass, declaringClass, accessibility ) ||
            isGosuClassAccessingProtectedMemberOfClassNotInHierarchy( compilingClass, declaringClass, accessibility ) ||
            isProgramCompilingDuringDebuggerSuspension( compilingClass, accessibility ) ||
-           (isProgramNotEval( compilingClass ) && accessibility != IRelativeTypeInfo.Accessibility.PUBLIC); // for studio debugger expressions
+           (isProgramNotEval( compilingClass, declaringClass ) && accessibility != IRelativeTypeInfo.Accessibility.PUBLIC); // for studio debugger expressions
   }
 
   private static boolean isProgramCompilingDuringDebuggerSuspension( IType compilingClass, IRelativeTypeInfo.Accessibility accessibility )
@@ -176,8 +176,8 @@ public class RequiresReflectionDeterminer
   private static boolean isInSeparateClassLoader( ICompilableTypeInternal callingClass, IType declaringClass )
   {
     return callingClass != declaringClass &&
-           (isEvalProgram( callingClass ) ||
-            isEvalProgram( declaringClass ) ||
+           (isInEvalProgram( callingClass ) ||
+            isInEvalProgram( declaringClass ) ||
             isThrowawayProgram( callingClass ) ||
             isThrowawayProgram( declaringClass ) ||
             BytecodeOptions.isSingleServingLoader());
@@ -199,10 +199,13 @@ public class RequiresReflectionDeterminer
     }
   }
 
-  private static boolean isEvalProgram( IType gsClass )
+  private static boolean isInEvalProgram( IType gsClass )
   {
-    return gsClass instanceof IGosuProgram &&
-           ((IGosuProgram)gsClass).isAnonymous();
+    if( gsClass == null ) {
+      return false;
+    }
+    return (gsClass instanceof IGosuProgram && ((IGosuProgram)gsClass).isAnonymous()) ||
+           isInEvalProgram( gsClass.getEnclosingType() );
   }
 
   private static boolean isThrowawayProgram( IType gsClass )
@@ -211,10 +214,11 @@ public class RequiresReflectionDeterminer
            ((IGosuProgramInternal)gsClass).isThrowaway();
   }
 
-  private static boolean isProgramNotEval( IType gsClass )
+  private static boolean isProgramNotEval( IType callingClass, IType declaringClass )
   {
-    return gsClass instanceof IGosuProgram &&
-           !((IGosuProgram)gsClass).isAnonymous();
+    return callingClass != declaringClass &&
+           callingClass instanceof IGosuProgram &&
+           !((IGosuProgram)callingClass).isAnonymous();
   }
 
 }

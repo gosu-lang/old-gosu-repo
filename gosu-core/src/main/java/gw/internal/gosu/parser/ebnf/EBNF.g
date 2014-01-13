@@ -25,7 +25,7 @@ optionValue : id | STRING_LITERAL | INT | '*' ;
 
 rule : ('protected'|'public'|'private'|'fragment')? id '!'? ARG_ACTION? ( 'returns' ARG_ACTION)?
        throwsSpec? optionsSpec? ruleScopeSpec? ruleAction*
-       ':' altList ';' exceptionGroup? {System.out.print($id.text + " = " + $altList.str + ".\n");} ;
+       ':' altList ';' exceptionGroup? {System.out.print("<b>"+$id.text+"</b>" + " <b>=</b> " + $altList.str + "<b>.</b>\n");} ;
 
 ruleAction : '@' id ACTION ;
 
@@ -35,7 +35,7 @@ ruleScopeSpec : 'scope' ACTION | 'scope' id (',' id)* ';' | 'scope' ACTION 'scop
        
 block returns [String str] : '(' ( optionsSpec? ':')? altList ')' {$str= $altList.str; } ;
 
-altList returns [String str] : {$str= ""; }  a1=alternative {$str+= $a1.str;} ( '|'  a2=alternative {$str+= "| " + $a2.str;} )* ;
+altList returns [String str] : {$str= ""; }  a1=alternative {$str+= $a1.str;} ( '|'  a2=alternative {$str+= "<b>|</b> " + $a2.str;} )* ;
 
 alternative returns [String str] : {str="";} (element {if(!$element.str.equals("")) {$str = $str+ $element.str + " ";}})* ;
 
@@ -61,17 +61,21 @@ element returns [String str] :
                                                                                   block = true;
                                                                                 } 
                                                                                 if($op1 != null) {
-                                                                                  $str = "["+ s +"]";
+                                                                                  $str = "<b>[</b>"+ s +"<b>]</b>";
                                                                                 }
                                                                                 else if($op2 != null) {
-                                                                                  $str = "{"+ s +"}";
+                                                                                  $str = "<b>{</b>"+ s +"<b>}</b>";
                                                                                 }
                                                                                 else if($op3 != null) {
-                                                                                  $str = s + " {"+ s +"}";
+                                                                                  if(block) {
+                                                                                    $str = "<b>(</b>"+ s +"<b>)</b>" + " <b>{</b>"+ s +"<b>}</b>";
+                                                                                  } else {
+                                                                                    $str = s + " <b>{</b>"+ s +"<b>}</b>";
+                                                                                  }
                                                                                 } else if($op4 != null) {
                                                                                   $str = "";
                                                                                 }else if(block) {
-                                                                                  $str = "("+ s +")";
+                                                                                  $str = "<b>(</b>"+ s +"<b>)</b>";
                                                                                 } else {
                                                                                   $str = s;
                                                                                 }
@@ -130,7 +134,7 @@ STRING_LITERAL :   '\'' LITERAL_CHAR LITERAL_CHAR* '\''
                       }
                       r[j] = '"';
                       j++;
-                      setText(new String(r, 0, j));
+                      setText(new String("<font color=\"green\">" + new String(r, 0, j) + "</font>"));
                     };
     
 

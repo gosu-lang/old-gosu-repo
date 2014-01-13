@@ -22,7 +22,6 @@ public interface IXmlSchemaEnumValue {
    * Returns the code of this enum constant.
    * @return the code of this enum constant
    */
-  @gw.lang.InternalAPI
   String getCode();
 
 }

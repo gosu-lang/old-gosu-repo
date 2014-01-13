@@ -5,6 +5,7 @@
 package gw.internal.gosu.ir.transform.statement;
 
 import gw.config.CommonServices;
+import gw.internal.gosu.ir.compiler.bytecode.expression.IRMethodCallExpressionCompiler;
 import gw.internal.gosu.ir.nodes.JavaClassIRType;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
@@ -122,7 +123,7 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
   private void makeIteratorLoop( TopLevelTransformationContext cc, IRExpression rootExpression, IRForEachStatement forLoop, Symbol identifier, Symbol iteratorIdentifier )
   {
     // iterator temporary variable init
-    IRExpression iteratorInit = callStaticMethod( ForEachStatementTransformer.class, "makeIterator", new Class[]{Object.class}, exprList( rootExpression ) );
+    IRExpression iteratorInit = callStaticMethod( ForEachStatementTransformer.class, "makeIterator", new Class[]{Object.class, boolean.class}, exprList( rootExpression, pushConstant( _stmt() != null && _stmt().isStructuralIterable() ) ) );
     if( rootExpression.getType() == JavaClassIRType.get( IntegerInterval.class ) )
     {
       iteratorInit = checkCast( AbstractIntIterator.class, iteratorInit );
@@ -275,7 +276,7 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
   }
 
   @SuppressWarnings({"UnusedDeclaration"})
-  public static Iterator makeIterator( Object obj )
+  public static Iterator makeIterator( Object obj, boolean bStructuralIterable )
   {
     if( obj == null )
     {
@@ -285,6 +286,11 @@ public class ForEachStatementTransformer extends AbstractStatementTransformer<Fo
     if( obj instanceof Iterable )
     {
       return ((Iterable)obj).iterator();
+    }
+
+    if( bStructuralIterable )
+    {
+      return ((Iterable)IRMethodCallExpressionCompiler.constructProxy( obj, Iterable.class.getName() )).iterator();
     }
 
     if( obj instanceof Iterator )

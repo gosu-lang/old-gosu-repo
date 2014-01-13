@@ -16,8 +16,9 @@ import gw.lang.reflect.IProvidesCustomErrorInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.TypeUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
@@ -50,7 +51,7 @@ public class GosuOpenTypeAnnotator implements Annotator, Condition<VirtualFile> 
         if (module != null) {
           TypeSystem.pushModule(module);
           try {
-            final String[] types = TypeSystem.getTypesForFile(module, IDEAUtil.toIFile(virtualFile));
+            final String[] types = TypeSystem.getTypesForFile(module, FileUtil.toIFile(virtualFile));
             for (String typeName : types) {
               IType type = TypeSystem.getByFullNameIfValid(typeName);
               if (type instanceof IProvidesCustomErrorInfo) {
@@ -79,6 +80,6 @@ public class GosuOpenTypeAnnotator implements Annotator, Condition<VirtualFile> 
 
   @Override
   public boolean value(VirtualFile file) {
-    return !IDEAUtil.getTypesForFile(GosuModuleUtil.getGlobalModule(_project), file).isEmpty();
+    return !TypeUtil.getTypesForFile(GosuModuleUtil.getGlobalModule(_project), file).isEmpty();
   }
 }

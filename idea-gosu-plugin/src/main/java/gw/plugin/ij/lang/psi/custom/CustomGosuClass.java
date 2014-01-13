@@ -54,7 +54,7 @@ import gw.lang.reflect.IType;
 import gw.plugin.ij.filesystem.IDEAFile;
 import gw.plugin.ij.lang.GosuLanguage;
 import gw.plugin.ij.lang.psi.impl.CustomPsiClassCache;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,7 +90,7 @@ public class CustomGosuClass extends UserDataHolderBase implements PsiClass {
   }
 
   public CustomGosuClass(@NotNull IFileBasedType type) {
-    final VirtualFile virtualFile = IDEAUtil.getTypeResourceFiles(type).get(0);
+    final VirtualFile virtualFile = FileUtil.getTypeResourceFiles(type).get(0);
     final PsiManager manager = PsiManagerImpl.getInstance((Project) type.getTypeLoader().getModule().getExecutionEnvironment().getProject().getNativeProject());
 
     this.file = manager.findFile(virtualFile);

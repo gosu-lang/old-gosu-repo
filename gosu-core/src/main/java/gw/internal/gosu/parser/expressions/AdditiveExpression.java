@@ -5,10 +5,14 @@
 package gw.internal.gosu.parser.expressions;
 
 import gw.config.CommonServices;
+import gw.internal.gosu.parser.BeanAccess;
 import gw.internal.gosu.parser.ParseTree;
+import gw.internal.gosu.parser.ParserBase;
 import gw.lang.IDimension;
 import gw.lang.parser.expressions.IAdditiveExpression;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.JavaTypes;
 
@@ -113,6 +117,23 @@ public final class AdditiveExpression extends ArithmeticExpression implements IA
 
   public static Object evaluate( IType type, Object lhsValue, Object rhsValue, IType lhsType, IType rhsType, boolean bAdditive, boolean bNullSafe, boolean bNumericType )
   {
+    boolean bDynamic = false;
+    if( lhsType instanceof IPlaceholder && ((IPlaceholder)lhsType).isPlaceholder() )
+    {
+      bDynamic = true;
+      lhsType = TypeSystem.getFromObject( lhsValue );
+    }
+    if( rhsType instanceof IPlaceholder && ((IPlaceholder)rhsType).isPlaceholder() )
+    {
+      bDynamic = true;
+      rhsType = TypeSystem.getFromObject( rhsValue );
+    }
+    if( bDynamic )
+    {
+      type = ParserBase.resolveRuntimeType( lhsType, bAdditive ? '+' : '-', rhsType );
+      bNumericType = BeanAccess.isNumericType( type );
+    }
+
     if( bNumericType )
     {
       // Only evaluate as null if this is a numeric expression.

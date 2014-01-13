@@ -707,14 +707,14 @@ class ParameterInfoTest extends GosuTestCase {
   function testOnGenericGosuMethodFromGenericGosuSameTypeVar() {
     var fsup = new JavaClassFile (
       "package some.pkg;\n" +
-      "class BaseA<A> {\n" +
+      "public class BaseA<A> {\n" +
       "  public void baseFoo( A a ) {\n" +
       "  }\n" +
       "}"
     )
     var fsub = new GosuClassFile (
       "package some.pkg\n" +
-      "class DerivedF<A> extends BaseA<A> {\n" +
+      "public class DerivedF<A> extends BaseA<A> {\n" +
       "  function caller( a : A ) {\n" +
       "    baseFoo(^^)\n" +
       "  }\n" +

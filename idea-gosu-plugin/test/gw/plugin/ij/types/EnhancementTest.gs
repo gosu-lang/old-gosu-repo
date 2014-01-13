@@ -12,10 +12,11 @@ uses gw.lang.reflect.java.JavaTypes
 uses gw.plugin.ij.core.FileModificationManager
 uses gw.plugin.ij.framework.GosuTestCase
 uses gw.plugin.ij.framework.generator.ResourceFactory
-uses gw.plugin.ij.util.IDEAUtil
+uses gw.plugin.ij.util.ExecutionUtil
 uses gw.testharness.Disabled
 
 uses java.lang.Runnable
+uses gw.plugin.ij.util.UIUtil
 
 class EnhancementTest extends GosuTestCase {
   var oldDelay: int
@@ -151,7 +152,7 @@ class EnhancementTest extends GosuTestCase {
       var markers = getMarkers(enhFile)
       assertBefore(javaResources.map(\file -> TypeSystem.getByFullNameIfValid(file.qualifiedName)))
 
-      IDEAUtil.runWriteActionInDispatchThread(new Runnable() {
+      runWriteActionInDispatchThread(new Runnable() {
         function run() {
           TypeSystem.pushGlobalModule();
           try {
@@ -164,7 +165,7 @@ class EnhancementTest extends GosuTestCase {
           }
         }
       }, true);
-      IDEAUtil.settleModalEventQueue();
+      UIUtil.settleModalEventQueue();
 
       assertAfter(javaResources.map(\file -> TypeSystem.getByFullNameIfValid(file.qualifiedName)))
     } finally {

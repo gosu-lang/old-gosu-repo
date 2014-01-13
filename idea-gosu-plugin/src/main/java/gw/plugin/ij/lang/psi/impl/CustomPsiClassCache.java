@@ -4,7 +4,6 @@
 
 package gw.plugin.ij.lang.psi.impl;
 
-import com.google.common.collect.Maps;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiFile;
@@ -21,15 +20,15 @@ import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.lang.psi.custom.CustomGosuClass;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class CustomPsiClassCache extends AbstractTypeSystemListener {
   private static final CustomPsiClassCache INSTANCE = new CustomPsiClassCache();
@@ -39,8 +38,8 @@ public class CustomPsiClassCache extends AbstractTypeSystemListener {
     return INSTANCE;
   }
 
-  private final Map<String, CustomGosuClass> _psi2Class = Collections.synchronizedMap(Maps.<String, CustomGosuClass>newHashMap());
-  private final Map<IModule, Map<String, CustomGosuClass>> _type2Class = Collections.synchronizedMap(Maps.<IModule, Map<String, CustomGosuClass>>newHashMap());
+  private final ConcurrentHashMap<String, CustomGosuClass> _psi2Class = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<IModule, Map<String, CustomGosuClass>> _type2Class = new ConcurrentHashMap<>();
 
   private CustomPsiClassCache() {
     TypeSystem.addTypeLoaderListenerAsWeakRef(this);
@@ -50,8 +49,8 @@ public class CustomPsiClassCache extends AbstractTypeSystemListener {
     if (!(type instanceof IFileBasedType)) {
       return null;
     }
-    List<VirtualFile> typeResourceFiles = IDEAUtil.getTypeResourceFiles( type );
-    if( typeResourceFiles.isEmpty() ) {
+    List<VirtualFile> typeResourceFiles = FileUtil.getTypeResourceFiles(type);
+    if (typeResourceFiles.isEmpty()) {
       return null;
     }
 
@@ -59,7 +58,7 @@ public class CustomPsiClassCache extends AbstractTypeSystemListener {
     String name = type.getName();
     Map<String, CustomGosuClass> map = _type2Class.get(module);
     if (map == null) {
-      map = Collections.synchronizedMap(Maps.<String, CustomGosuClass>newHashMap());
+      map = new ConcurrentHashMap<>();
       _type2Class.put(module, map);
     }
     CustomGosuClass psiClass = map.get(name);
@@ -140,7 +139,7 @@ public class CustomPsiClassCache extends AbstractTypeSystemListener {
               IType type = TypeSystem.getByFullNameIfValid(typeName, module);
               if (type instanceof IFileBasedType) {
                 CustomGosuClass psiClass = getPsiClass(type);
-                if( psiClass != null ) {
+                if (psiClass != null) {
                   classes.add(psiClass);
                 }
               }

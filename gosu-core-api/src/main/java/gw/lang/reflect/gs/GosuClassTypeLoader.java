@@ -235,6 +235,7 @@ public class GosuClassTypeLoader extends SimpleTypeLoader
     {
       case Class:
       case Interface:
+      case Structure:
       case Enum:
         return GosuShop.createClass( sourceFile.getTypeNamespace(), sourceFile.getRelativeName(), this, sourceFile, getTypeUsesMap() );
 

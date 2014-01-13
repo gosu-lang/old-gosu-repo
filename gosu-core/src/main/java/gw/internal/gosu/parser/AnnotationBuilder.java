@@ -89,14 +89,14 @@ public class AnnotationBuilder
     // field annotations
     for( IVarStatement varStmt : gosuClass.getMemberFields() )
     {
-      annotations = ((VarStatement)varStmt).getGosuAnnotations();
+      annotations = ((VarStatement)varStmt).getAnnotations();
       addAnnotations( annotations, varStmt.getSymbol().getName(), stmts, bClearOnly );
     }
 
     // static field annotations
     for( IVarStatement varStmt : gosuClass.getStaticFields() )
     {
-      annotations = ((VarStatement)varStmt).getGosuAnnotations();
+      annotations = ((VarStatement)varStmt).getAnnotations();
       addAnnotations( annotations, varStmt.getSymbol().getName(), stmts, bClearOnly );
     }
 

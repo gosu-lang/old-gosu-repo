@@ -4,12 +4,16 @@
 
 package gw.lang.parser;
 
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
+
+import java.util.List;
 
 public interface IReducedSymbol {
   boolean isStatic();
   int getModifiers();
+  List<IGosuAnnotation> getAnnotations();
   String getName();
   String getDisplayName();
   String getFullDescription();

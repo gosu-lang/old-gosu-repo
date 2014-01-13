@@ -14,6 +14,7 @@ public enum ClassType
   Eval,
   Class,
   Interface,
+  Structure,
   Enum,
   JavaClass,
   Unknown
@@ -31,6 +32,7 @@ public enum ClassType
         this == Eval ||
         this == Class ||
         this == Interface ||
+        this == Structure ||
         this == Enum;
   }
 

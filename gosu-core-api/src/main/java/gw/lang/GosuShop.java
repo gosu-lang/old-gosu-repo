@@ -13,7 +13,19 @@ import gw.lang.init.GosuPathEntry;
 import gw.lang.ir.IRClassCompiler;
 import gw.lang.ir.IRTypeResolver;
 import gw.lang.javadoc.IJavaDocFactory;
-import gw.lang.parser.*;
+import gw.lang.parser.IConstructorInfoFactory;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IFullParserState;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.IReducedDynamicFunctionSymbol;
+import gw.lang.parser.IScope;
+import gw.lang.parser.ISourceCodeTokenizer;
+import gw.lang.parser.IStackProvider;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITokenizerInstructor;
+import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INullExpression;
 import gw.lang.parser.template.ITemplateHost;
@@ -41,7 +53,6 @@ import gw.lang.reflect.gs.IGosuProgram;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.gs.ITemplateType;
 import gw.lang.reflect.java.IJavaClassInfo;
-import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IModule;
@@ -49,7 +60,6 @@ import gw.lang.reflect.module.IModule;
 import java.io.File;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.*;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -243,7 +253,7 @@ public class GosuShop
     return CommonServices.getGosuIndustrialPark().getNullExpressionInstance();
   }
 
-  public static Class getBlockToInterfaceConversionClass( IJavaType typeToCoerceTo ) {
+  public static Class getBlockToInterfaceConversionClass( IType typeToCoerceTo ) {
     return CommonServices.getGosuIndustrialPark().getBlockToInterfaceConversionClass(typeToCoerceTo);
   }
 
@@ -447,5 +457,17 @@ public class GosuShop
 
   public static ITemplateObserver.ITemplateObserverManager makeTemplateObserverManager() {
     return CommonServices.getGosuIndustrialPark().makeTemplateObserverManager();
+  }
+
+  public static void print( Object ret ) {
+    CommonServices.getGosuIndustrialPark().print( ret );
+  }
+
+  public static String toString( Object val ) {
+    return CommonServices.getGosuIndustrialPark().toString( val );
+  }
+
+  public static IGosuClass getGosuClassFrom( IType fromType ) {
+    return CommonServices.getGosuIndustrialPark().getGosuClassFrom( fromType );
   }
 }

@@ -73,7 +73,7 @@ public class DependencySink {
   }
 
   private void processType(IType type) {
-    //if (!IDEAUtil.getTypesForFile(file).contains(type.getName())) {
+    //if (!FileUtil.getTypesForFile(file).contains(type.getName())) {
     // de-generify the type
     IType genericType = TypeSystem.getPureGenericType(type);
     if (genericType != null) {

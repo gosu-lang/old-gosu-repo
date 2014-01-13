@@ -340,8 +340,21 @@ public class AsmClassJavaClassInfo extends AsmTypeJavaClassType implements IAsmJ
         }
       }
       if( getterType != null ) {
+        if( theSetter == null ) {
+          theSetter = maybeFindSetterInSuper( getter, getSuperclass() );
+        }
         propertyDescriptors.add( new JavaSourcePropertyDescriptor(
           propName, (IJavaClassInfo)getterType.getConcreteType(), getter, theSetter ) );
+      }
+      else if( infoSetters != null ) {
+        for( IJavaClassMethod setter : infoSetters ) {
+          getter = maybeFindGetterInSuper( setter, getSuperclass() );
+          if( getter != null ) {
+            setters.remove( propName );
+            propertyDescriptors.add( new JavaSourcePropertyDescriptor(
+                    propName, (IJavaClassInfo)getterType.getConcreteType(), getter, setter ) );
+          }
+        }
       }
     }
     for( Map.Entry<String, List<IJavaClassMethod>> entry : setters.entrySet() ) {
@@ -352,6 +365,50 @@ public class AsmClassJavaClassInfo extends AsmTypeJavaClassType implements IAsmJ
     }
     return propertyDescriptors.toArray( new IJavaPropertyDescriptor[propertyDescriptors.size()] );
   }
+
+  public static IJavaClassMethod maybeFindSetterInSuper(IJavaClassMethod getter, IJavaClassInfo superClass ) {
+    if( superClass == null ) {
+      return null;
+    }
+    for( ;superClass != null; superClass = superClass.getSuperclass() ) {
+      for( IJavaPropertyDescriptor pd: superClass.getPropertyDescriptors() ) {
+        if( doesSetterDescMatchGetterMethod(getter, pd) ) {
+          return pd.getWriteMethod();
+        }
+      }
+    }
+    return null;
+  }
+
+  private static boolean doesSetterDescMatchGetterMethod(IJavaClassMethod getter, IJavaPropertyDescriptor pd) {
+    final IJavaClassType getterType = getter.getGenericReturnType();
+    if( getterType != null ) {
+      final IJavaClassMethod setter = pd.getWriteMethod();
+      if( setter != null &&
+          (setter.getGenericParameterTypes()[0].equals( getterType ) ||
+           GosuObjectUtil.equals( setter.getGenericParameterTypes()[0].getConcreteType(), getterType )) ) {
+        if( ("get" + pd.getName()).equals( getter.getName() ) || ("is" + pd.getName()).equals( getter.getName() ) ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  public static IJavaClassMethod maybeFindGetterInSuper(IJavaClassMethod setter, IJavaClassInfo superClass ) {
+    if( superClass == null ) {
+      return null;
+    }
+    for( ; superClass != null; superClass = superClass.getSuperclass() ) {
+      for( IJavaPropertyDescriptor pd: superClass.getPropertyDescriptors() ) {
+        if( doesSetterDescMatchGetterMethod(setter, pd) ) {
+          return pd.getReadMethod();
+        }
+      }
+    }
+    return null;
+  }
+
 
   @Override
   public IJavaMethodDescriptor[] getMethodDescriptors() {
@@ -558,7 +615,7 @@ public class AsmClassJavaClassInfo extends AsmTypeJavaClassType implements IAsmJ
     try {
       // This should never get called in AsmClassJavaClassInfo but it does for now eg. see DataTypeImpl, JavaTypeInfo.makeLegacyAnnotationConstructor()
       //System.out.println( "!!!! DANGER !!!!!" + "  Class.forName( \"" + getName() + "\" )" );
-      return Class.forName( getName() );
+      return Class.forName( getName(), false, getClass().getClassLoader() );
     }
     catch( ClassNotFoundException e ) {
       return null;

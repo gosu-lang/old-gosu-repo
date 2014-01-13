@@ -4,8 +4,6 @@
 
 package gw.internal.xml.ws
 
-uses java.io.ByteArrayInputStream
-uses java.io.ByteArrayOutputStream
 uses java.io.InputStream
 uses java.net.HttpURLConnection
 uses java.net.URI
@@ -14,11 +12,7 @@ uses gw.internal.xml.ws.WebservicesResponse
 uses gw.internal.xml.ws.http.fragment.*
 uses gw.internal.xml.ws.http.*
 uses gw.util.StreamUtil
-uses gw.xml.XmlElement
-uses gw.xml.XmlSimpleValue
 uses gw.xml.ws.HttpHeaders
-uses gw.xml.ws.WebServiceException
-uses gw.xml.XmlParseOptions
 
 class HttpMultipartRelatedWebservicesResponse extends WebservicesResponse {
 

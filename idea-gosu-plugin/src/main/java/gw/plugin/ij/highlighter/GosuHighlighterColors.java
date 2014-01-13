@@ -4,48 +4,28 @@
 
 package gw.plugin.ij.highlighter;
 
-import com.intellij.openapi.editor.HighlighterColors;
-import com.intellij.openapi.editor.SyntaxHighlighterColors;
+import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.colors.CodeInsightColors;
 import com.intellij.openapi.editor.colors.TextAttributesKey;
-import com.intellij.openapi.editor.markup.EffectType;
-import com.intellij.openapi.editor.markup.TextAttributes;
-import com.intellij.ui.Gray;
-import org.jetbrains.annotations.NonNls;
-
-import java.awt.*;
 
 public class GosuHighlighterColors {
-  @NonNls
-  static final String WORD_ID = "GOSU_WORD";
-
-  @NonNls
-  static final String UNRESOLVED_ACCESS_ID = "GOSU_UNRESOLVED_REF";
-
-  public static final TextAttributes WORD_ATTRIBUTES = SyntaxHighlighterColors.KEYWORD.getDefaultAttributes().clone();
-
-  static {
-    WORD_ATTRIBUTES.setForegroundColor(Gray._0);
-    WORD_ATTRIBUTES.setFontType(Font.PLAIN);
-  }
-
-  public static final TextAttributesKey WORD = TextAttributesKey.createTextAttributesKey(WORD_ID, WORD_ATTRIBUTES);
+  public static final TextAttributesKey WORD = DefaultLanguageHighlighterColors.IDENTIFIER;
 
   // Syntactic colors inferred from java
-  public static final TextAttributesKey LINE_COMMENT = SyntaxHighlighterColors.LINE_COMMENT;
-  public static final TextAttributesKey BLOCK_COMMENT = SyntaxHighlighterColors.JAVA_BLOCK_COMMENT;
-  public static final TextAttributesKey DOC_COMMENT_CONTENT = SyntaxHighlighterColors.DOC_COMMENT;
-  public static final TextAttributesKey DOC_COMMENT_TAG = SyntaxHighlighterColors.DOC_COMMENT_TAG;
-  public static final TextAttributesKey KEYWORD = SyntaxHighlighterColors.KEYWORD;
-  public static final TextAttributesKey NUMBER = SyntaxHighlighterColors.NUMBER;
-  public static final TextAttributesKey STRING = SyntaxHighlighterColors.STRING;
-  public static final TextAttributesKey PARENTHS = SyntaxHighlighterColors.PARENTHS;
-  public static final TextAttributesKey BRACKETS = SyntaxHighlighterColors.BRACKETS;
-  public static final TextAttributesKey BRACES = SyntaxHighlighterColors.BRACES;
-  public static final TextAttributesKey OPERATOR = SyntaxHighlighterColors.OPERATION_SIGN;
-  public static final TextAttributesKey COMMA = SyntaxHighlighterColors.COMMA;
-  public static final TextAttributesKey SEMICOLON = SyntaxHighlighterColors.JAVA_SEMICOLON;
-  public static final TextAttributesKey DOT = SyntaxHighlighterColors.DOT;
+  public static final TextAttributesKey LINE_COMMENT = DefaultLanguageHighlighterColors.LINE_COMMENT;
+  public static final TextAttributesKey BLOCK_COMMENT = DefaultLanguageHighlighterColors.BLOCK_COMMENT;
+  public static final TextAttributesKey DOC_COMMENT_CONTENT = DefaultLanguageHighlighterColors.DOC_COMMENT;
+  public static final TextAttributesKey DOC_COMMENT_TAG = DefaultLanguageHighlighterColors.DOC_COMMENT_TAG;
+  public static final TextAttributesKey KEYWORD = DefaultLanguageHighlighterColors.KEYWORD;
+  public static final TextAttributesKey NUMBER = DefaultLanguageHighlighterColors.NUMBER;
+  public static final TextAttributesKey STRING = DefaultLanguageHighlighterColors.STRING;
+  public static final TextAttributesKey PARENTHS = DefaultLanguageHighlighterColors.PARENTHESES;
+  public static final TextAttributesKey BRACKETS = DefaultLanguageHighlighterColors.BRACKETS;
+  public static final TextAttributesKey BRACES = DefaultLanguageHighlighterColors.BRACES;
+  public static final TextAttributesKey OPERATOR = DefaultLanguageHighlighterColors.OPERATION_SIGN;
+  public static final TextAttributesKey COMMA = DefaultLanguageHighlighterColors.COMMA;
+  public static final TextAttributesKey SEMICOLON = DefaultLanguageHighlighterColors.SEMICOLON;
+  public static final TextAttributesKey DOT = DefaultLanguageHighlighterColors.DOT;
   public static final TextAttributesKey BAD_CHARACTER = CodeInsightColors.UNMATCHED_BRACE_ATTRIBUTES;
 
   // Semantic colors inferred from Java
@@ -74,17 +54,6 @@ public class GosuHighlighterColors {
   public static final TextAttributesKey ENUM_NAME_ATTRKEY = CLASS_NAME_ATTRKEY;
   public static final TextAttributesKey PACKAGE_QUALIFIER_ATTRKEY = CLASS_NAME_ATTRKEY;
   public static final TextAttributesKey UNHANDLED_ATTRKEY = CodeInsightColors.PARAMETER_ATTRIBUTES;
-
-
-  public static final TextAttributes UNRESOLVED_ACCESS_ATTRIBUTES = HighlighterColors.TEXT.getDefaultAttributes().clone();
-
-  static {
-    UNRESOLVED_ACCESS_ATTRIBUTES.setForegroundColor(Color.BLACK);
-    UNRESOLVED_ACCESS_ATTRIBUTES.setEffectColor(Color.GRAY);
-    UNRESOLVED_ACCESS_ATTRIBUTES.setEffectType(EffectType.LINE_UNDERSCORE);
-  }
-
-  public static final TextAttributesKey UNRESOLVED_ACCESS = TextAttributesKey.createTextAttributesKey(UNRESOLVED_ACCESS_ID, UNRESOLVED_ACCESS_ATTRIBUTES);
 
   private GosuHighlighterColors() {
   }

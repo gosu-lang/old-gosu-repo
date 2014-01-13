@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser;
 
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.lang.Deprecated;
 import gw.lang.GosuShop;
 import gw.lang.PublishedName;
@@ -39,9 +40,8 @@ import gw.lang.reflect.java.IJavaClassTypeVariable;
 import gw.lang.reflect.java.IJavaClassWildcardType;
 import gw.lang.reflect.java.IJavaMethodDescriptor;
 import gw.lang.reflect.java.IJavaMethodInfo;
-import gw.lang.reflect.java.IJavaParameterDescriptor;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.JavaExceptionInfo;
+import gw.lang.reflect.java.JavaTypes;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -542,14 +542,20 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
   @Override
   public boolean isDeprecated()
   {
-    return super.isDeprecated() || getMethod().isAnnotationPresent( Deprecated.class );
+    return isJavadocDeprecated() || super.isDeprecated() || getMethod().isAnnotationPresent( Deprecated.class ) || getMethod().isAnnotationPresent( java.lang.Deprecated.class );
+  }
+
+  private boolean isJavadocDeprecated()
+  {
+    return (getModifiers() & Opcodes.ACC_DEPRECATED) > 0;
   }
 
   @Override
   public String getDeprecatedReason() {
     String deprecated = super.getDeprecatedReason();
     if (isDeprecated() && deprecated == null) {
-      return (String) getMethod().getAnnotation( Deprecated.class ).getFieldValue("value");
+      IAnnotationInfo gwDeprecated = getMethod().getAnnotation( Deprecated.class );
+      return gwDeprecated == null ? null : (String) gwDeprecated.getFieldValue( "value" );
     }
     return deprecated;
   }

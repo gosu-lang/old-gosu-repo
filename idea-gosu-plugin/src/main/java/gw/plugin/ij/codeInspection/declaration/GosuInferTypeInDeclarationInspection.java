@@ -5,7 +5,11 @@
 package gw.plugin.ij.codeInspection.declaration;
 
 
-import com.intellij.codeInspection.*;
+import com.intellij.codeInspection.LocalInspectionToolSession;
+import com.intellij.codeInspection.LocalQuickFix;
+import com.intellij.codeInspection.ProblemDescriptor;
+import com.intellij.codeInspection.ProblemHighlightType;
+import com.intellij.codeInspection.ProblemsHolder;
 import com.intellij.codeInspection.ex.BaseLocalInspectionTool;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
@@ -18,9 +22,12 @@ import gw.internal.gosu.parser.expressions.NumericLiteral;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
 import gw.internal.gosu.parser.statements.VarStatement;
 import gw.lang.parser.IParsedElement;
+import gw.lang.parser.exceptions.IWarningSuppressor;
 import gw.lang.parser.expressions.IImplicitTypeAsExpression;
+import gw.lang.parser.expressions.IMemberAccessExpression;
+import gw.lang.reflect.IPlaceholder;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuProgram;
-import gw.lang.reflect.java.JavaTypes;
 import gw.plugin.ij.intentions.varInferenceFix;
 import gw.plugin.ij.lang.psi.api.expressions.IGosuExpression;
 import gw.plugin.ij.lang.psi.api.statements.IGosuField;
@@ -30,7 +37,9 @@ import gw.plugin.ij.util.GosuBundle;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NotNull;
 
-public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionTool {
+public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionTool implements IWarningSuppressor {
+
+  public static final String SUPPRESS_WARNING_CODE = "InferTypeInDeclaration";
 
   @Nls
   @NotNull
@@ -69,6 +78,9 @@ public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionToo
         if(parsedElement == null) {
           return;
         }
+        if( parsedElement.isSuppressed( GosuInferTypeInDeclarationInspection.this ) ) {
+          return;
+        }
         boolean isProgramVariable = parsedElement.getGosuClass() instanceof IGosuProgram;
         if (parsedElement instanceof VarStatement) {
           VarStatement varStmt = (VarStatement) parsedElement;
@@ -89,6 +101,9 @@ public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionToo
       public void visitVariable(IGosuVariable variable) {
         IParsedElement parsedElement = variable.getParsedElement();
         if (parsedElement instanceof VarStatement) {
+          if( parsedElement.isSuppressed( GosuInferTypeInDeclarationInspection.this ) ) {
+            return;
+          }
           VarStatement varStmt = (VarStatement) parsedElement;
           Expression expr = varStmt.getAsExpression();
           if (isFixable(varStmt, expr)) {
@@ -125,13 +140,30 @@ public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionToo
       {
         // prevent fix in cases like this: var _subtype : typekey.State = "CA"
         fixable = false;
-      }  else if(varStmt.hasProperty())
+      } else if(expr instanceof IMemberAccessExpression && !expr.getLocation().getTextFromTokens().contains("."))
+      {
+        // prevent fix in cases like this: var c : Currency = TC_USD
+        fixable = false;
+      } else if(varStmt.hasProperty())
       {
         // prevent fix in cases like this: var x : String as Name = "Gosu"
         fixable = false;
       }
+      else {
+        IType type = typeLiteral.getType().getType();
+        if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() &&
+            !(expr.getType() instanceof IPlaceholder && ((IPlaceholder)expr.getType()).isPlaceholder()) ) {
+          // prevent fix in cases like this:  var dyn : Dynamic = foo
+          fixable = false;
+        }
+      }
     }
     return fixable;
+  }
+
+  @Override
+  public boolean isSuppressed( String warningCode ) {
+    return SUPPRESS_WARNING_CODE.equals( warningCode ) || "all".equals( warningCode );
   }
 
   private class TypeInferenceFix implements LocalQuickFix {

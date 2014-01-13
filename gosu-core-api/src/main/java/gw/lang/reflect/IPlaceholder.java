@@ -6,5 +6,7 @@ package gw.lang.reflect;
 
 public interface IPlaceholder
 {
+  Object UNHANDLED = new Object() { public String toString() {return "unhandled";} };
+
   boolean isPlaceholder();
 }

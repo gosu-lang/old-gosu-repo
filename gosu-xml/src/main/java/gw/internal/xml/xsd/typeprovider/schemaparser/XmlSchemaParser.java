@@ -124,7 +124,7 @@ public abstract class XmlSchemaParser {
 
   public static XmlSchema parseSchema( XmlSchemaIndex schemaIndex, XmlElement element, String tns, URL baseURL, XmlSchemaParseContext context, boolean isRedefine, Map<Pair<URL, String>, XmlSchema> caches ) throws IOException {
      if ( context.pushIncludedSchema( baseURL ) ) {
-      throw new XmlException( "Circular xs:include found in schema " + baseURL.toExternalForm() + " (it either directly or indirectly includes itself)");
+      throw new IllegalStateException( "Internal Error: Unhandled circularity in schemas" ); // this used to be a circular include error, but we should now detect circular includes, and we should never get here
     }
     try {
       // if tns is non-null, perform chameleon transformation
@@ -175,6 +175,9 @@ public abstract class XmlSchemaParser {
         XmlSchemaInclude include = parseInclude( schemaIndex, includeElement );
         String schemaLocation = include.getSchemaLocation();
         URL targetUrl = XmlSchemaIndex.makeLocalIfValid( baseURL, schemaLocation, null, schemaIndex.getTypeLoader().getModule() );
+        if ( context.isSchemaAlreadyIncluded( targetUrl ) ) {
+          continue; // skip already included schema (circular include or redefine)
+        }
         XmlSchema schema = loadSchemaWithCache( schemaIndex, targetUrl, targetNamespace, context, caches);
         for ( XmlSchemaImport imprt : schema.getImports() ) {
           imports.add( imprt );
@@ -198,6 +201,9 @@ public abstract class XmlSchemaParser {
       for ( XmlElement redefineElement : element.getChildren( new QName( XMLConstants.W3C_XML_SCHEMA_NS_URI, "redefine" ) ) ) {
         String schemaLocation = redefineElement.getAttributeValue( "schemaLocation" );
         URL url = XmlSchemaIndex.makeLocalIfValid( baseURL, schemaLocation, null, schemaIndex.getTypeLoader().getModule() );
+        if ( context.isSchemaAlreadyIncluded( url ) ) {
+          continue; // skip already included schema (circular include or redefine)
+        }
         context.popIncludedSchema( baseURL ); // to avoid circular schema error when reparsing this same baseURL
         XmlSchema overrideSchema = parseSchema( schemaIndex, redefineElement, targetNamespace, baseURL, context, true, caches );
         context.pushIncludedSchema( baseURL );

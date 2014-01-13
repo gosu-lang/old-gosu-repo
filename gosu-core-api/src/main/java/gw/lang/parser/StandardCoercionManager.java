@@ -54,14 +54,21 @@ import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IMetaType;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPlaceholder;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.ITypeVariableArrayType;
 import gw.lang.reflect.ITypeVariableType;
+import gw.lang.reflect.MethodList;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuArrayClass;
 import gw.lang.reflect.gs.IGosuArrayClassInstance;
 import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.gs.IGosuEnhancement;
 import gw.lang.reflect.gs.IGosuObject;
 import gw.lang.reflect.java.GosuTypes;
 import gw.lang.reflect.java.IJavaArrayType;
@@ -132,8 +139,7 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     }
     else if( lhsType == JavaTypes.pCHAR() || lhsType == JavaTypes.CHARACTER() )
     {
-      return rhsType != JavaTypes.pBYTE() && rhsType != JavaTypes.BYTE() &&
-             rhsType != JavaTypes.pCHAR() && rhsType != JavaTypes.CHARACTER();
+      return rhsType != JavaTypes.pCHAR() && rhsType != JavaTypes.CHARACTER();
     }
     else if( lhsType == JavaTypes.pDOUBLE() || lhsType == JavaTypes.DOUBLE() )
     {
@@ -163,8 +169,7 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     else if( lhsType == JavaTypes.pSHORT() || lhsType == JavaTypes.SHORT() )
     {
       return rhsType != JavaTypes.pSHORT() && rhsType != JavaTypes.SHORT() &&
-             rhsType != JavaTypes.pBYTE() && rhsType != JavaTypes.BYTE() &&
-             rhsType != JavaTypes.pCHAR() && rhsType != JavaTypes.CHARACTER();
+             rhsType != JavaTypes.pBYTE() && rhsType != JavaTypes.BYTE();
     }
     else if( JavaTypes.BIG_INTEGER().isAssignableFrom( lhsType ) )
     {
@@ -691,6 +696,14 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     }
 
     //==================================================================================
+    // Structurally suitable (static duck typing)
+    //==================================================================================
+    if( isStructurallyAssignable( lhsT, rhsT ) )
+    {
+      return lhsType;
+    }
+
+    //==================================================================================
     // Coercion
     //==================================================================================
     if( canCoerce( lhsT, rhsT ) )
@@ -709,6 +722,113 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     String strLhs = TypeSystem.getNameWithQualifiedTypeVariables( lhsType );
     String strRhs = TypeSystem.getNameWithQualifiedTypeVariables( rhsType );
     throw new ParseException( parserState, lhsType, Res.MSG_TYPE_MISMATCH, strLhs, strRhs );
+  }
+
+  public static boolean isStructurallyAssignable( IType toType, IType fromType )
+  {
+    if( !(toType instanceof IGosuClass && ((IGosuClass)toType).isStructure()) )
+    {
+      return false;
+    }
+    return isStructurallyAssignable_Laxed( toType, fromType );
+  }
+  public static boolean isStructurallyAssignable_Laxed( IType toType, IType fromType )
+  {
+    ITypeInfo fromTypeInfo = fromType.getTypeInfo();
+    MethodList fromMethods = fromTypeInfo instanceof IRelativeTypeInfo
+                             ? ((IRelativeTypeInfo)fromTypeInfo).getMethods( toType )
+                             : fromTypeInfo.getMethods();
+    ITypeInfo toTypeInfo = toType.getTypeInfo();
+    MethodList toMethods = toTypeInfo instanceof IRelativeTypeInfo
+                           ? ((IRelativeTypeInfo)toTypeInfo).getMethods( fromType )
+                           : toTypeInfo.getMethods();
+    for( IMethodInfo toMi : toMethods )
+    {
+      if( isObjectMethod( toMi ) ) {
+        continue;
+      }
+      if( toMi.getOwnersType() instanceof IGosuEnhancement ) {
+        continue;
+      }
+      IMethodInfo fromMi = fromMethods.findAssignableMethod( toMi );
+      if( fromMi == null ) {
+        if( toMi.getDisplayName().startsWith( "@" ) ) {
+          IPropertyInfo fromPi = fromTypeInfo.getProperty( toMi.getDisplayName().substring( 1 ) );
+          if( fromPi != null ) {
+            if( toMi.getParameters().length == 0 ) {
+              return toMi.getReturnType().equals( fromPi.getFeatureType() ) ||
+                     arePrimitiveTypesAssignable( toMi.getReturnType(), fromPi.getFeatureType() );
+            }
+            else {
+              return fromPi.isWritable( toType ) &&
+                     (fromPi.getFeatureType().equals( toMi.getParameters()[0].getFeatureType() ) ||
+                      arePrimitiveTypesAssignable( fromPi.getFeatureType(), toMi.getParameters()[0].getFeatureType() ));
+            }
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static boolean arePrimitiveTypesAssignable( IType toType, IType fromType ) {
+    if( toType == null || fromType == null || !toType.isPrimitive() || !fromType.isPrimitive() ) {
+      return false;
+    }
+    if( toType == fromType )
+    {
+      return true;
+    }
+
+    if( toType == JavaTypes.pDOUBLE() ) {
+      return fromType == JavaTypes.pFLOAT() ||
+             fromType == JavaTypes.pINT() ||
+             fromType == JavaTypes.pCHAR() ||
+             fromType == JavaTypes.pSHORT() ||
+             fromType == JavaTypes.pBYTE();
+    }
+    if( toType == JavaTypes.pFLOAT() ) {
+      return fromType == JavaTypes.pCHAR() ||
+             fromType == JavaTypes.pSHORT() ||
+             fromType == JavaTypes.pBYTE();
+    }
+    if( toType == JavaTypes.pLONG() ) {
+      return fromType == JavaTypes.pINT() ||
+             fromType == JavaTypes.pCHAR() ||
+             fromType == JavaTypes.pSHORT() ||
+             fromType == JavaTypes.pBYTE();
+    }
+    if( toType == JavaTypes.pINT() ) {
+      return fromType == JavaTypes.pSHORT() ||
+             fromType == JavaTypes.pCHAR() ||
+             fromType == JavaTypes.pBYTE();
+    }
+    if( toType == JavaTypes.pSHORT() ) {
+      return fromType == JavaTypes.pBYTE();
+    }
+
+    return false;
+  }
+
+  public static boolean isObjectMethod( IMethodInfo mi )
+  {
+    IGosuClass gosuObjectType = GosuShop.getGosuClassFrom( JavaTypes.IGOSU_OBJECT() );
+    if( mi.getOwnersType() == gosuObjectType || mi.getDisplayName().equals( "@itype" ) )
+    {
+      // A IGosuObject method
+      return true;
+    }
+
+    IParameterInfo[] params = mi.getParameters();
+    IType[] paramTypes = new IType[params.length];
+    for( int i = 0; i < params.length; i++ )
+    {
+      paramTypes[i] = params[i].getFeatureType();
+    }
+    IRelativeTypeInfo ti = (IRelativeTypeInfo)JavaTypes.OBJECT().getTypeInfo();
+    IMethodInfo objMethod = ti.getMethod( JavaTypes.OBJECT(), mi.getDisplayName(), paramTypes );
+    return objMethod != null;
   }
 
   public boolean coercionRequiresWarningIfImplicit( IType lhsType, IType rhsType )
@@ -1275,7 +1395,7 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
 
     if( obj instanceof Integer )
     {
-      return new BigDecimal( (Integer)obj );
+      return BigDecimal.valueOf( (Integer)obj );
     }
     else if( obj instanceof BigInteger )
     {
@@ -1283,15 +1403,22 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     }
     else if( obj instanceof Long )
     {
-      return new BigDecimal( (Long)obj );
+      return BigDecimal.valueOf( (Long)obj );
     }
-    else if (obj instanceof Short) {
-      return new BigDecimal(((Short) obj).intValue());
+    else if( obj instanceof Short )
+    {
+      return BigDecimal.valueOf( (Short)obj );
     }
-    else if (obj instanceof Byte) {
-      return new BigDecimal(((Byte) obj).intValue());
+    else if( obj instanceof Byte )
+    {
+      return BigDecimal.valueOf( (Byte)obj );
     }
-    else if (obj instanceof Float) {
+    else if( obj instanceof Character )
+    {
+      return BigDecimal.valueOf( (Character)obj );
+    }
+    else if (obj instanceof Float)
+    {
       // Convert a float directly to a BigDecimal via the String value; don't
       // up-convert it to a double first, since converting a double can be lossy
       return new BigDecimal( obj.toString());
@@ -1309,10 +1436,6 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     else if( obj instanceof Date )
     {
       return new BigDecimal( ((Date)obj).getTime() );
-    }
-    else if( obj instanceof Character )
-    {
-      return new BigDecimal( (Character) obj );
     }
     else if( CommonServices.getCoercionManager().canCoerce( JavaTypes.NUMBER(), TypeSystem.getFromObject( obj ) ) )
     {
@@ -1332,6 +1455,11 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     if( obj == null )
     {
       return null;
+    }
+
+    if( obj instanceof BigInteger )
+    {
+      return (BigInteger)obj;
     }
 
     if( obj instanceof IDimension )

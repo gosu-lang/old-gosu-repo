@@ -10,6 +10,7 @@ import gw.internal.gosu.parser.GosuParser;
 import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.MetaType;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.TypeVariableType;
 import gw.lang.parser.exceptions.ParseWarningForDeprecatedMember;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
 import gw.lang.reflect.IType;
@@ -138,7 +139,8 @@ public class TypeLiteral extends Literal implements ITypeLiteralExpression
 
   public boolean isCompileTimeConstant()
   {
-    return true;
+    IType type = getType().getType();
+    return !type.isParameterizedType() && !(type instanceof TypeVariableType);
   }
 
   public IType evaluate()

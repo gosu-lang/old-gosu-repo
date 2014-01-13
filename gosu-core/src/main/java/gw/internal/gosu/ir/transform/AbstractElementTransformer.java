@@ -2662,7 +2662,10 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     return new IRMethodCallExpression(name, getDescriptor(ownersType), ownersType.isInterface(), getDescriptor(returnType), getIRTypes(paramTypes), root, args);
   }
 
-  protected IRCastExpression buildCast(IRType castType, IRExpression expression) {
+  protected IRExpression buildCast(IRType castType, IRExpression expression) {
+    if( castType.isPrimitive() && expression.getType().equals( JavaClassIRType.get( Object.class ) ) ) {
+      return unboxValueToType( castType, expression );
+    }
     return new IRCastExpression(expression, castType);
   }
 

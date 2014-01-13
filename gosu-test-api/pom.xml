@@ -41,6 +41,12 @@
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-classredefiner</artifactId>
       <version>1.0.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.sun</groupId>
+          <artifactId>tools</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

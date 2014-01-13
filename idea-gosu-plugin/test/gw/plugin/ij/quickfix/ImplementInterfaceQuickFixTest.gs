@@ -152,6 +152,155 @@ class ImplementInterfaceQuickFixTest extends AbstractQuickFixTest {
     test({ iface, implCls })
   }
 
+  function testImplementJavaInterfaceMethodWithGetterSetter01() {
+    var iface = new JavaInterfaceFile (
+        "package some.pkg;\n" +
+            "interface IBase {\n" +
+            "public int getT();\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override property get T(): int {!!\n" +
+            "    return 0\n  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementJavaInterfaceMethodWithGetterSetter02() {
+    var iface = new JavaInterfaceFile (
+        "package some.pkg;\n" +
+            "interface IBase {\n" +
+            "public int getT();\n" +
+            "void setT(int x);\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override property get T(): int {!!\n" +
+            "    return 0\n  }\n\n" +
+            "  override property set T(x: int) {\n" +
+            "  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementJavaInterfaceMethodWithGetterSetter03() {
+    var iface = new JavaInterfaceFile (
+        "package some.pkg;\n" +
+            "interface IBase {\n" +
+            "public int T=1;\n" +
+            "void setT(int x);\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override function setT(x: int) {!!\n" +
+            "  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementJavaInterfaceMethodWithGetterSetter04() {
+    var iface = new JavaInterfaceFile (
+        "package some.pkg;\n" +
+            "interface IBase {\n" +
+            "public int T=1;\n" +
+            "public int getT();\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override property get T(): int {!!\n" +
+            "    return 0\n  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementGosuInterfaceMethodWithGetterSetter01() {
+    var iface = new GosuInterfaceFile (
+        "package some.pkg\n" +
+            "interface IBase {\n" +
+            "  property get T() : int\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override property get T(): int {!!\n" +
+            "    return 0\n  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementGosuInterfaceMethodWithGetterSetter02() {
+    var iface = new GosuInterfaceFile (
+        "package some.pkg\n" +
+            "interface IBase {\n" +
+            "  property get T() : int\n" +
+            "  property set T(x : int)\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override property get T(): int {!!\n" +
+            "    return 0\n  }\n\n" +
+            "  override property set T(x: int) {\n" +
+            "  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementGosuInterfaceMethodWithGetterSetter03() {
+    var iface = new GosuInterfaceFile (
+        "package some.pkg\n" +
+            "interface IBase {\n" +
+            "  static var T : int = 0\n" +
+            "  function setT(x : int)\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override function setT(x: int) {!!\n" +
+            "  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
+  function testImplementGosuInterfaceMethodWithGetterSetter04() {
+    var iface = new GosuInterfaceFile (
+        "package some.pkg\n" +
+            "interface IBase {\n" +
+            "  static var T : int = 0\n" +
+            "  function getT() : int\n" +
+            "  function setT(x : int)\n" +
+            "}"
+    )
+    var implCls = new GosuClassFile (
+        "package some.pkg\n" +
+            "class ImplClass implements IB^^ase {\n" +
+            "  [[[override function getT(): int {!!\n" +
+            "    return 0\n  }\n\n" +
+            "  override function setT(x: int) {\n" +
+            "  }\n]]]" +
+            "}"
+    )
+    test({ iface, implCls })
+  }
+
   function testImplementSimpleJavaInterfaceWithTwoMethodsWithoutParams() {
     var iface = new JavaInterfaceFile (
       "package some.pkg;\n" +

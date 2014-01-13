@@ -75,7 +75,7 @@ import gw.plugin.ij.core.PluginLoaderUtil;
 import gw.plugin.ij.framework.FileMarkers;
 import gw.plugin.ij.framework.MarkerType;
 import gw.plugin.ij.framework.SmartTextRange;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.JavaPsiFacadeUtil;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -303,7 +303,7 @@ public abstract class CodeInsightTestCase extends PsiTestCase {
         //TODO-dp refresh only the newly created file
         final IModule module = TypeSystem.getExecutionEnvironment( PluginLoaderUtil.getFrom( getProject() ) ).getModule(m.getName());
         TypeSystem.refresh(module);
-        TypeSystem.created(IDEAUtil.toIFile(vFile));
+        TypeSystem.created(FileUtil.toIFile(vFile));
         assertNotNull("Newly created type could not be loaded: " + fqn  + " at location " + vFile.getPath(), TypeSystem.getByFullNameIfValid(fqn, module));
 
         // TODO-dp I don't know why without this line sometimes the class cannot be later found in the JavaPsiFacade

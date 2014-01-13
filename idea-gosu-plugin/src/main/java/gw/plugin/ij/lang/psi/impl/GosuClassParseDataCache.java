@@ -4,18 +4,17 @@
 
 package gw.plugin.ij.lang.psi.impl;
 
-import com.google.common.collect.Maps;
 import com.intellij.openapi.vfs.VirtualFile;
 import gw.lang.reflect.module.IModule;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GosuClassParseDataCache {
-  private static final Map<IModule, Map<String, GosuClassParseData>> _cache = Collections.synchronizedMap(Maps.<IModule, Map<String, GosuClassParseData>>newHashMap());
+  private static final ConcurrentHashMap<IModule, Map<String, GosuClassParseData>> _cache = new ConcurrentHashMap<>();
 
   private static boolean isValid(@NotNull GosuClassParseData parseData) {
     return _cache.containsKey(parseData.getModule());
@@ -33,11 +32,11 @@ public class GosuClassParseDataCache {
   private static GosuClassParseData createParseData(VirtualFile file, IModule module) {
     Map<String, GosuClassParseData> moduleCache = _cache.get(module);
     if (moduleCache == null) {
-      moduleCache = Collections.synchronizedMap(Maps.<String, GosuClassParseData>newHashMap());
+      moduleCache = new ConcurrentHashMap<>();
       _cache.put(module, moduleCache);
     }
 
-    final String qualifiedName = IDEAUtil.getSourceQualifiedName(file, module);
+    final String qualifiedName = FileUtil.getSourceQualifiedName(file, module);
     GosuClassParseData data = moduleCache.get(qualifiedName);
     if (data == null) {
       data = new GosuClassParseData(module);

@@ -262,6 +262,7 @@ public class GosuSemanticAnnotator implements Annotator {
     COLOR_MAP.put(GosuElementTypes.TT_statictypeof, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_typeis, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_typeas, GosuHighlighterColors.KEYWORD);
+    COLOR_MAP.put(GosuElementTypes.TT_print, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_package, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_uses, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_if, GosuHighlighterColors.KEYWORD);
@@ -373,7 +374,9 @@ public class GosuSemanticAnnotator implements Annotator {
     COLOR_MAP.put(GosuElementTypes.TT_OP_assign_divide, GosuHighlighterColors.OPERATOR);
     COLOR_MAP.put(GosuElementTypes.TT_OP_assign_modulo, GosuHighlighterColors.OPERATOR);
     COLOR_MAP.put(GosuElementTypes.TT_OP_assign_and, GosuHighlighterColors.OPERATOR);
+    COLOR_MAP.put(GosuElementTypes.TT_OP_assign_logical_and, GosuHighlighterColors.OPERATOR);
     COLOR_MAP.put(GosuElementTypes.TT_OP_assing_or, GosuHighlighterColors.OPERATOR);
+    COLOR_MAP.put(GosuElementTypes.TT_OP_assing_logical_or, GosuHighlighterColors.OPERATOR);
     COLOR_MAP.put(GosuElementTypes.TT_OP_assign_xor, GosuHighlighterColors.OPERATOR);
 
     // Block operators

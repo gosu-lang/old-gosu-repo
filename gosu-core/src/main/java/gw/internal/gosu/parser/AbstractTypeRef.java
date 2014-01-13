@@ -91,7 +91,7 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
   {
     if( type == null )
     {
-      throw new TypeResolveException( "Failed to re-resolve type " + _typeName );
+      throw new TypeMayHaveBeenDeletedException( "Failed to re-resolve type " + _typeName, this );
     }
     if( type instanceof AbstractTypeRef )
     {
@@ -377,7 +377,7 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
         try {
           IType theType = TypeSystem.getByFullNameIfValid(_pureGenericTypeName);
           if (theType == null) {
-            throw new TypeResolveException("This is rather tragic. The generic type was once valid, now it cannot be found: " + _typeName);
+            throw new TypeMayHaveBeenDeletedException("This is rather tragic. The generic type was once valid, now it cannot be found: " + _typeName, this);
           }
           type = theType.getParameterizedType(_typeParameters);
         } finally {

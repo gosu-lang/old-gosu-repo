@@ -4,56 +4,57 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
+import gw.config.CommonServices;
+import gw.internal.gosu.ir.nodes.IRProperty;
+import gw.internal.gosu.ir.nodes.IRPropertyFactory;
+import gw.internal.gosu.ir.transform.ExpressionTransformer;
+import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
+import gw.internal.gosu.parser.ArrayExpansionPropertyInfo;
 import gw.internal.gosu.parser.GosuVarPropertyInfo;
 import gw.internal.gosu.parser.JavaFieldPropertyInfo;
 import gw.internal.gosu.parser.LengthProperty;
-import gw.internal.gosu.parser.MetaTypeTypeInfo;
-import gw.lang.ir.IRElement;
-import gw.lang.ir.IRStatement;
-import gw.lang.ir.statement.IRAssignmentStatement;
-import gw.lang.parser.MemberAccessKind;
 import gw.internal.gosu.parser.MetaType;
-import gw.internal.gosu.parser.ArrayExpansionPropertyInfo;
-import gw.internal.gosu.parser.optimizer.SinglePropertyMemberAccessRuntime;
+import gw.internal.gosu.parser.MetaTypeTypeInfo;
 import gw.internal.gosu.parser.expressions.Identifier;
-import gw.internal.gosu.parser.expressions.MemberAccess;
 import gw.internal.gosu.parser.expressions.Literal;
+import gw.internal.gosu.parser.expressions.MemberAccess;
 import gw.internal.gosu.parser.expressions.MemberExpansionAccess;
+import gw.internal.gosu.parser.optimizer.SinglePropertyMemberAccessRuntime;
 import gw.internal.gosu.runtime.GosuRuntimeMethods;
-import gw.internal.gosu.ir.transform.ExpressionTransformer;
-import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
-import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRType;
-import gw.lang.ir.IRSymbol;
-import gw.internal.gosu.ir.nodes.IRProperty;
-import gw.internal.gosu.ir.nodes.IRPropertyFactory;
-import gw.lang.ir.statement.IRSyntheticStatement;
-import gw.lang.ir.expression.IRCompositeExpression;
-import gw.lang.parser.IExpression;
-import gw.lang.parser.Keyword;
-import gw.lang.parser.IBlockClass;
-import gw.lang.parser.EvaluationException;
-import gw.lang.parser.ICustomExpressionRuntime;
-import gw.lang.reflect.IPropertyInfo;
-import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeInfo;
-import gw.lang.reflect.IPropertyAccessor;
-import gw.lang.reflect.TypeSystem;
-import gw.lang.reflect.IRelativeTypeInfo;
-import gw.lang.reflect.ITypeInfoPropertyInfo;
-import gw.lang.reflect.IAnnotationInfo;
-import gw.lang.reflect.IEntityAccess;
-import gw.lang.reflect.IPropertyInfoDelegate;
-import gw.lang.reflect.ReflectUtil;
-import gw.lang.reflect.IUncacheableFeature;
-import gw.lang.reflect.IPlaceholder;
-import gw.lang.reflect.gs.IGosuVarPropertyInfo;
-import gw.lang.reflect.java.GosuTypes;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.IAutocreate;
 import gw.lang.ShortCircuitingProperty;
 import gw.lang.function.IBlock;
-import gw.config.CommonServices;
+import gw.lang.ir.IRElement;
+import gw.lang.ir.IRExpression;
+import gw.lang.ir.IRStatement;
+import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
+import gw.lang.ir.expression.IRCompositeExpression;
+import gw.lang.ir.statement.IRAssignmentStatement;
+import gw.lang.ir.statement.IRSyntheticStatement;
+import gw.lang.parser.EvaluationException;
+import gw.lang.parser.IBlockClass;
+import gw.lang.parser.ICustomExpressionRuntime;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.Keyword;
+import gw.lang.parser.MemberAccessKind;
+import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IEntityAccess;
+import gw.lang.reflect.IExpando;
+import gw.lang.reflect.IPlaceholder;
+import gw.lang.reflect.IPropertyAccessor;
+import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IPropertyInfoDelegate;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.ITypeInfo;
+import gw.lang.reflect.ITypeInfoPropertyInfo;
+import gw.lang.reflect.IUncacheableFeature;
+import gw.lang.reflect.ReflectUtil;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGosuVarPropertyInfo;
+import gw.lang.reflect.java.GosuTypes;
+import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -234,7 +235,11 @@ public class MemberAccessTransformer extends AbstractExpressionTransformer<Membe
         if (list != null && !list.isEmpty()) {
           return true;
         }
-        else { // TODO dlank - With a bit of work, the following can be replaced by adding @Autocreate annotations to the EntityTypeInfo's properties
+        else if( rootType instanceof IPlaceholder && ((IPlaceholder)rootType).isPlaceholder() ) {
+          return true;
+        }
+        else {
+          // TODO dlank - With a bit of work, the following can be replaced by adding @Autocreate annotations to the EntityTypeInfo's properties
           IEntityAccess ea = CommonServices.getEntityAccess();
           if( ea.isEntityClass( rootType ) && ea.isEntityClass(pi.getFeatureType()))
           {
@@ -586,6 +591,11 @@ public class MemberAccessTransformer extends AbstractExpressionTransformer<Membe
   }
 
   public static Object autoCreateEntityInstance(Object rootValue, String typeName, String propertyName) {
+    if( rootValue instanceof IExpando ) {
+      ((IExpando)rootValue).setDefaultFieldValue( propertyName );
+      return ((IExpando)rootValue).getFieldValue( propertyName );
+    }
+
     IType entityType = TypeSystem.getByFullName(typeName);
     IPropertyInfo property = entityType.getTypeInfo().getProperty(propertyName);
     IEntityAccess ea = CommonServices.getEntityAccess();

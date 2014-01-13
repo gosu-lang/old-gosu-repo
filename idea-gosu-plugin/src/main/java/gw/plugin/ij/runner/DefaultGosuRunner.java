@@ -16,12 +16,10 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.search.PsiElementProcessor;
 import com.intellij.psi.util.PsiTreeUtil;
-import gw.internal.gosu.parser.GosuClass;
 import gw.internal.gosu.parser.MetaType;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.expressions.IEvalExpression;
 import gw.lang.parser.statements.IEvalStatement;
-import gw.lang.reflect.FunctionType;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuProgram;
@@ -80,8 +78,8 @@ public class DefaultGosuRunner extends GosuProgramRunner {
         type = type.getComponentType();
       }
       String packageName = type.getClass().getPackage().getName();
-      if( !packageName.startsWith( GosuClass.class.getPackage().getName() ) &&
-          !packageName.startsWith( FunctionType.class.getPackage().getName() ))
+      if( !packageName.startsWith( "gw.internal.gosu" ) &&
+          !packageName.startsWith( "gw.lang" ))
       {
         return true;
       }

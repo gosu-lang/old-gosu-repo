@@ -20,7 +20,6 @@ public class HttpParseContext {
     }
   }
 
-  // TODO - Convert LWS into a single space, per RFC2616
   public Byte get() {
     if ( _position >= _input.length ) {
       return null;

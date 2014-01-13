@@ -9,14 +9,10 @@ import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassOwner;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.impl.PsiManagerImpl;
-import gw.fs.IFile;
-import gw.lang.reflect.IFileBasedType;
 import gw.lang.reflect.IType;
-import gw.plugin.ij.filesystem.IDEAResource;
 import gw.plugin.ij.lang.psi.api.ITypeResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -26,7 +22,7 @@ public class FileBasedTypeResolver implements ITypeResolver {
   @Nullable
   @Override
   public PsiElement resolveType(@NotNull IType type, @NotNull PsiElement ctx) {
-    final List<VirtualFile> files = IDEAUtil.getTypeResourceFiles(type);
+    final List<VirtualFile> files = FileUtil.getTypeResourceFiles(type);
     if (!files.isEmpty()) {
       final PsiFile psiFile = PsiManagerImpl.getInstance(ctx.getProject()).findFile(files.get(0));
       if (psiFile instanceof PsiClassOwner) {

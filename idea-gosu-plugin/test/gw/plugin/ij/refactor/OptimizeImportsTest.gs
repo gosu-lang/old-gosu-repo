@@ -45,13 +45,18 @@ class OptimizeImportsTest extends GosuTestCase {
           "java.util.Set",
           "java.util.Map",
           "java.util.EnumSet",
-          "java.util.Vector"
+          "java.util.Vector",
+          "java.util.HashSet",
+          "java.util.HashMap"
+
         },
         "var _a : List \n" +
         "var _b : Set \n" +
         "var _c : Map \n" +
         "var _d : EnumSet \n" +
-        "var _e : Vector \n"
+        "var _e : Vector \n" +
+        "var _f : HashSet \n" +
+        "var _g : HashMap \n"
     )
 
     organizeImports(gsFile)
@@ -68,6 +73,8 @@ class OptimizeImportsTest extends GosuTestCase {
         "java.util.Map",
         "java.util.EnumSet",
         "java.util.Vector",
+        "java.util.HashSet",
+        "java.util.HashMap",
         "java.sql.Date",
         "java.sql.Blob",
         "java.sql.Clob",
@@ -84,7 +91,10 @@ class OptimizeImportsTest extends GosuTestCase {
       "var _g : Blob \n" +
       "var _h : Clob \n" +
       "var _j : Driver \n" +
-      "var _k : Ref \n"
+      "var _k : Ref \n" +
+      "var _l : HashMap \n" +
+      "var _m : HashSet \n"
+
     )
 
 
@@ -120,6 +130,7 @@ class OptimizeImportsTest extends GosuTestCase {
           "java.util.Map",
           "java.util.EnumSet",
           "java.util.Vector",
+          "java.util.HashSet",
           "java.awt.Button"
         },
         "var _a : List \n" +
@@ -127,14 +138,15 @@ class OptimizeImportsTest extends GosuTestCase {
         "var _c : Map \n" +
         "var _d : EnumSet \n" +
         "var _e : Vector \n" +
-        "var _f : Button \n"
+        "var _f : Button \n" +
+        "var _g : HashSet \n"
+
     )
 
     organizeImports(gsFile)
     assertEquals({
-      "java.awt.*",
-      "java.util.*",
-      "java.util.List"
+      "java.awt.Button",
+      "java.util.*"
     }, extractImports(gsFile))
   }
 
@@ -230,8 +242,7 @@ class OptimizeImportsTest extends GosuTestCase {
     assertEquals({
       "some.pkg2.Test1",
       "some.pkg2.Test2",
-      "java.lang.Process",
-      "java.util.List"
+      "java.lang.Process"
     }, extractImports(gsFile))
   }
 

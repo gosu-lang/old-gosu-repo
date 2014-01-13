@@ -48,8 +48,6 @@ public class SourceCodeTokenizerInternal
   private boolean _bForceLower;
 
   private boolean _bEOLIsSignificantP;
-  private boolean _bSlashSlashCommentsP;
-  private boolean _bSlashStarCommentsP;
 
   private int _ctype[];
 
@@ -86,8 +84,6 @@ public class SourceCodeTokenizerInternal
       _iLineOffset = -1;
       _iLineNum = 1;
       _bEOLIsSignificantP = false;
-      _bSlashSlashCommentsP = false;
-      _bSlashStarCommentsP = false;
       _ctype = new int[256];
       _iType = ISourceCodeTokenizer.TT_NOTHING;
       _bParseDotsAsOperators = true;
@@ -338,7 +334,7 @@ public class SourceCodeTokenizerInternal
         "?+", "?-", "?*", "?/", "?%",
 
         // Compound operators
-        "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=",
+        "+=", "-=", "*=", "/=", "&=", "&&=", "|=", "||=", "^=", "%=",
 
         // Block operators
         "\\", "->",
@@ -492,16 +488,6 @@ public class SourceCodeTokenizerInternal
   public void eolIsSignificant( boolean bFlag )
   {
     _bEOLIsSignificantP = bFlag;
-  }
-
-  public void slashStarComments( boolean bFlag )
-  {
-    _bSlashStarCommentsP = bFlag;
-  }
-
-  public void slashSlashComments( boolean bFlag )
-  {
-    _bSlashSlashCommentsP = bFlag;
   }
 
   public void lowerCaseMode( boolean bLowerCaseMode )
@@ -863,23 +849,16 @@ public class SourceCodeTokenizerInternal
     //
     if( (iCharType & CT_ALPHA) != 0 )
     {
-      int i = 0;
+      int iStart = _iPos-1;
       do
       {
-        if( i >= _buf.length )
-        {
-          char nb[] = new char[_buf.length * 2];
-          System.arraycopy( _buf, 0, nb, 0, _buf.length );
-          _buf = nb;
-        }
-        _buf[i++] = (char)c;
         c = read();
         iCharType = c < 0 ? CT_WHITESPACE : c < 256 ? ct[c] : CT_ALPHA;
       }
       while( (iCharType & (CT_ALPHA | CT_DIGIT)) != 0 && !stopOnDot( c ) );
 
       _peekc = c;
-      _strValue = String.copyValueOf( _buf, 0, i );
+      _strValue = _reader.subsequence( iStart, _iPos-1 ).toString();
       if( _bForceLower )
       {
         _strValue = _strValue.toLowerCase();
@@ -1156,78 +1135,27 @@ public class SourceCodeTokenizerInternal
     // Handle SLASH signalled COMMENTS
     //
     boolean bSlashConsumed = false;
+    int srcLen = _reader.getSource().length();
 
-    if( c == '/' && (_bSlashSlashCommentsP || _bSlashStarCommentsP) )
+    if( c == '/' )
     {
       int iCommnetPos = _iPos - 1;
       c = read();
-      if( c == '*' && _bSlashStarCommentsP )
+      if( c == '*' )
       {
         _lastComment = new DocCommentBlock();
-        int i = 0;
-        int prevc = 0;
-        while( (c = read()) != '/' || prevc != '*' )
-        {
-          if( c == '\r' )
-          {
-            while( c == '\r' )
-            {
-              _lastComment.addLine( String.copyValueOf( _buf, 0, i ).trim() );
-              i = 0;
-              c = read();
-              if( c == '\n' )
-              {
-                incrementLineNumber();
-                c = read();
-              }
-            }
-          }
-          else
-          {
-            while( c == '\n' )
-            {
-              _lastComment.addLine( String.copyValueOf( _buf, 0, i ).trim() );
-              i = 0;
-              incrementLineNumber();
-              c = read();
-            }
-          }
-          if( c < 0 )
-          {
-            _bUnterminatedComment = true;
-            break;
-          }
-          else
-          {
-            prevc = c;
-          }
-
-          if( i >= _buf.length )
-          {
-            char nb[] = new char[_buf.length * 2];
-            System.arraycopy( _buf, 0, nb, 0, _buf.length );
-            _buf = nb;
-          }
-          _buf[i++] = (char)c;
-        }
-        if( prevc == '*' && i > 0 && _buf[i - 1] == '*' )
-        {
-          i--;
-        }
-        _lastComment.addLine( String.copyValueOf( _buf, 0, i ).trim() );
-        if( !_bUnterminatedComment )
-        {
-          _peekc = read();
-        }
+        consumeBlockComment();
         String strSaveValue = _strValue;
-        _strValue = _reader.getSource().substring( iCommnetPos, _iPos-1 );
+        int endIndex =  Math.min( srcLen, _iPos-1 );
+        _strValue = _reader.getSource().substring( iCommnetPos, endIndex );
+        _lastComment.setRawComment( _strValue );
         int iSaveType = _iType;
         _iType = ISourceCodeTokenizer.TT_COMMENT;
         pushToken();
         _iType = iSaveType;
         _strValue = strSaveValue;
 
-        if( c == ISourceCodeTokenizer.TT_EOF )
+        if( _bUnterminatedComment )
         {
           return _iType = ISourceCodeTokenizer.TT_EOF;
         }
@@ -1236,7 +1164,7 @@ public class SourceCodeTokenizerInternal
           return nextToken();
         }
       }
-      else if( c == '/' && _bSlashSlashCommentsP )
+      else if( c == '/' )
       {
         while( (c = read()) != '\n' && c != '\r' && c >= 0 )
         {
@@ -1325,8 +1253,37 @@ public class SourceCodeTokenizerInternal
     return _iType = c;
   }
 
+  private void consumeBlockComment() throws IOException
+  {
+    //consume *
+    int c = read();
+    int prev = -1;
+    while( c >= 0 && !(prev == '*' && c =='/') )
+    {
+      if( prev == '/' && c == '*' )
+      {
+        consumeBlockComment();
+        prev = -1;
+      }
+      else
+      {
+        if( c == '\n' )
+        {
+          incrementLineNumber();
+        }
+        prev = c;
+        c = read();
+      }
+    }
+    _bUnterminatedComment = c == ISourceCodeTokenizer.TT_EOF;
+    if( !_bUnterminatedComment )
+    {
+      _peekc = read();
+    }
+  }
+
   private boolean isReserved() {
-    return isSupportsKeywords() && Keyword.isReserved(_strValue);
+    return isSupportsKeywords() && Keyword.isKeyword( _strValue );
   }
 
   private boolean isAtIgnorePos()

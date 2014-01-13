@@ -43,7 +43,12 @@ public class GosuShortNamesCache extends PsiShortNamesCache {
       ContainerUtil.addIfNotNull(file, allClasses);
     }
 
-    gosuFiles = CustomPsiClassCache.instance().getByShortName(name);
+    try {
+      gosuFiles = CustomPsiClassCache.instance().getByShortName(name);
+    } catch (RuntimeException e) {
+      // PL-28213.  Hack to short-circuit case where the file is not yet known by the type system.
+      return PsiClass.EMPTY_ARRAY;
+    }
     for (PsiClass file : gosuFiles) {
       ContainerUtil.addIfNotNull(file, allClasses);
     }

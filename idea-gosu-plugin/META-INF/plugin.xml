@@ -121,6 +121,7 @@
         <refactoring.moveMemberHandler language="Gosu" implementationClass="gw.plugin.ij.refactor.MoveGosuMemberHandler"/>
         <statementUpDownMover implementation="gw.plugin.ij.actions.GosuStatementMover" order="first"/>
         <refactoring.moveInnerHandler language="Gosu" implementationClass="gw.plugin.ij.refactor.MoveGosuInnerHandler"/>
+        <refactoring.moveClassHandler implementation="gw.plugin.ij.refactor.MoveGosuClassHandler" order="first"/>
         <lang.refactoringSupport language="Gosu" implementationClass="gw.plugin.ij.refactor.GosuRefactoringSupportProvider"/>
         <refactoring.changeSignatureUsageProcessor
                 implementation="gw.plugin.ij.refactor.signature.GosuChangeSignatureUsageProcessor"
@@ -149,14 +150,14 @@
         <lang.psiStructureViewFactory language="Gosu" implementationClass="gw.plugin.ij.structure.GosuStructureViewFactory"/>
         <java.shortNamesCache implementation="gw.plugin.ij.lang.psi.stubs.GosuShortNamesCache"/>
 
-      <typeHierarchyProvider language="Gosu"
-                             implementationClass="gw.plugin.ij.typehierarchy.GosuTypeHierarchyProvider"/>
-      <callHierarchyProvider language="Gosu"
-                             implementationClass="gw.plugin.ij.callhierarchy.GosuCallHierarchyProvider"/>
-      <methodHierarchyProvider language="Gosu"
-                               implementationClass="gw.plugin.ij.typehierarchy.GosuMethodHierarchyProvider"/>
+        <typeHierarchyProvider language="Gosu"
+                               implementationClass="gw.plugin.ij.typehierarchy.GosuTypeHierarchyProvider"/>
+        <callHierarchyProvider language="Gosu"
+                               implementationClass="gw.plugin.ij.callhierarchy.GosuCallHierarchyProvider"/>
+        <methodHierarchyProvider language="Gosu"
+                                 implementationClass="gw.plugin.ij.typehierarchy.GosuMethodHierarchyProvider"/>
 
-      <createFromTemplateHandler implementation="gw.plugin.ij.filetemplates.GosuCreateFromTemplateHandler"/>
+        <createFromTemplateHandler implementation="gw.plugin.ij.filetemplates.GosuCreateFromTemplateHandler"/>
 
         <!--<lang.psiAugmentProvider implementation="gw.plugin.ij.core.GosuAugmentProvider"/>-->
 
@@ -183,31 +184,49 @@
                        bundle="messages.Gosu"
                        level="ERROR"
                        implementationClass="gw.plugin.ij.codeInspection.expression.GosuEqualityInspection"/>
-        <localInspection language="Gosu" groupPath="Gosu" shortName="GosuInferTypeInDeclaration" enabledByDefault="true"
+        <localInspection language="Gosu" groupPath="Gosu" shortName="GosuUpgradeToAssertStatementInspection" enabledByDefault="false"
+                       key="inspection.assert.is.reserved"
+                       groupKey="inspection.group.name.upgrade.issues"
+                       bundle="messages.Gosu"
+                       level="ERROR"
+                       implementationClass="gw.plugin.ij.codeInspection.expression.GosuUpgradeToAssertStatementInspection"/>
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuIterableInspection" enabledByDefault="false"
+                       key="inspection.expecting.iterable"
+                       groupKey="inspection.group.name.upgrade.issues"
+                       bundle="messages.Gosu"
+                       level="ERROR"
+                       implementationClass="gw.plugin.ij.codeInspection.expression.GosuIterableInspection"/>
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuAmbiguousMethodCallInspection" enabledByDefault="false"
+                       key="inspection.ambiguous.call"
+                       groupKey="inspection.group.name.upgrade.issues"
+                       bundle="messages.Gosu"
+                       level="ERROR"
+                       implementationClass="gw.plugin.ij.codeInspection.method.GosuAmbiguousMethodCallInspection"/>
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuInferTypeInDeclaration" enabledByDefault="true"
                        key="inspection.variable.type.inferred"
                        groupKey="inspection.group.name.declaration.issues"
                        bundle="messages.Gosu"
                        level="WARNING"
                        implementationClass="gw.plugin.ij.codeInspection.declaration.GosuInferTypeInDeclarationInspection"/>
-        <localInspection language="Gosu" groupPath="Gosu" shortName="GosuMethodAsPropertyInspection" enabledByDefault="true"
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuMethodAsPropertyInspection" enabledByDefault="true"
                        key="inspection.method.as.property"
                        groupKey="inspection.group.name.method.issues"
                        bundle="messages.Gosu"
                        level="WARNING"
                        implementationClass="gw.plugin.ij.codeInspection.method.GosuMethodAsPropertyInspection"/>
-        <localInspection language="Gosu" groupPath="Gosu" shortName="NewExpressionAsBlockInspection" enabledByDefault="true"
+       <localInspection language="Gosu" groupPath="Gosu" shortName="NewExpressionAsBlockInspection" enabledByDefault="true"
                        key="inspection.expression.as.block"
                        groupKey="inspection.group.name.expression.issues"
                        bundle="messages.Gosu"
                        level="WARNING"
                        implementationClass="gw.plugin.ij.codeInspection.expression.NewExpressionAsBlockInspection"/>
-      <localInspection language="Gosu" groupPath="Gosu" shortName="GosuObjectEqualsInspection" enabledByDefault="true"
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuObjectEqualsInspection" enabledByDefault="true"
                        key="inspection.object.equals.as.op"
                        groupKey="inspection.group.name.expression.issues"
                        bundle="messages.Gosu"
                        level="WARNING"
                        implementationClass="gw.plugin.ij.codeInspection.expression.GosuObjectEqualsInspection"/>
-        <localInspection language="Gosu" groupPath="Gosu" shortName="GosuWhileToForInspection" enabledByDefault="true"
+       <localInspection language="Gosu" groupPath="Gosu" shortName="GosuWhileToForInspection" enabledByDefault="true"
                        key="inspection.while.to.for"
                        groupKey="inspection.group.name.statement.issues"
                        bundle="messages.Gosu"

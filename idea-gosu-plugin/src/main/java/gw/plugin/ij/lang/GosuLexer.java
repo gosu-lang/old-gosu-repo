@@ -32,8 +32,6 @@ public class GosuLexer extends LexerBase {
     _tokenType = null;
     _iTokenEndOffset = startOffset;
     _tokenizer = GosuShop.createSourceCodeTokenizer(buffer);
-    _tokenizer.slashSlashComments(true);
-    _tokenizer.slashStarComments(true);
     _tokenizer.setWhitespaceSignificant(true);
     _tokenizer.setCommentsSignificant(true);
     _tokenizer.setParseDotsAsOperators(true);

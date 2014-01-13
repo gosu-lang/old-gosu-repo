@@ -14,7 +14,6 @@ import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationStarter;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.PluginId;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
@@ -85,7 +84,7 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
   }
 
   public static void fixClassLoaders() {
-    IdeaPluginDescriptor mainPlugin = IDEAUtil.getEditorPlugin();
+    IdeaPluginDescriptor mainPlugin = GosuAppComponent.getEditorPlugin();
     // Only fix if we are running in regular IntelliJ (not in tests)
     if (mainPlugin.getPluginClassLoader() instanceof PluginClassLoader) {
       PluginClassLoader mainClassLoader = (PluginClassLoader) mainPlugin.getPluginClassLoader();

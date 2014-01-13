@@ -20,19 +20,16 @@ public final class XmlSimpleValueException extends XmlException {
 
   private final List<XmlSimpleValueException> _causes;
 
-  @gw.lang.InternalAPI
   public XmlSimpleValueException( String msg ) {
     super( msg );
     _causes = null;
   }
 
-  @gw.lang.InternalAPI
   public XmlSimpleValueException( String msg, List<XmlSimpleValueException> causes ) {
     super( msg );
     _causes = Collections.unmodifiableList( causes );
   }
 
-  @gw.lang.InternalAPI
   public XmlSimpleValueException( String msg, Throwable cause ) {
     super( msg, cause );
     _causes = null;

@@ -29,7 +29,7 @@ options { backtrack = true;  memoize = true; }
   }
 }
 
-start : header ( modifiers (gClass | gInterface | gEnum | gEnhancement) | statementTop )+ ;
+start : header ( modifiers (gClass | gInterfaceOrStructure | gEnum | gEnhancement) | statementTop )+ ;
 
 statementTop : statement                                    |
                modifiers functionDefn functionBody          |
@@ -42,11 +42,11 @@ classpathStatements : ('classpath' StringLiteral)+ ;
 
 typeLoaderStatements : ('typeloader' typeLiteral)+ ; 
 
-annotation : '@' idAll ('.' idAll)* (typeVariableDefs annotationArguments )? ;
+annotation : '@' idAll ('.' idAll)* annotationArguments? ;
 
 gClass : 'class' id typeVariableDefs ('extends' classOrInterfaceType)? ('implements' classOrInterfaceType (',' classOrInterfaceType)*)? classBody ;
 
-gInterface : 'interface' id typeVariableDefs (('extends' | 'implements') classOrInterfaceType (',' classOrInterfaceType)*)? interfaceBody ;
+gInterfaceOrStructure : ('interface' | 'structure') id typeVariableDefs ('extends' classOrInterfaceType (',' classOrInterfaceType)*)? interfaceBody ;
 
 gEnum : 'enum' id typeVariableDefs ('implements' classOrInterfaceType (',' classOrInterfaceType)*)? enumBody ;
 
@@ -62,15 +62,15 @@ enumBody : '{' enumConstants? classMembers '}' ;
 
 enumConstants : enumConstant  (',' enumConstant)*  ','? ';'?  ;
 
-enumConstant : annotation* id optionalArguments ;
+enumConstant : id optionalArguments ;
 
 interfaceMembers : ( modifiers 
                         (
-                          functionDefn     |
-                          propertyDefn     |
-                          fieldDefn        |
-                          gClass           |
-                          gInterface       |
+                          functionDefn           |
+                          propertyDefn           |
+                          fieldDefn              |
+                          gClass                 |
+                          gInterfaceOrStructure  |
                           gEnum
                         ) ';'?
                    )*;
@@ -87,7 +87,7 @@ declaration :
                    fieldDefn                      |
                    delegateDefn                   |
                    gClass                         |
-                   gInterface                     |
+                   gInterfaceOrStructure          |
                    gEnum
                  ) ';'?
             ;
@@ -110,7 +110,7 @@ fieldDefn : 'var' id optionalType ('as' 'readonly'? id)? ('=' expression)? ;
 
 propertyDefn : 'property' ('get' | 'set') id parameters (':' typeLiteral)? ;
 
-dotPathWord : id ('.' id)*;
+dotPathWord : idAll ('.' idAll)*;
 
 namespaceStatement :  dotPathWord (';')* ;
 
@@ -385,7 +385,9 @@ assignmentOp :
     |   '*='
     |   '/='
     |   '&='
+    |   '&&='
     |   '|='
+    |   '||='
     |   '^='
     |   '%='
     |   ('<' '<' '=')=> t1='<' t2='<' t3='=' 
@@ -569,6 +571,7 @@ idAll :  id                  |
          'implements'        |
          'class'             |
          'interface'         |
+         'structure'         |
          'enum'              |
          'using'             
        ;
@@ -606,9 +609,6 @@ StringLiteral : '"' ( EscapeSequence | ~('\\'|'"'|'$'|'\r'|'\n') | '$'('{' ~('}'
               
 fragment
 HexDigit : Digit | 'a'..'f' | 'A'..'F' ;
-
-fragment
-OctalDigit : '0'..'7' ;
 
 fragment
 IntegerTypeSuffix : ('l'|'L'|'s'|'S'|'bi'|'BI'|'b'|'B') ;

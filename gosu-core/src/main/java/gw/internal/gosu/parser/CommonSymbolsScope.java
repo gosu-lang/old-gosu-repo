@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.parser;
 
-import gw.config.CommonServices;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
@@ -21,7 +20,6 @@ import java.util.Map;
  */
 public class CommonSymbolsScope<K extends CharSequence, V extends ISymbol> extends StandardScope<K, V>
 {
-  private static final String NOW = "now" ;
   private static final String PRINT = "print";
 
   public static CommonSymbolsScope make()
@@ -29,21 +27,12 @@ public class CommonSymbolsScope<K extends CharSequence, V extends ISymbol> exten
     return new CommonSymbolsScope();
   }
 
-  //## Note these are all singletons, so there's no need to specify a
-  //## IStackProvider -- there's no need for a stack for these at runtime
-  //## because a Symbol w/o a IStackProvider manages its own storage.
   @SuppressWarnings({"unchecked"})
   private CommonSymbolsScope()
   {
     super( null, 6 );
     try
     {
-      // Methods for testing
-      if( CommonServices.getEntityAccess().getLanguageLevel().allowGlobalNowSymbol() )
-      {
-        super.put( (K) NOW, (V)new LockedDownSymbol( NOW, new FunctionType( "now", GosuParserTypes.STRING_TYPE(), null ),
-                                                     StandardSymbolTable.NOW ) );
-      }
       super.put( (K) PRINT, (V)new LockedDownSymbol( PRINT, new FunctionType( "print", GosuParserTypes.NULL_TYPE(), new IType[]{JavaTypes.OBJECT()} ),
                                                      StandardSymbolTable.PRINT ) );
     }

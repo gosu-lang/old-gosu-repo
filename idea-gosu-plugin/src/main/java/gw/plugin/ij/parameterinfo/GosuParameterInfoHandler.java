@@ -20,9 +20,9 @@ import gw.plugin.ij.lang.psi.impl.GosuPsiClassReferenceType;
 import gw.plugin.ij.lang.psi.impl.GosuPsiSubstitutor;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuAnnotationExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.statements.params.GosuParameterImpl;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.plugin.ij.util.InjectedElementEditor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,7 +85,7 @@ public class GosuParameterInfoHandler implements ParameterInfoHandler<PsiElement
   public void showParameterInfo(@NotNull PsiElement element, @NotNull CreateParameterInfoContext context) {
     String error = ParameterInfoUtil.verify(context);
     if (error != null) {
-      IDEAUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
+      ExceptionUtil.showNonFatalError(GosuBundle.message("parameter.info.problem"), error);
     } else {
       context.showHint(element, element.getTextRange().getStartOffset(), this);
     }
@@ -151,60 +151,69 @@ public class GosuParameterInfoHandler implements ParameterInfoHandler<PsiElement
   }
 
   public static void updateUIByFeatureInfo(ParameterInfoUIContext context, IHasParameterInfos infos) {
-    StringBuilder info = new StringBuilder();
 
-    CodeInsightSettings settings = CodeInsightSettings.getInstance();
-    boolean showMethodName = settings.SHOW_FULL_SIGNATURES_IN_PARAMETER_INFO;
-    if (showMethodName) {
-      info.append(infos.getDisplayName()).append("(");
-    }
+    ITypeLoader typeLoader = infos.getOwnersType().getTypeLoader();
+    IModule module = typeLoader != null ? typeLoader.getModule() : TypeSystem.getGlobalModule();
+    TypeSystem.pushModule( module );
+    try {
+      StringBuilder info = new StringBuilder();
 
-    IParameterInfo[] params = infos.getParameters();
-    int highlightStartOffset = -1;
-    int highlightEndOffset = -1;
+      CodeInsightSettings settings = CodeInsightSettings.getInstance();
+      boolean showMethodName = settings.SHOW_FULL_SIGNATURES_IN_PARAMETER_INFO;
+      if (showMethodName) {
+        info.append(infos.getDisplayName()).append("(");
+      }
 
-    if (params.length == 0) {
-      info.append("<no parameters>");
-    } else {
-      final int currentParameter = context.getCurrentParameterIndex();
+      IParameterInfo[] params = infos.getParameters();
+      int highlightStartOffset = -1;
+      int highlightEndOffset = -1;
 
-      for (int i = 0; i < params.length; ++i) {
-        int startOffset = info.length();
-        IParameterInfo pi = params[i];
-        info.append(pi.getName());
-        IType featureType = pi.getFeatureType();
-        if (featureType != null) {
-          info.append(": ").append(getStrType(featureType));
-        }
-        int endOffset = info.length();
-        if (i < params.length - 1) {
-          info.append(", ");
-        }
-        if (context.isUIComponentEnabled() && i == currentParameter) {
-          highlightStartOffset = startOffset;
-          highlightEndOffset = endOffset;
+      if (params.length == 0) {
+        info.append("<no parameters>");
+      } else {
+        final int currentParameter = context.getCurrentParameterIndex();
+
+        for (int i = 0; i < params.length; ++i) {
+          int startOffset = info.length();
+          IParameterInfo pi = params[i];
+          info.append(pi.getName());
+          IType featureType = pi.getFeatureType();
+          if (featureType != null) {
+            info.append(": ").append(getStrType(featureType));
+          }
+          int endOffset = info.length();
+          if (i < params.length - 1) {
+            info.append(", ");
+          }
+          if (context.isUIComponentEnabled() && i == currentParameter) {
+            highlightStartOffset = startOffset;
+            highlightEndOffset = endOffset;
+          }
         }
       }
-    }
 
-    if (showMethodName) {
-      info.append(")");
-      if (infos instanceof IMethodInfo) {
-        IType returnType = ((IMethodInfo) infos).getReturnType();
-        if (returnType != null) {
-          info.append(" : ").append(getStrType(returnType));
+      if (showMethodName) {
+        info.append(")");
+        if (infos instanceof IMethodInfo) {
+          IType returnType = ((IMethodInfo) infos).getReturnType();
+          if (returnType != null) {
+            info.append(" : ").append(getStrType(returnType));
+          }
         }
       }
-    }
 
-    context.setupUIComponentPresentation(
-            info.toString(),
-            highlightStartOffset,
-            highlightEndOffset,
-            !context.isUIComponentEnabled(),
-            infos.isDeprecated(),
-            false,
-            context.getDefaultParameterColor());
+      context.setupUIComponentPresentation(
+              info.toString(),
+              highlightStartOffset,
+              highlightEndOffset,
+              !context.isUIComponentEnabled(),
+              infos.isDeprecated(),
+              false,
+              context.getDefaultParameterColor());
+    }
+    finally {
+      TypeSystem.popModule( module );
+    }
 }
 
   public static void updateMethodUI(@NotNull ParameterInfoUIContext context, @NotNull PsiMethod method, @Nullable PsiSubstitutor substitutor) {

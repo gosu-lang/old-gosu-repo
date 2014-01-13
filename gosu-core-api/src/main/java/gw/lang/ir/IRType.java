@@ -4,7 +4,6 @@
 
 package gw.lang.ir;
 
-import gw.lang.reflect.IType;
 import gw.lang.UnstableAPI;
 
 @UnstableAPI
@@ -51,4 +50,7 @@ public interface IRType {
 
   boolean isInterface();
 
+  boolean isStructural();
+
+  boolean isStructuralAndErased( IRType ownersType );
 }

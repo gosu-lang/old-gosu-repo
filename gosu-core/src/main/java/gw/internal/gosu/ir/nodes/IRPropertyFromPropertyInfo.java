@@ -223,7 +223,10 @@ public class IRPropertyFromPropertyInfo implements IRProperty {
   private IRType getBoundedReturnTypeFromProxiedClass( IReducedDynamicPropertySymbol dps )
   {
     IJavaPropertyDescriptor pd = getJavaPropertyFromProxy( dps );
-    return JavaClassIRType.get( pd.getPropertyClassInfo() );
+    IJavaClassInfo type = pd.getReadMethod() != null
+                          ? pd.getReadMethod().getReturnClassInfo()
+                          : pd.getPropertyClassInfo();
+    return JavaClassIRType.get( type );
   }
 
   private IJavaPropertyDescriptor getJavaPropertyFromProxy( IReducedDynamicPropertySymbol dps )

@@ -4,30 +4,31 @@
 
 package gw.internal.gosu.coercer;
 
-import gw.lang.ir.builder.IRClassBuilder;
-import gw.lang.ir.builder.IRMethodBuilder;
-import gw.lang.ir.builder.IRExpressionBuilder;
 import gw.internal.gosu.ir.builders.SimpleCompiler;
+import gw.internal.gosu.parser.TypeLord;
+import gw.lang.GosuShop;
+import gw.lang.function.IBlock;
 import gw.lang.ir.IRClass;
 import gw.lang.ir.IRTypeConstants;
-import gw.internal.gosu.parser.TypeLord;
-import gw.lang.function.IBlock;
+import gw.lang.ir.builder.IRClassBuilder;
+import gw.lang.ir.builder.IRExpressionBuilder;
+import gw.lang.ir.builder.IRMethodBuilder;
 import gw.lang.parser.ICoercer;
+import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuEnhancement;
-import gw.lang.reflect.java.IJavaMethodInfo;
-import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.gs.IGosuObject;
 import gw.lang.reflect.java.JavaTypes;
-import gw.lang.reflect.java.IJavaClassMethod;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
+
 import static gw.lang.ir.builder.IRBuilderMethods.*;
 
 public class FunctionToInterfaceClassGenerator {
@@ -38,16 +39,16 @@ public class FunctionToInterfaceClassGenerator {
     _classesToBlockCoercers.clear();
   }
 
-  public static synchronized Class getBlockToInterfaceConversionClass( IJavaType typeToCoerceTo ) {
-    Class coercionClass = _classesToBlockCoercers.get( typeToCoerceTo.getBackingClass() );
+  public static synchronized Class getBlockToInterfaceConversionClass( IType typeToCoerceTo ) {
+    Class coercionClass = _classesToBlockCoercers.get( ((IHasJavaClass)typeToCoerceTo).getBackingClass() );
     if (coercionClass == null) {
       coercionClass = generateBlockToInterfaceConversionClass( typeToCoerceTo );
-      _classesToBlockCoercers.put( typeToCoerceTo.getBackingClass(), coercionClass );
+      _classesToBlockCoercers.put( ((IHasJavaClass)typeToCoerceTo).getBackingClass(), coercionClass );
     }
     return coercionClass;
   }
   
-  private static Class generateBlockToInterfaceConversionClass( IJavaType typeToCoerceTo ) {
+  private static Class generateBlockToInterfaceConversionClass( IType typeToCoerceTo ) {
     typeToCoerceTo = TypeLord.getPureGenericType( typeToCoerceTo );
 
     IRClassBuilder classBuilder = initializeClass( typeToCoerceTo );
@@ -57,7 +58,7 @@ public class FunctionToInterfaceClassGenerator {
     addConstructor( classBuilder );
 
     addInterfaceMethod( classBuilder, typeToCoerceTo );
-    addToStringMethod( classBuilder, typeToCoerceTo );
+    addToStringMethod( classBuilder );
 
     IRClass irClass = classBuilder.build();
 
@@ -65,7 +66,7 @@ public class FunctionToInterfaceClassGenerator {
     return TypeSystem.getGosuClassLoader().defineClass( irClass.getName(), bytes );
   }
 
-  private static IRClassBuilder initializeClass( IJavaType typeToCoerceTo ) {
+  private static IRClassBuilder initializeClass( IType typeToCoerceTo ) {
     IRClassBuilder classBuilder = new IRClassBuilder( "__proxy.generated.blocktointerface.ProxyFor" + typeToCoerceTo.getRelativeName(), Object.class );
     classBuilder.withInterface( typeToCoerceTo );
     return classBuilder;
@@ -88,18 +89,19 @@ public class FunctionToInterfaceClassGenerator {
     );
   }
 
-  private static void addInterfaceMethod( IRClassBuilder classBuilder, IJavaType typeToCoerceTo ) {
+  private static void addInterfaceMethod( IRClassBuilder classBuilder, IType typeToCoerceTo ) {
 
-    final IJavaClassMethod proxiedMethod = getSingleMethod( typeToCoerceTo ).getMethod();
+    IMethodInfo proxiedMethod = getSingleMethod( typeToCoerceTo );
 
     IRMethodBuilder method = classBuilder.createMethod();
-    method.name( proxiedMethod.getName() )
+    method.name( proxiedMethod.getDisplayName() )
             ._public()
             .copyParameters( proxiedMethod )
-            .returns( proxiedMethod.getReturnClassInfo() );
+            .returns( GosuShop.getIRTypeResolver().getDescriptor( proxiedMethod.getReturnType() ) );
 
     List<IRExpressionBuilder> arrayContents = new ArrayList<IRExpressionBuilder>();
-    for (int i = 0; i < proxiedMethod.getParameterTypes().length; i++) {
+    IParameterInfo[] parameters = proxiedMethod.getParameters();
+    for (int i = 0; i < parameters.length; i++) {
       arrayContents.add(var("arg" + i));
     }
 
@@ -119,14 +121,11 @@ public class FunctionToInterfaceClassGenerator {
     }
   }
 
-  private static void addToStringMethod( IRClassBuilder classBuilder, IJavaType typeToCoerceTo ) {
-
-    final IJavaClassMethod proxiedMethod = ((IJavaMethodInfo)typeToCoerceTo.getTypeInfo().getMethod( "toString" )).getMethod();
-
+  private static void addToStringMethod( IRClassBuilder classBuilder ) {
     IRMethodBuilder method = classBuilder.createMethod();
     method.name( "toString" )
       ._public()
-      .returns( proxiedMethod.getReturnClassInfo() );
+      .returns( IRTypeConstants.STRING() );
 
     method.body(
       assign( "value", IRTypeConstants.OBJECT(), field( "_block" ).call( "toString" ) ),
@@ -134,12 +133,11 @@ public class FunctionToInterfaceClassGenerator {
     );
   }
 
-  private static IJavaMethodInfo getSingleMethod( IType interfaceType )
+  private static IMethodInfo getSingleMethod( IType interfaceType )
   {
-    if( interfaceType.isInterface() && interfaceType instanceof IJavaType )
+    if( interfaceType.isInterface() )
     {
-      IJavaType javaIntrinsicType = (IJavaType)interfaceType;
-      List<IMethodInfo> list = new ArrayList<IMethodInfo>( javaIntrinsicType.getTypeInfo().getMethods() );
+      List<IMethodInfo> list = new ArrayList<IMethodInfo>( interfaceType.getTypeInfo().getMethods() );
 
       //extract all object methods since they are guaranteed to be implemented
       for( Iterator<? extends IMethodInfo> it = list.iterator(); it.hasNext(); )
@@ -156,11 +154,15 @@ public class FunctionToInterfaceClassGenerator {
         {
           it.remove();
         }
+        else if( methodInfo.getOwnersType().getName().contains( IGosuObject.class.getName() ) )
+        {
+          it.remove();
+        }
       }
 
-      if( list.size() == 1 && list.get( 0 ) instanceof IJavaMethodInfo )
+      if( list.size() == 1 )
       {
-        return (IJavaMethodInfo)list.get( 0 );
+        return list.get( 0 );
       }
     }
     return null;

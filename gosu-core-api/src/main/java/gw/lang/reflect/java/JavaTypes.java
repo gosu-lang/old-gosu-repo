@@ -43,7 +43,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,10 +52,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.Lock;
 
 public class JavaTypes {
-  private static Map<Class<?>, IJavaType> CACHE =  Collections.synchronizedMap(new HashMap<Class<?>, IJavaType>());
+  private static ConcurrentHashMap<Class<?>, Future<IJavaType>> CACHE = new ConcurrentHashMap<Class<?>, Future<IJavaType>>();
+
   static {
     TypeSystem.addShutdownListener(new TypeSystemShutdownListener() {
       public void shutdown() {
@@ -279,7 +285,6 @@ public class JavaTypes {
     return getGosuType(AnnotationUsages.class);
   }
 
-
   public static IJavaType AUTOINSERT() {
     return getGosuType(Autoinsert.class);
   }
@@ -390,35 +395,80 @@ public class JavaTypes {
 
   // utilities
 
-  public static IJavaType getJreType(Class<?> c) {
-    IJavaType type = CACHE.get(c);
-    if (type == null) {
-      type = (IJavaType) TypeSystem.get(c, TypeSystem.getExecutionEnvironment().getJreModule());
-      IExecutionEnvironment execEnv = type.getTypeLoader().getModule().getExecutionEnvironment();
-      if( execEnv.getProject().isDisposed() ) {
-        throw new IllegalStateException( "Whoops.... the project associated with type, " + type.getName() + ", is stale. ExecEnv: " + execEnv.getProject() );
-      }
-      CACHE.put(c, type);
-    }
-    return type;
+  private interface Computable<A, V> {
+    V compute(A arg);
   }
 
-  public static IJavaType getGosuType(Class<?> c) {
-    IJavaType type = CACHE.get(c);
-    if (type == null) {
-      type = (IJavaType) TypeSystem.get(c, TypeSystem.getGlobalModule());
-      CACHE.put(c, type);
+  private final static Computable<Class<?>, IJavaType> computeJRE = new Computable<Class<?>, IJavaType>() {
+    @Override
+    public IJavaType compute(Class c) {
+      IJavaType type = (IJavaType) TypeSystem.get(c, TypeSystem.getExecutionEnvironment().getJreModule());
+      IExecutionEnvironment execEnv = type.getTypeLoader().getModule().getExecutionEnvironment();
+      if (execEnv.getProject().isDisposed()) {
+        throw new IllegalStateException("Whoops.... the project associated with type, " + type.getName() + ", is stale. ExecEnv: " + execEnv.getProject());
+      }
+      return type;
     }
-    return type;
+  };
+
+  private final static Computable<Class<?>, IJavaType> computeGosu = new Computable<Class<?>, IJavaType>() {
+    @Override
+    public IJavaType compute(Class c) {
+      return (IJavaType) TypeSystem.get(c, TypeSystem.getGlobalModule());
+    }
+  };
+
+  public static RuntimeException launderThrowable(Throwable t) {
+    if (t instanceof RuntimeException) {
+      return (RuntimeException) t;
+    } else if (t instanceof Error) {
+      throw (Error) t;
+    } else {
+      throw new IllegalStateException("Not unchecked", t);
+    }
+  }
+
+  private static IJavaType getOrEvalCachedType(final Class<?> c, final Computable<Class<?>, IJavaType> eval) {
+    while (true) {
+      Future<IJavaType> typeFuture = CACHE.get(c);
+      if (typeFuture == null) {
+        FutureTask<IJavaType> ft = new FutureTask<IJavaType>(new Callable<IJavaType>() {
+          @Override
+          public IJavaType call() throws Exception {
+            return eval.compute(c);
+          }
+        });
+        typeFuture = CACHE.putIfAbsent(c, ft);
+        if (typeFuture == null) {
+          typeFuture = ft;
+          ft.run();
+        }
+      }
+      try {
+        return typeFuture.get();
+      } catch (CancellationException e) {
+        CACHE.remove(c, typeFuture);
+      } catch (ExecutionException e) {
+        CACHE.remove(c, typeFuture);
+        throw launderThrowable(e.getCause());
+      } catch (InterruptedException e) {
+        CACHE.remove(c, typeFuture);
+        throw launderThrowable(e.getCause());
+      }
+    }
+
+  }
+
+  public static IJavaType getJreType(final Class<?> c) {
+    return getOrEvalCachedType(c, computeJRE);
+  }
+
+  public static IJavaType getGosuType(final Class<?> c) {
+    return getOrEvalCachedType(c, computeGosu);
   }
 
   public static IJavaType getSystemType(Class<?> c) {
-    IJavaType type = CACHE.get(c);
-    if (type == null) {
-      type = (IJavaType) TypeSystem.get(c, TypeSystem.getGlobalModule());
-      CACHE.put(c, type);
-    }
-    return type;
+    return getGosuType(c);
   }
 
 }

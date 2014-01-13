@@ -22,12 +22,11 @@ import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
 import gw.plugin.ij.lang.psi.impl.GosuPsiElementImpl;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiTypeResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 
 public class GosuNewExpressionImpl extends GosuPsiElementImpl<INewExpression> implements IGosuExpression, PsiNewExpression, PsiModifierListOwner {
@@ -68,9 +67,9 @@ public class GosuNewExpressionImpl extends GosuPsiElementImpl<INewExpression> im
 
   @Override
   public PsiMethod resolveConstructor() {
-    PsiElement psiElement = IDEAUtil.runInModule(new Callable<PsiElement>() {
+    PsiElement psiElement = ExecutionUtil.execute(new SafeCallable<PsiElement>(GosuNewExpressionImpl.this) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         INewExpression newExpr = getParsedElement();
         if (newExpr == null) {
           return null;
@@ -87,7 +86,7 @@ public class GosuNewExpressionImpl extends GosuPsiElementImpl<INewExpression> im
           }
         }
       }
-    }, GosuNewExpressionImpl.this);
+    });
 
     return psiElement instanceof PsiMethod ? (PsiMethod) psiElement : null;
   }

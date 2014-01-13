@@ -4,31 +4,33 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
-import gw.internal.gosu.parser.Symbol;
-import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.ir.nodes.IRMethod;
+import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.ir.transform.statement.ForEachStatementTransformer;
+import gw.internal.gosu.parser.Symbol;
+import gw.internal.gosu.parser.TypeLord;
 import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRStatement;
-import gw.internal.gosu.ir.nodes.IRMethod;
-import gw.internal.gosu.ir.nodes.IRMethodFactory;
+import gw.lang.ir.IRSymbol;
 import gw.lang.ir.expression.IRNoOpExpression;
 import gw.lang.ir.statement.IRForEachStatement;
 import gw.lang.ir.statement.IRStatementList;
 import gw.lang.parser.expressions.IMemberAccessExpression;
-import gw.lang.reflect.IType;
 import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuObject;
+import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 /**
  */
@@ -137,7 +139,7 @@ public abstract class AbstractMemberExpansionTransformer<T extends IMemberAccess
 
     // Create the result array and assign it to a temp variable
     IRSymbol resultArray = _cc().makeAndIndexTempSymbol( getDescriptor( resultType ) );
-    IRStatement arrayCreation = buildAssignment(resultArray, newArray( getDescriptor( resultCompType ), createArrayLengthExpression(rootType, tempRoot) ) );
+    IRStatement arrayCreation = buildAssignment( resultArray, makeArray( resultCompType, createArrayLengthExpression( rootType, tempRoot ) ) );
 
     // Create the loop that populates the array
     IRForEachStatement forLoop = createArrayStoreLoop(rootType, rootComponentType, resultCompType, tempRoot, resultArray);
@@ -158,6 +160,16 @@ public abstract class AbstractMemberExpansionTransformer<T extends IMemberAccess
               tempRootAssignment,
               checkCast( _expr().getType(), expansion ) );
     }
+  }
+
+  private IRExpression makeArray( IType componentType, IRExpression lengthExpression ) {
+    if( componentType.isPrimitive() || componentType instanceof IGosuClass || componentType instanceof IJavaType ) {
+      // Gosu/Java arrays are directly represented in bytecode, so we can directly construct a Java array from the component type
+      return newArray( getDescriptor( componentType ), lengthExpression );
+    }
+    // Custom array types may not have direct representation in bytecode e.g., whacky entities
+    IRExpression array = callMethod( IType.class, "makeArrayInstance", new Class[]{int.class}, pushType( componentType ), exprList( lengthExpression ) );
+    return checkCast( componentType.getArrayType(), array );
   }
 
   private IRExpression createArrayLengthExpression(IType rootType, IRSymbol tempRoot) {

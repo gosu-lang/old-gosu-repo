@@ -6,25 +6,25 @@ package gw.plugin.ij.intentions;
 
 import com.intellij.codeInsight.CodeInsightUtilBase;
 import com.intellij.codeInspection.LocalQuickFixAndIntentionActionOnPsiElement;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.util.PsiMatcherImpl;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.expressions.ConditionalAndExpression;
 import gw.internal.gosu.parser.expressions.EqualityExpression;
+import gw.internal.gosu.parser.expressions.UnaryNotPlusMinusExpression;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.expressions.IBeanMethodCallExpression;
-import gw.plugin.ij.lang.parser.GosuRawExpression;
+import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuBeanMethodCallExpressionImpl;
-import gw.plugin.ij.lang.psi.util.GosuPsiParseUtil;
 import gw.plugin.ij.util.GosuBundle;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static com.intellij.psi.util.PsiMatchers.hasClass;
 
 public class ObjectEqualsAsOpFix extends LocalQuickFixAndIntentionActionOnPsiElement {
   public ObjectEqualsAsOpFix(GosuBeanMethodCallExpressionImpl callExpression) {
@@ -47,7 +47,15 @@ public class ObjectEqualsAsOpFix extends LocalQuickFixAndIntentionActionOnPsiEle
     String root = parsedElement.getRootExpression().getLocation().getTextFromTokens();
     if (args != null && args.length == 1) {
       PsiElement toRemove = startElement;
+      String op = " == ";
       IParsedElement expr = parsedElement.getParent();
+      if (expr instanceof UnaryNotPlusMinusExpression) {
+        UnaryNotPlusMinusExpression unaryExpr = (UnaryNotPlusMinusExpression) expr;
+        if(unaryExpr.isNot()) {
+          toRemove = startElement.getParent();
+          op =  " != ";
+        }
+      }
       if (expr instanceof ConditionalAndExpression) {
         ConditionalAndExpression condExpr = (ConditionalAndExpression) expr;
         Expression lhs = condExpr.getLHS();
@@ -60,14 +68,18 @@ public class ObjectEqualsAsOpFix extends LocalQuickFixAndIntentionActionOnPsiEle
           }
         }
       }
-      String src = root + " == " + args[0].getLocation().getTextFromTokens();
-      PsiElement stub = GosuPsiParseUtil.parseProgramm(src, startElement, file.getManager(), null);
+      String src = root + op + args[0].getLocation().getTextFromTokens();
+      Document document = toRemove.getContainingFile().getViewProvider().getDocument();
+      if(document != null) {
+        int i = toRemove.getTextOffset();
+        String text = document.getText();
+        String newText = text.substring( 0, i ) + src + text.substring( i+toRemove.getTextLength());
+        PsiDocumentManager.getInstance(project).doPostponedOperationsAndUnblockDocument(document);
+        document.setText( newText );
+      }
 
-      PsiElement eq = new PsiMatcherImpl(stub)
-              .descendant(hasClass(GosuRawExpression.class))
-              .getElement();
-      if (eq != null) {
-        toRemove.replace(eq);
+      if (file instanceof AbstractGosuClassFileImpl) {
+        ((AbstractGosuClassFileImpl) file).reparsePsiFromContent();
       }
     }
   }

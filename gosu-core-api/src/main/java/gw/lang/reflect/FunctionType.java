@@ -7,6 +7,7 @@ package gw.lang.reflect;
 import gw.internal.gosu.parser.StringCache;
 import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.IExpression;
+import gw.lang.parser.StandardCoercionManager;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.gs.IGenericTypeVariable;
@@ -649,6 +650,7 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
       {
         //covariant return types
         return getReturnType().isAssignableFrom( otherType.getReturnType() ) ||
+                StandardCoercionManager.arePrimitiveTypesAssignable( getReturnType(), otherType.getReturnType() ) ||
                getReturnType() == GosuParserTypes.NULL_TYPE();
       }
     }
@@ -673,9 +675,11 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
     {
       IType myParamType = lhsParams[i];
       IType otherParamType = rhsParams[i];                    //## todo: this is a hack; we need to tighten this up
-      if( !(otherParamType.isAssignableFrom( myParamType ) || myParamType instanceof ITypeVariableType) )
-      {
-        return false;
+      if( !StandardCoercionManager.arePrimitiveTypesAssignable( otherParamType, myParamType ) ) {
+        if( !(otherParamType.isAssignableFrom( myParamType ) || myParamType instanceof ITypeVariableType) )
+        {
+          return false;
+        }
       }
     }
     return true;
@@ -777,7 +781,9 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
     final FunctionType funcType = (FunctionType)o;
 
     // Name
-    if( !funcType.getDisplayName().equals( getDisplayName() ) )
+    if( !funcType.getDisplayName().equals( getDisplayName() ) &&
+        !(o instanceof IBlockType) &&
+        !(this instanceof IBlockType))
     {
       return false;
     }

@@ -17,6 +17,8 @@ import java.util.List;
 public interface ITemplateGenerator
 {
   String PRINT_METHOD = "printContent";
+  String PRINT_COMPRESSED_METHOD = "printCompressed";
+  String PRINT_RANGE_METHOD = "printRange";
 
   void execute( Writer writer, ISymbolTable symbolTable ) throws TemplateParseException;
 
@@ -25,8 +27,6 @@ public interface ITemplateGenerator
   void compile( ISymbolTable symTable ) throws TemplateParseException;
 
   void verify( IGosuParser parser ) throws ParseResultsException;
-
-  IProgram verifyAndGetProgram( IGosuParser parser );
 
   boolean isValid();
 

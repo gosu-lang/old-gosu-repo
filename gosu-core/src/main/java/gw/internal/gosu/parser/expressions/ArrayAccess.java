@@ -16,6 +16,7 @@ import gw.lang.parser.GosuParserTypes;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.expressions.IArrayAccessExpression;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.java.JavaTypes;
@@ -254,6 +255,10 @@ public final class ArrayAccess extends Expression implements IArrayAccessExpress
         setType( JavaTypes.OBJECT() );
       }
     }
+    else if( rootType instanceof IPlaceholder && ((IPlaceholder)rootType).isPlaceholder() )
+    {
+      setType( rootType.getComponentType() );
+    }
     else
     {
       setType( JavaTypes.OBJECT() );
@@ -266,7 +271,8 @@ public final class ArrayAccess extends Expression implements IArrayAccessExpress
     return type.isArray() ||
            (JavaTypes.LIST().isAssignableFrom(type) &&
             !JavaTypes.LINKED_LIST().isAssignableFrom( type )) ||
-           JavaTypes.CHAR_SEQUENCE().isAssignableFrom(type);
+           JavaTypes.CHAR_SEQUENCE().isAssignableFrom(type) ||
+           (type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder());
   }
 
   private static Object getElementFromIterator( Iterator iter, int iIndex )

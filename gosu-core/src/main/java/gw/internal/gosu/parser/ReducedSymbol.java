@@ -4,7 +4,11 @@
 
 package gw.internal.gosu.parser;
 
-import gw.lang.parser.*;
+import gw.lang.parser.GlobalScope;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IReducedSymbol;
+import gw.lang.parser.IScriptPartId;
+import gw.lang.parser.ISymbol;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.gs.IGenericTypeVariable;
@@ -23,6 +27,7 @@ public class ReducedSymbol implements IReducedSymbol {
   protected String _fullDescription;
   private IScriptPartId _scriptPartId;
   private int _modifiers;
+  private List<IGosuAnnotation> _annotations;
   private Class<?> _symClass;
   private IExpression _defValue;
   private GlobalScope _globalScope;
@@ -36,6 +41,7 @@ public class ReducedSymbol implements IReducedSymbol {
     _type = sym.getType();
     _scriptPartId = sym.getScriptPart();
     _modifiers = sym.getModifierInfo().getModifiers();
+    _annotations = sym.getModifierInfo().getAnnotations();
     _symClass = sym.getClass();
     _bValueBoxed = sym.isValueBoxed();
     _iIndex = sym.getIndex();
@@ -52,6 +58,7 @@ public class ReducedSymbol implements IReducedSymbol {
     _scriptPartId = arg.getScriptPart();
     _defValue = arg.getDefaultValueExpression();
     _modifiers = arg.getModifiers();
+    _annotations = arg.getAnnotations();
     _symClass = arg.getClass();
     _globalScope = arg.getScope();
     _bValueBoxed = arg.isValueBoxed();
@@ -91,6 +98,10 @@ public class ReducedSymbol implements IReducedSymbol {
     return _modifiers;
   }
 
+  public List<IGosuAnnotation> getAnnotations() {
+    return _annotations;
+  }
+
   public String getName() {
     return _name;
   }
@@ -120,11 +131,11 @@ public class ReducedSymbol implements IReducedSymbol {
   }
 
   public boolean isAbstract() {
-    return Modifier.isAbstract(getModifiers());
+    return Modifier.isAbstract( getModifiers() );
   }
 
   public boolean isFinal() {
-    return Modifier.isFinal(getModifiers());
+    return Modifier.isFinal( getModifiers() );
   }
 
   public IType getType() {

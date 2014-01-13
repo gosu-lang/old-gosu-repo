@@ -18,11 +18,10 @@ import gw.plugin.ij.lang.psi.api.types.IGosuTypeElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeParameterList;
 import gw.plugin.ij.lang.psi.impl.GosuElementVisitor;
 import gw.plugin.ij.lang.psi.impl.resolvers.PsiFeatureResolver;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 
 public class GosuMemberExpansionExpressionImpl extends GosuReferenceExpressionImpl<IMemberExpansionExpression> implements IGosuCodeReferenceElement, IGosuTypeElement /*, PsiCallExpression*/ {
@@ -57,13 +56,13 @@ public class GosuMemberExpansionExpressionImpl extends GosuReferenceExpressionIm
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(new Callable<PsiElement>() {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
       @Nullable
-      public PsiElement call() throws Exception {
+      public PsiElement execute() throws Exception {
         final IPropertyInfo pi = getPropertyInfo();
         return pi != null ? PsiFeatureResolver.resolveProperty(pi, GosuMemberExpansionExpressionImpl.this) : null;
       }
-    }, this);
+    });
   }
 
   @Nullable

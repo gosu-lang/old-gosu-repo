@@ -7,6 +7,7 @@ package gw.internal.gosu.parser.expressions;
 import gw.internal.gosu.parser.Expression;
 import gw.lang.IDimension;
 import gw.lang.parser.expressions.IUnaryExpression;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.JavaTypes;
@@ -129,7 +130,8 @@ public final class UnaryExpression extends Expression implements IUnaryExpressio
       type == JavaTypes.FLOAT() || type == JavaTypes.pFLOAT() ||
       type == JavaTypes.SHORT() || type == JavaTypes.pSHORT() ||
       type == JavaTypes.BYTE() || type == JavaTypes.pBYTE() ||
-      JavaTypes.IDIMENSION().isAssignableFrom( type );
+      JavaTypes.IDIMENSION().isAssignableFrom( type ) ||
+      (type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder());
   }
 
   @Override

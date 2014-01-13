@@ -12,7 +12,7 @@ import gw.plugin.ij.compiler.parser.ICompilerParser;
 import org.jetbrains.annotations.NotNull;
 
 public class SDKCreatorExtensionBean extends AbstractExtensionPointBean {
-  public static final ExtensionPointName<SDKCreatorExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.sdkCreator");
+  public static final ExtensionPointName<SDKCreatorExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.sdkCreator");
 
   @Attribute("class")
   public String className;

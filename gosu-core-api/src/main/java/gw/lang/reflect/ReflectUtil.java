@@ -167,7 +167,7 @@ public class ReflectUtil
     return gosuClass;
   }
 
-  private static Object[] coerceArgsIfNecessary( IParameterInfo[] parameters, Object... args )
+  public static Object[] coerceArgsIfNecessary( IParameterInfo[] parameters, Object... args )
   {
     for( int i = 0; i < parameters.length; i++ )
     {
@@ -184,7 +184,7 @@ public class ReflectUtil
            typeInfo.getProperty( propertyName );
   }
 
-  private static IMethodInfo findCallableMethod( String methodName, IType[] runtimeTypes, IType type )
+  public static IMethodInfo findCallableMethod( String methodName, IType[] runtimeTypes, IType type )
   {
     ITypeInfo typeInfo = type.getTypeInfo();
     MethodList methodInfos = typeInfo instanceof IRelativeTypeInfo ?
@@ -218,7 +218,7 @@ public class ReflectUtil
     }
   }
 
-  private static IType[] extractRuntimeTypes( Object... args )
+  public static IType[] extractRuntimeTypes( Object... args )
   {
     IType[] runtimeTypes = new IType[args.length];
     for( int i = 0; i < args.length; i++ )

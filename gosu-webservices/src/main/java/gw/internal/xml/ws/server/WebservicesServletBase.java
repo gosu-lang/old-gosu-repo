@@ -81,7 +81,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -102,7 +101,6 @@ import java.util.concurrent.Callable;
 public abstract class WebservicesServletBase extends HttpServlet implements ITypeLoaderListener {
 
   public static final String CONFIG_PARAM_AVAILABLE_SERVICES = "AvailableServices";
-  public static final String CONFIG_PARAM_UNIVERSAL_HANDLERS = "HandersList";
   public static final String CONFIG_PARAM_HIDE_SERVICE_LIST_PAGE = "HideListPage";
 
   private Set<String> _availableServices = new HashSet<String>();
@@ -126,6 +124,7 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
   };
   private static ILogger _logger;
   private static ILogger _requestLogger;
+  private Map<String, ILogger> _loggers = new HashMap<String, ILogger>();
   private static final Map<String, Pair<String, String>> RESOURCES = new HashMap<String, Pair<String, String>>();
   private static final Map<IGosuClass, WsiInvocationContextImpl.WebService> _webservices = new HashMap<IGosuClass, WsiInvocationContextImpl.WebService>();
   private static LockingLazyVar<WebservicesServletBase> _defaultLocalWebservicesServlet = new LockingLazyVar<WebservicesServletBase>() {
@@ -287,14 +286,6 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
     return value == null || value.length() == 0 ? defaultValue : Boolean.parseBoolean( value );
   }
 
-  protected List<String> getListValue( ServletConfig config, String name, List<String> defaultValue ) {
-    if ( config == null ) {
-      return defaultValue;
-    }
-    final String value = config.getInitParameter( name );
-    return value == null ? defaultValue : Arrays.asList( value.split( "\\s*,\\s*" ) );
-  }
-
   protected void onRefreshTypeSystem() {
     TypeSystem.lock();
     try {
@@ -374,7 +365,7 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
    * state.
    */
   protected void beforeInvoke( WebservicesRequest request, WebservicesResponseAdapter responseAdapter ) {
-    _requestLocals.set( new WeakHashMap<WsiRequestLocal, Object>() );
+    _requestLocals.set(new WeakHashMap<WsiRequestLocal, Object>());
   }
 
   /**
@@ -460,9 +451,8 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
       try {
         XmlElement envelope;
         InputStream is = request.getInputStream();
-        if ( webservice._requestTransform != null ) {
-          is = (InputStream) webservice._requestTransform.invoke( is );
-        }
+
+        // get character set
         String contentTypeString = request.getHttpHeaders().getHeader( "Content-Type" );
         String charset = null;
         if ( contentTypeString != null ) {
@@ -471,6 +461,19 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
             is = XopUtil.getInputStream( new HttpMultipartRelatedContent( new HttpParseContext( StreamUtil.getContent( is ) ), httpMediaType ) );
           }
           charset = httpMediaType.getFirstParameter( "charset" );
+        }
+
+       // log request if desired
+        ILogger wsLogger = getLogger(webservice._serviceInfo.getWebserviceType().getName());
+        if (wsLogger.isDebugEnabled()) {
+          ByteArrayOutputStream baos = new ByteArrayOutputStream();
+          StreamUtil.copy(is,baos);
+          wsLogger.debug(">>>\n" + (charset == null ? baos.toString("UTF-8") : baos.toString(charset)));
+          is = new ByteArrayInputStream(baos.toByteArray());
+        }
+
+        if ( webservice._requestTransform != null ) {
+          is = (InputStream) webservice._requestTransform.invoke( is );
         }
         // if charset is specified in content-type http header, use that, otherwise use charset embedded in XML
         if ( charset == null ) {
@@ -525,6 +528,9 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
         if ( webservice._responseXmlTransform != null ) {
           webservice._responseXmlTransform.invoke( responseEnvelopeXml );
         }
+        if (wsLogger.isDebugEnabled()) {
+          wsLogger.debug("<<<\n" + responseEnvelopeXml.asUTFString());
+        }
         writeResponseEnvelope( responseEnvelopeXml, os, context, webservice, responseAdapter, soapVersion );
 
       } catch ( Throwable throwable ) {
@@ -554,6 +560,20 @@ public abstract class WebservicesServletBase extends HttpServlet implements ITyp
     } finally {
       afterInvoke( request, responseAdapter );
     }
+  }
+
+  private ILogger getLogger(String name) {
+    ILogger logger = _loggers.get(name);
+    if (logger == null) {
+      synchronized (_loggers) {
+        logger = _loggers.get(name);
+        if (logger == null) {
+          logger = XmlServices.getLogger(name);
+          _loggers.put(name, logger);
+        }
+      }
+    }
+    return logger;
   }
 
   private static void writeString( OutputStream os, String s ) throws IOException {

@@ -4,24 +4,26 @@
 
 package gw.lang.ir.builder;
 
+import gw.lang.UnstableAPI;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
 import gw.lang.ir.builder.expression.IRMethodCallExpressionBuilder;
-import gw.lang.ir.statement.IRMethodStatement;
 import gw.lang.ir.statement.IRMethodCallStatement;
+import gw.lang.ir.statement.IRMethodStatement;
 import gw.lang.ir.statement.IRStatementList;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.java.IJavaClassConstructor;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassMethod;
-import gw.lang.UnstableAPI;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
-import java.lang.reflect.Method;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @UnstableAPI
 public class IRMethodBuilder extends IRFeatureBuilder<IRMethodBuilder> {
@@ -97,6 +99,15 @@ public class IRMethodBuilder extends IRFeatureBuilder<IRMethodBuilder> {
     IJavaClassInfo[] paramTypes = method.getParameterTypes();
     for (int i = 0; i < paramTypes.length; i++) {
       parameter("arg" + i, getIRType(paramTypes[i]));
+    }
+
+    return this;
+  }
+
+  public IRMethodBuilder copyParameters(IMethodInfo method) {
+    IParameterInfo[] paramTypes = method.getParameters();
+    for (int i = 0; i < paramTypes.length; i++) {
+      parameter( "arg" + i, getIRType( paramTypes[i].getFeatureType() ) );
     }
 
     return this;

@@ -4,39 +4,45 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
+import gw.internal.gosu.ir.nodes.IRMethod;
+import gw.internal.gosu.ir.nodes.IRMethodFactory;
+import gw.internal.gosu.ir.nodes.JavaClassIRType;
+import gw.internal.gosu.ir.transform.ExpressionTransformer;
+import gw.internal.gosu.ir.transform.GosuFragmentTransformer;
+import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.internal.gosu.parser.CommonSymbolsScope;
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.InitConstructorFunctionSymbol;
 import gw.internal.gosu.parser.SuperConstructorFunctionSymbol;
 import gw.internal.gosu.parser.ThisConstructorFunctionSymbol;
-import gw.internal.gosu.parser.statements.BeanMethodCallStatement;
+import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.expressions.MethodCallExpression;
+import gw.internal.gosu.parser.statements.BeanMethodCallStatement;
+import gw.internal.gosu.runtime.GosuRuntimeMethods;
 import gw.internal.gosu.template.TemplateGenerator;
-import gw.internal.gosu.ir.transform.ExpressionTransformer;
-import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
-import gw.internal.gosu.ir.transform.GosuFragmentTransformer;
+import gw.lang.function.IBlock;
 import gw.lang.ir.IRExpression;
-import gw.lang.ir.IRType;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
-import gw.internal.gosu.ir.nodes.IRMethodFactory;
-import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IFunctionSymbol;
 import gw.lang.parser.StandardSymbolTable;
 import gw.lang.reflect.IAttributedFeatureInfo;
+import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.IFunctionType;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGosuEnhancement;
 import gw.lang.reflect.java.JavaTypes;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  */
@@ -74,10 +80,33 @@ public class MethodCallExpressionTransformer extends AbstractExpressionTransform
     {
       return callPrintContent();
     }
+    else if( symbol.getType() instanceof IPlaceholder && ((IPlaceholder)symbol.getType()).isPlaceholder() )
+    {
+      return callBlockViaDynamicType( symbol );
+    }
     else
     {
       throw new UnsupportedOperationException( "Don't know how to compile symbol: " + symbol.getType() );
     }
+  }
+
+  private IRExpression callBlockViaDynamicType( IFunctionSymbol symbol )
+  {
+    if( !(symbol.getType() instanceof IPlaceholder) )
+    {
+      throw new IllegalArgumentException( "Expecting symbol to have dynamic type" );
+    }
+
+    // Generates: ((IBlock)symbolValue).invokeWithArgs( args )
+
+    Identifier identifier = new Identifier();
+    identifier.setSymbol( symbol, symbol.getDynamicSymbolTable() );
+    IRExpression idExpr = IdentifierTransformer.compile( _cc(), identifier );
+    idExpr = buildCast( JavaClassIRType.get( IBlock.class ), idExpr );
+    List<IRExpression> irArgs = new ArrayList<IRExpression>();
+    pushArgumentsNoCasting( null, _expr().getArgs(), irArgs );
+    IRExpression objArray = collectArgsIntoObjArray( irArgs );
+    return callMethod( IBlock.class, "invokeWithArgs", new Class[]{Object[].class}, idExpr, Collections.singletonList( objArray ) );
   }
 
   private IRExpression callExternalProgramSymbol(IFunctionSymbol symbol) {
@@ -217,12 +246,8 @@ public class MethodCallExpressionTransformer extends AbstractExpressionTransform
   private IRExpression callGlobalStaticFunction(IFunctionSymbol symbol) {
     if( symbol.getDisplayName().equals( StandardSymbolTable.PRINT.getName() ) )
     {
-      IRMethod method = IRMethodFactory.createIRMethod(StandardSymbolTable.class, "print", Object.class);
+      IRMethod method = IRMethodFactory.createIRMethod( GosuRuntimeMethods.class, "print", Object.class );
       return callMethod( method, null, pushArguments( method ) );
-    }
-    else if (symbol.getDisplayName().equals( StandardSymbolTable.NOW.getName() ) )
-    {
-      return callMethod( StandardSymbolTable.class, "now", new Class[0], null, exprList() );
     }
     else
     {

@@ -8,6 +8,7 @@ import gw.config.CommonServices;
 import gw.internal.gosu.parser.expressions.AnnotationExpression;
 import gw.internal.gosu.parser.expressions.ArithmeticExpression;
 import gw.internal.gosu.parser.expressions.BlockExpression;
+import gw.internal.gosu.parser.expressions.DefaultArgLiteral;
 import gw.internal.gosu.parser.expressions.Identifier;
 import gw.internal.gosu.parser.expressions.ImplicitTypeAsExpression;
 import gw.internal.gosu.parser.expressions.Literal;
@@ -61,6 +62,7 @@ import gw.lang.parser.resources.ResourceKey;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.INamespaceType;
+import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
@@ -637,7 +639,7 @@ public abstract class ParserBase implements IParserPart
   {
     return iType == SourceCodeTokenizer.TT_WORD &&
            tokenizer.getType() == SourceCodeTokenizer.TT_KEYWORD &&
-           Keyword.isReservedValue( tokenizer.getStringValue() );
+           Keyword.isValueKeyword( tokenizer.getStringValue() );
   }
 
   protected boolean match( Token T, Keyword token )
@@ -808,7 +810,18 @@ public abstract class ParserBase implements IParserPart
 
   protected IType resolveType( ParsedElement parsedElement, IType lhsType, int op, IType rhsType )
   {
+    if( isDynamic( lhsType ) )
+    {
+      return lhsType;
+    }
+    if( isDynamic( rhsType ) )
+    {
+      return rhsType;
+    }
+
     if( op == '+' &&
+        !(lhsType instanceof IErrorType) &&
+        !(rhsType instanceof IErrorType) &&
         (JavaTypes.CHAR_SEQUENCE().isAssignableFrom( lhsType ) ||
          JavaTypes.CHAR_SEQUENCE().isAssignableFrom( rhsType )) )
     {
@@ -851,7 +864,7 @@ public abstract class ParserBase implements IParserPart
     return JavaTypes.IDIMENSION().isAssignableFrom( type ) && !type.isFinal();
   }
 
-  public static IType resolveRuntimeType( ParsedElement parsedElement, IType lhsType, int op, IType rhsType )
+  public static IType resolveRuntimeType( IType lhsType, int op, IType rhsType )
   {
     if( op == '+' &&
         (JavaTypes.CHAR_SEQUENCE().isAssignableFrom( lhsType ) ||
@@ -860,18 +873,30 @@ public abstract class ParserBase implements IParserPart
       return GosuParserTypes.STRING_TYPE();
     }
 
-    IType retType = resolveIfDimensionOperand( null, parsedElement, lhsType, op, rhsType );
-    if( retType != null )
-    {
-      return retType;
-    }
+//## todo: support dimensional arithmetic with Dynamic types
+//    IType retType = resolveIfDimensionOperand( null, null, lhsType, op, rhsType );
+//    if( retType != null )
+//    {
+//      return retType;
+//    }
 
     return resolveType( lhsType, op, rhsType );
   }
 
   public static IType resolveType( IType lhsType, int op, IType rhsType )
   {
+    if( isDynamic( lhsType ) )
+    {
+      return lhsType;
+    }
+    if( isDynamic( rhsType ) )
+    {
+      return rhsType;
+    }
+
     if( op == '+' &&
+        !(lhsType instanceof IErrorType) &&
+        !(rhsType instanceof IErrorType) &&
         (JavaTypes.CHAR_SEQUENCE().isAssignableFrom( lhsType ) ||
          JavaTypes.CHAR_SEQUENCE().isAssignableFrom( rhsType )) )
     {
@@ -1542,6 +1567,9 @@ public abstract class ParserBase implements IParserPart
   protected void verifyComparable( IType lhsType, Expression rhs, boolean bBiDirectional, boolean bWarnOnCoercion, IParserState state )
   {
     IType rhsType = rhs.getType();
+    if (TypeSystem.isDeleted(lhsType) || TypeSystem.isDeleted(rhsType)) {
+      return;
+    }
     if( lhsType != JavaTypes.pVOID() &&
         (rhsType == GosuParserTypes.NULL_TYPE() && !(rhs instanceof NullExpression)) )
     {
@@ -1845,6 +1873,11 @@ public abstract class ParserBase implements IParserPart
     }
   }
 
+  protected static boolean isDynamic( IType type )
+  {
+    return type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder();
+  }
+  
   protected void parseAnnotation( List<IGosuAnnotation> annotations )
   {
     int iOffset = getTokenizer().getTokenStart();
@@ -1932,7 +1965,7 @@ public abstract class ParserBase implements IParserPart
         for( Expression arg : ae.getArgs() )
         {
           verifyOrWarn( arg, arg.isCompileTimeConstant(),
-                        CommonServices.getEntityAccess().getLanguageLevel().allowNonLiteralArgsForJavaAnnotations(),
+                        JavaTypes.IANNOTATION().isAssignableFrom( e.getType() ) && CommonServices.getEntityAccess().getLanguageLevel().allowNonLiteralArgsForJavaAnnotations(),
                         Res.MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION );
         }
       }
@@ -2245,6 +2278,12 @@ public abstract class ParserBase implements IParserPart
 
   protected void setLocationForImplicitTypeAs( Expression expressionToCoerce, TypeAsExpression tas )
   {
+    if( expressionToCoerce instanceof DefaultArgLiteral )
+    {
+      // DefaultArgLiterals do not exist in the parse tree
+      return;
+    }
+
     ParseTree wrappedLoc = findAndWrapLocation( expressionToCoerce, tas );
     if( wrappedLoc == null )
     {
@@ -2362,6 +2401,7 @@ public abstract class ParserBase implements IParserPart
       match( T, Keyword.KW_delegate.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
       match( T, Keyword.KW_class.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
       match( T, Keyword.KW_interface.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+      match( T, Keyword.KW_structure.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
       match( T, Keyword.KW_enum.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer );
   }
 

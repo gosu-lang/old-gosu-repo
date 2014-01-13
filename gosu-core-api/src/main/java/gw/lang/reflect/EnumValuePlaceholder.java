@@ -23,14 +23,15 @@ public class EnumValuePlaceholder implements IEnumValue {
 
   @Override
   public Object getValue() {
-    throw new UnsupportedOperationException();
+    return _code;
+//    throw new UnsupportedOperationException();
   }
 
   @Override
   public int getOrdinal() {
     throw new UnsupportedOperationException();
   }
-  
+
   public String toString() {
     return _code;
   }

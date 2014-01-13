@@ -26,10 +26,11 @@ import gw.lang.reflect.module.IExecutionEnvironment;
 import gw.lang.reflect.module.IGlobalModule;
 import gw.lang.reflect.module.IJreModule;
 import gw.lang.reflect.module.IModule;
+import gw.plugin.ij.util.ExceptionUtil;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.GosuBundle;
 import gw.plugin.ij.util.GosuMessages;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
 import gw.util.fingerprint.FP64;
 import org.jetbrains.annotations.NotNull;
 
@@ -60,9 +61,9 @@ public class ModuleClasspathListener implements ModuleRootListener {
     boolean processDependencies = true;
 
     PluginLoaderUtil loader = PluginLoaderUtil.instance(project);
-    String circularDependency = IDEAUtil.getCircularModuleDependency(project);
+    String circularDependency = GosuModuleUtil.getCircularModuleDependency(project);
     if (circularDependency != null) {
-      IDEAUtil.showWarning(GosuBundle.message("error.dependency.line1"), GosuBundle.message("error.dependency.line2", circularDependency));
+      ExceptionUtil.showWarning(GosuBundle.message("error.dependency.line1"), GosuBundle.message("error.dependency.line2", circularDependency));
       processDependencies = false;
     } else if (!loader.isStarted() && loader.getFailureReason() == PluginFailureReason.CIRCULAR_DEPENDENCY) {
       startPlugin(project, GosuBundle.message("error.dependency.resolved"));
@@ -105,7 +106,7 @@ public class ModuleClasspathListener implements ModuleRootListener {
     } else if (!PluginLoaderUtil.instance(project).isStarted()) {
       SwingUtilities.invokeLater(new Runnable() {
         public void run() {
-          IDEAUtil.showWarning(GosuBundle.message("info.plugin.not.started"), GosuBundle.message("info.restart.ide"));
+          ExceptionUtil.showWarning(GosuBundle.message("info.plugin.not.started"), GosuBundle.message("info.restart.ide"));
         }
       });
     } else {
@@ -132,7 +133,7 @@ public class ModuleClasspathListener implements ModuleRootListener {
   private Set<String> getSDKPaths(@NotNull Sdk sdk) {
     final Set<String> paths = Sets.newHashSet();
     for (VirtualFile file : sdk.getRootProvider().getFiles(OrderRootType.CLASSES)) {
-      paths.add(IDEAUtil.removeJarSeparator(file.getPath()));
+      paths.add(FileUtil.removeJarSeparator(file.getPath()));
     }
     return paths;
   }
@@ -210,7 +211,7 @@ public class ModuleClasspathListener implements ModuleRootListener {
   // ================================ private part
 
   private void startPlugin(final Project project, String message) {
-    IDEAUtil.showInfo(GosuBundle.message("info.plugin.enabled"), message);
+    ExceptionUtil.showInfo(GosuBundle.message("info.plugin.enabled"), message);
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
         try {
@@ -226,7 +227,7 @@ public class ModuleClasspathListener implements ModuleRootListener {
     SwingUtilities.invokeLater(new Runnable() {
       public void run() {
         try {
-          IDEAUtil.showWarning(GosuBundle.message("info.plugin.disabled"), message);
+          ExceptionUtil.showWarning(GosuBundle.message("info.plugin.disabled"), message);
           PluginLoaderUtil.instance(project).closeProject(PluginFailureReason.NO_SDK);
         } catch (Throwable t) {
           LOG.error(GosuMessages.create(GosuBundle.message("error.cannot.stop.plugin"), t));

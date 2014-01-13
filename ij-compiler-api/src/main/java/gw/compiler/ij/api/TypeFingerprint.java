@@ -31,23 +31,34 @@ import java.util.Comparator;
 import java.util.List;
 
 public class TypeFingerprint {
+
+  private static int nullSafeCompare(String s1, String s2) {
+    if (s1 == null) {
+      return s2 == null ? 0 : 1;
+    }
+    if (s2 == null) {
+      return -1;
+    }
+    return s1.compareTo(s2);
+  }
+
   private static final Comparator<IType> TYPE_COMPARATOR = new Comparator<IType>() {
     @Override
     public int compare(IType type1, IType type2) {
-      return type1.getName().compareTo(type2.getName());
+      return nullSafeCompare(type1.getName(), type2.getName());
     }
   };
 
   private static final Comparator<IGosuClass> CLASS_COMPARATOR = new Comparator<IGosuClass>() {
     @Override
     public int compare(IGosuClass class1, IGosuClass class2) {
-      return class1.getName().compareTo(class2.getName());
+      return nullSafeCompare(class1.getName(), class2.getName());
     }
   };
 
   private static final Comparator<IMethodInfo> METHOD_COMPARATOR = new Comparator<IMethodInfo>() {
     public int compare(IMethodInfo method1, IMethodInfo method2) {
-      int res = method1.getName().compareTo(method2.getName());
+      int res = nullSafeCompare(method1.getName(), method2.getName());
       if (res != 0) {
         return res;
       }
@@ -57,14 +68,14 @@ public class TypeFingerprint {
         return res;
       }
 
-      res = method1.getReturnType().getName().compareTo(method2.getReturnType().getName());
+      res = nullSafeCompare(method1.getReturnType().getName(), method2.getReturnType().getName());
       return res;
     }
   };
 
   private static final Comparator<IJavaClassMethod> METHOD_INFO_COMPARATOR = new Comparator<IJavaClassMethod>() {
     public int compare(IJavaClassMethod method1, IJavaClassMethod method2) {
-      int res = method1.getName().compareTo(method2.getName());
+      int res = nullSafeCompare(method1.getName(), method2.getName());
       if (res != 0) {
         return res;
       }
@@ -74,14 +85,14 @@ public class TypeFingerprint {
         return res;
       }
 
-      res = method1.getReturnType().getName().compareTo(method2.getReturnType().getName());
+      res = nullSafeCompare(method1.getReturnType().getName(), method2.getReturnType().getName());
       return res;
     }
   };
 
   private static final Comparator<IConstructorInfo> CONSTRUCTOR_COMPARATOR = new Comparator<IConstructorInfo>() {
     public int compare(IConstructorInfo constructor1, IConstructorInfo constructor2) {
-      int res = constructor1.getName().compareTo(constructor2.getName());
+      int res = nullSafeCompare(constructor1.getName(), constructor2.getName());
       if (res != 0) {
         return res;
       }
@@ -99,24 +110,24 @@ public class TypeFingerprint {
 
   private static final Comparator<IPropertyInfo> PROPERTY_COMPARATOR = new Comparator<IPropertyInfo>() {
     public int compare(IPropertyInfo property1, IPropertyInfo property2) {
-      int res = property1.getName().compareTo(property2.getName());
+      int res = nullSafeCompare(property1.getName(), property2.getName());
       if (res != 0) {
         return res;
       }
 
-      res = property1.getFeatureType().getName().compareTo(property2.getFeatureType().getName());
+      res = nullSafeCompare(property1.getFeatureType().getName(), property2.getFeatureType().getName());
       return res;
     }
   };
 
   private static final Comparator<IJavaClassField> PROPERTY_INFO_COMPARATOR = new Comparator<IJavaClassField>() {
     public int compare(IJavaClassField property1, IJavaClassField property2) {
-      int res = property1.getName().compareTo(property2.getName());
+      int res = nullSafeCompare(property1.getName(), property2.getName());
       if (res != 0) {
         return res;
       }
 
-      res = property1.getType().getName().compareTo(property2.getType().getName());
+      res = nullSafeCompare(property1.getType().getName(), property2.getType().getName());
       return res;
     }
   };
@@ -128,12 +139,12 @@ public class TypeFingerprint {
     }
 
     for (int i = 0; i < params1.length; i++) {
-      res = params1[i].getName().compareTo(params2[i].getName());
+      res = nullSafeCompare(params1[i].getName(), params2[i].getName());
       if (res != 0) {
         return res;
       }
 
-      res = params1[i].getFeatureType().getName().compareTo(params2[i].getFeatureType().getName());
+      res = nullSafeCompare(params1[i].getFeatureType().getName(), params2[i].getFeatureType().getName());
       if (res != 0) {
         return res;
       }
@@ -148,7 +159,7 @@ public class TypeFingerprint {
     }
 
     for (int i = 0; i < params1.length; i++) {
-      res = params1[i].getName().compareTo(params2[i].getName());
+      res = nullSafeCompare(params1[i].getName(), params2[i].getName());
       if (res != 0) {
         return res;
       }
@@ -214,7 +225,9 @@ public class TypeFingerprint {
     for (IMethodInfo method : sort(methods, METHOD_COMPARATOR)) {
       if (!method.isPrivate()) {
         // the method name
-        fp.extend(method.getName());
+        if (method.getName() != null) {
+          fp.extend(method.getName());
+        }
 
         // the return type
         fp.extend(method.getReturnType().getName());
@@ -272,10 +285,21 @@ public class TypeFingerprint {
     for (IPropertyInfo property : sort(properties, PROPERTY_COMPARATOR)) {
       if (!property.isPrivate()) {
         // the property name
-        fp.extend(property.getName());
+        if (property.getName() != null) {
+          fp.extend(property.getName());
+        }
 
         // the property type
-        fp.extend(property.getFeatureType().getName());
+        IType featureType = null;
+        try {
+          featureType = property.getFeatureType();
+        }
+        catch (Throwable t) {
+          //Ignore
+        }
+        if (featureType != null) {
+          fp.extend(featureType.getName());
+        }
 
         // readability
         fp.extend(Boolean.toString(property.isReadable()));

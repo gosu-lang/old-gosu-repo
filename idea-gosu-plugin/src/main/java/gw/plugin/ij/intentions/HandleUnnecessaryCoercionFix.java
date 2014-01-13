@@ -8,11 +8,12 @@ import com.intellij.codeInsight.CodeInsightUtilBase;
 import com.intellij.codeInspection.LocalQuickFixAndIntentionActionOnPsiElement;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Condition;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import gw.plugin.ij.lang.psi.impl.expressions.GosuBeanMethodCallExpressionImpl;
+import com.intellij.psi.util.PsiTreeUtil;
+import gw.plugin.ij.lang.psi.IGosuPsiElement;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuParenthesizedExpressionImpl;
-import gw.plugin.ij.lang.psi.impl.expressions.GosuPropertyMemberAccessExpressionImpl;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuTypeAsExpressionImpl;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,21 +34,31 @@ public class HandleUnnecessaryCoercionFix extends LocalQuickFixAndIntentionActio
     if( !CodeInsightUtilBase.prepareFileForWrite(startElement.getContainingFile()) ) {
       return;
     }
-    PsiElement pe = startElement.getParent();
-    boolean isMemberAcc = pe instanceof GosuBeanMethodCallExpressionImpl || pe instanceof GosuPropertyMemberAccessExpressionImpl;
-    if ((pe instanceof GosuTypeAsExpressionImpl || isMemberAcc) && editor != null) {
-      PsiElement typeAsExpr = pe.getParent();
-      PsiElement replaceMe;
-      if (typeAsExpr instanceof GosuTypeAsExpressionImpl) {
-        if (typeAsExpr.getParent() instanceof GosuParenthesizedExpressionImpl) {
-          typeAsExpr = typeAsExpr.getParent();
-        }
-        replaceMe = typeAsExpr;
-      } else {
-        replaceMe = pe;
-      }
-      replaceMe.replace(isMemberAcc ? pe : startElement);
+    PsiElement typeAsExpr = getTypeAsExpr(startElement);
+    if(typeAsExpr.getChildren().length == 1) {
+      typeAsExpr = getTypeAsExpr(typeAsExpr.getParent());
     }
+    if (typeAsExpr instanceof GosuTypeAsExpressionImpl  && editor != null) {
+      PsiElement replaceMe;
+      IGosuPsiElement lhs = ((GosuTypeAsExpressionImpl) typeAsExpr).getLhs();
+      if(((GosuTypeAsExpressionImpl) typeAsExpr).getRhs() == null) {
+        typeAsExpr = typeAsExpr.getParent();
+      }
+      if (typeAsExpr.getParent() instanceof GosuParenthesizedExpressionImpl) {
+        typeAsExpr = typeAsExpr.getParent();
+      }
+      replaceMe = typeAsExpr;
+      replaceMe.replace(lhs);
+    }
+  }
+
+  private PsiElement getTypeAsExpr(PsiElement startElement) {
+    return PsiTreeUtil.findFirstParent(startElement, new Condition<PsiElement>() {
+      @Override
+      public boolean value(PsiElement psiElement) {
+        return psiElement instanceof GosuTypeAsExpressionImpl;
+      }
+    });
   }
 
   @NotNull

@@ -4,10 +4,9 @@
 package gw.internal.gosu.parser.statements;
 
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
-import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.internal.gosu.parser.Statement;
-
-
+import gw.internal.gosu.parser.TypeLord;
 import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
@@ -22,6 +21,7 @@ import gw.util.GosuObjectUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -176,6 +176,13 @@ public class FunctionStatement extends Statement implements IFunctionStatement
       }
     }
     return params;
+  }
+
+  public List<IGosuAnnotation> getAnnotations()
+  {
+    return getDynamicFunctionSymbol() == null
+           ? Collections.<IGosuAnnotation>emptyList()
+           : getDynamicFunctionSymbol().getAnnotations();
   }
 
   @Override

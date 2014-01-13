@@ -112,12 +112,11 @@ public class WsiUtilities {
       return o1.getRelativeName().compareTo(o2.getRelativeName());
     }
   };
-  private static final LockingLazyVar<Collection<IType>> EXCEPTIONS_THROWN_BY_INFASTRUCTURE = new LockingLazyVar<Collection<IType>>( TypeSystem.getGlobalLock() ) {
+  public static final LockingLazyVar<Collection<IType>> EXCEPTIONS_THROWN_BY_INFRASTRUCTURE = new LockingLazyVar<Collection<IType>>( TypeSystem.getGlobalLock() ) {
     @Override
     protected Collection<IType> init() {
       TreeSet<IType> rtn = new TreeSet<IType>(COMPARATOR);
       rtn.add(TypeSystem.get(WsiAuthenticationException.class));
-      rtn.add(TypeSystem.get(WebServiceException.class));
       return rtn;
     }
   };
@@ -400,7 +399,7 @@ public class WsiUtilities {
 
     serviceInfo.getSchema().Element().add( element );
     TreeSet<IType> expected = new TreeSet<IType>(COMPARATOR);
-    expected.addAll(EXCEPTIONS_THROWN_BY_INFASTRUCTURE.get());
+    expected.addAll( EXCEPTIONS_THROWN_BY_INFRASTRUCTURE.get());
 
     for ( IExceptionInfo exceptionInfo : m.getExceptions() ) {
       IType exceptionType = exceptionInfo.getExceptionType();

@@ -24,8 +24,16 @@ public class DocCommentBlock
   private StringBuilder _desc;
   private ITypeUsesMap _typeUsesMap;
   private ICompilableType _ownersType;
+  private String _rawComment;
+  private boolean computeAnnotationData = false;
 
-  public void addLine( String line )
+
+  public void setRawComment(String rawComment) {
+    _rawComment = rawComment;
+    computeAnnotationData = true;
+  }
+
+  private void addLine( String line )
   {
     String strippedLine = stripLeadingCommentAndWhiteSpace( line );
     DocAnnotationData annotationData = maybeStartDocAnnotation( strippedLine );
@@ -58,11 +66,21 @@ public class DocCommentBlock
 
   public String getDescription()
   {
+    if(computeAnnotationData)
+    {
+      computeAnnotationData();
+      computeAnnotationData = false;
+    }
     return GosuStringUtil.strip( _desc == null ? "" : _desc.toString() );
   }
 
   public List<IGosuAnnotation> getAnnotations()
   {
+    if(computeAnnotationData)
+    {
+      computeAnnotationData();
+      computeAnnotationData = false;
+    }
     if( _annotationData == null )
     {
       return Collections.emptyList();
@@ -77,6 +95,14 @@ public class DocCommentBlock
       }
     }
     return lst;
+  }
+
+  private void computeAnnotationData() {
+    final String[] lines = _rawComment.substring( 2, _rawComment.length()-2 ).split( "\n" );
+    for(String line : lines)
+    {
+      addLine( line );
+    }
   }
 
   private DocAnnotationData maybeStartDocAnnotation( String line )

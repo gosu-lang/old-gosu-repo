@@ -42,8 +42,6 @@ public class GosucProjectParser {
 
   private GosucProjectParser( String strContent ) {
     _tokenizer = makeTokenizer(strContent);
-    _tokenizer.slashSlashComments( true );
-    _tokenizer.slashStarComments( true );
     _tokenizer.wordChars( '_', '_' );
     _tokenizer.wordChars( '-', '-' );
     _tokenizer.setSupportsKeywords( false );

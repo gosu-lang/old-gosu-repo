@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser.fragments;
 
+import gw.internal.gosu.compiler.GosuClassLoader;
 import gw.internal.gosu.parser.ClassJavaClassInfo;
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
 import gw.internal.gosu.parser.DynamicPropertySymbol;
@@ -27,6 +28,7 @@ import gw.lang.parser.statements.IClassStatement;
 import gw.lang.reflect.AbstractType;
 import gw.lang.reflect.DefaultArrayType;
 import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ClassType;
@@ -36,23 +38,21 @@ import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuFragment;
-import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.concurrent.LockingLazyVar;
 import gw.util.GosuExceptionUtil;
-import gw.internal.gosu.compiler.GosuClassLoader;
+import gw.util.concurrent.LockingLazyVar;
 
 import java.io.ObjectStreamException;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
 
 /**
  * @deprecated DO NOT USE THIS CLASS! This is here exclusively for PCF types.
@@ -504,6 +504,11 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
     return _sharedInstance.get().evaluateRootExpression(externalSymbols);
   }
 
+  @Override
+  public Class getBackingClass() {
+    return getBackingClassInfo().getBackingClass();
+  }
+
   public IJavaClassInfo getBackingClassInfo() {
     return _javaClass.get();
   }
@@ -553,7 +558,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
 
   private FragmentInstance createNewInstance() {
     try {
-      return (FragmentInstance) getBackingClassInfo().getBackingClass().newInstance();
+      return (FragmentInstance) getBackingClass().newInstance();
     } catch (InstantiationException e) {
       throw new RuntimeException(e);
     } catch (IllegalAccessException e) {
@@ -563,7 +568,7 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
 
   private IJavaClassInfo defineClass() {
     try {
-      Class aClass = GosuClassLoader.instance().defineClass(this, true);
+      Class aClass = GosuClassLoader.instance().defineClass(this, true); //getRelativeName().startsWith( FRAGMENT_NAME_PREFIX ) );
       return new ClassJavaClassInfo(aClass, getTypeLoader().getModule());
     } catch (ClassNotFoundException e) {
       throw new RuntimeException( e );

@@ -56,8 +56,9 @@ import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.compiler.parser.CompilerParser;
 import gw.plugin.ij.filesystem.IDEAFile;
+import gw.plugin.ij.util.FileUtil;
 import gw.plugin.ij.util.GosuModuleUtil;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.TypeUtil;
 import gw.util.fingerprint.FP64;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -77,6 +78,7 @@ import java.util.Set;
 public class GosuCompiler implements TranslatingCompiler {
   private static final Logger LOG = Logger.getInstance(GosuCompiler.class);
   private static final String PROP_EXT = "properties";
+  private static final String PCF_EXT = "pcf";
   private static Set<String> DISALLOWED_EXTENSIONS = new HashSet<>(Arrays.asList("java", "gs", "gsx", "gsp"));
   private IExternalCompiler externalCompiler;
 
@@ -103,7 +105,7 @@ public class GosuCompiler implements TranslatingCompiler {
 
     //## todo: we chould instead check for @DoNotVerifyResource annotation and just don't report errors for those
     if ((name.startsWith("Errant_") && "pcf".equals(extension)) ||
-        (name.contains("Errant") && "gs".equals(extension))) {
+            (name.contains("Errant") && "gs".equals(extension))) {
       return false;
     }
 
@@ -149,12 +151,15 @@ public class GosuCompiler implements TranslatingCompiler {
     return ApplicationManager.getApplication().runReadAction(new Computable<Long>() {
       public Long compute() {
         final FP64 fp = new FP64();
-        if (PROP_EXT.equals(file.getExtension())) {
+        final String extension = file.getExtension();
+        if (PROP_EXT.equals(extension)) {
           handlePropertiesFileFingerprint(file, fp);
+        } else if (PCF_EXT.equals(extension)) {
+          handleFileText(file, fp);
         } else {
-          List<String> types = IDEAUtil.getTypesForFile(gosuModule, file);
+          List<String> types = TypeUtil.getTypesForFile(gosuModule, file);
           for (String qualifiedName : Ordering.natural().sortedCopy(types)) {
-            if ("java".equals(file.getExtension())) {
+            if ("java".equals(extension)) {
               final IJavaClassInfo type = TypeSystem.getJavaClassInfo(qualifiedName, gosuModule);
               if (type != null) {
                 TypeFingerprint.extend(fp, type);
@@ -197,7 +202,7 @@ public class GosuCompiler implements TranslatingCompiler {
           public void action() {
             final VirtualMachineProxyImpl vm = process.getVirtualMachineProxy();
             final List<ReferenceType> types = vm.classesByName("gw.internal.gosu.parser.ReloadClassesIndicator");
-            final List<String> changedTypes = IDEAUtil.getTypesForFiles(TypeSystem.getGlobalModule(), Arrays.asList(files));
+            final List<String> changedTypes = TypeUtil.getTypesForFiles(TypeSystem.getGlobalModule(), Arrays.asList(files));
             vm.redefineClasses(ImmutableMap.of(types.get(0), GosuShop.updateReloadClassesIndicator(changedTypes, "")));
           }
 
@@ -278,7 +283,7 @@ public class GosuCompiler implements TranslatingCompiler {
       // First the PSI lock, then the TS lock
       ApplicationManager.getApplication().runReadAction(new Runnable() {
         public void run() {
-          TypeSystem.refreshed(IDEAUtil.toIResource(file));
+          TypeSystem.refreshed(FileUtil.toIResource(file));
         }
       });
     }
@@ -301,17 +306,17 @@ public class GosuCompiler implements TranslatingCompiler {
 
   private void sortEtiBeforeEtx(List<VirtualFile> files) {
     Collections.sort(files,
-        new Comparator<VirtualFile>() {
-          public int compare(VirtualFile o1, VirtualFile o2) {
-            int iRes = o1.getParent().getPath().compareToIgnoreCase(o2.getParent().getPath());
-            if (iRes == 0) {
-              // .eti comes before .etx
-              return o1.getName().compareToIgnoreCase(o2.getName());
-            }
-            // Ensure ../metadata/ comes before ../extensions/
-            return -iRes;
-          }
-        });
+            new Comparator<VirtualFile>() {
+              public int compare(VirtualFile o1, VirtualFile o2) {
+                int iRes = o1.getParent().getPath().compareToIgnoreCase(o2.getParent().getPath());
+                if (iRes == 0) {
+                  // .eti comes before .etx
+                  return o1.getName().compareToIgnoreCase(o2.getName());
+                }
+                // Ensure ../metadata/ comes before ../extensions/
+                return -iRes;
+              }
+            });
   }
 
   private FileDependencyInfo internalCompileFile(@NotNull CompileContext context, @NotNull Module ijModule, @NotNull VirtualFile file, List<OutputItem> outputItems) {
@@ -474,6 +479,9 @@ public class GosuCompiler implements TranslatingCompiler {
         if (oldFileDependencyInfo != null) {
           //put old info back to avoid second layer of dependencies.
           cache.put(oldFileDependencyInfo);
+
+          //do not recompile dependents until dependecy is compiled
+          fileToDependents.removeAll(file);
         }
       }
 

@@ -11,8 +11,8 @@ import com.intellij.openapi.projectRoots.Sdk;
 import com.intellij.openapi.projectRoots.SdkAdditionalData;
 import com.intellij.openapi.projectRoots.SdkModel;
 import com.intellij.openapi.projectRoots.SdkModificator;
+import gw.plugin.ij.util.ExceptionUtil;
 import gw.plugin.ij.util.GosuBundle;
-import gw.plugin.ij.util.IDEAUtil;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -37,7 +37,7 @@ public class GosuSdkConfigurable implements AdditionalDataConfigurable {
     try {
       return myForm.getContentPanel();
     } catch (IllegalStateException ex) {
-      IDEAUtil.showError(GosuBundle.message("error.ui_designed_missing"), ex);
+      ExceptionUtil.showError(GosuBundle.message("error.ui_designed_missing"), ex);
       throw new IllegalStateException(GosuBundle.message("error.ui_designed_missing"), ex);
     }
   }

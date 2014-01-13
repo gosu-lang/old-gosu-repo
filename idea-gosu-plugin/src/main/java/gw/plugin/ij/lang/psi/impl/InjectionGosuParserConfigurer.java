@@ -9,7 +9,7 @@ import com.intellij.psi.PsiElement;
 import gw.lang.parser.IGosuValidator;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.ITypeUsesMap;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.InjectionUtil;
 
 public class InjectionGosuParserConfigurer implements IGosuParserConfigurer {
   public static final Key<ISymbolTable> SYMBOL_TABLE = new Key<>("GOSU_SYMBOL_TABLE");
@@ -17,7 +17,7 @@ public class InjectionGosuParserConfigurer implements IGosuParserConfigurer {
 
   @Override
   public ISymbolTable getSymbolTable(AbstractGosuClassFileImpl psiFile) {
-    PsiElement host = IDEAUtil.getInjectionHost(psiFile);
+    PsiElement host = InjectionUtil.getInjectionHost(psiFile);
 
     if (host == null) {
       host = psiFile.getOriginalFile();
@@ -39,7 +39,7 @@ public class InjectionGosuParserConfigurer implements IGosuParserConfigurer {
 
   @Override
   public IGosuValidator getValidator(AbstractGosuClassFileImpl psiFile) {
-    PsiElement host = IDEAUtil.getInjectionHost(psiFile);
+    PsiElement host = InjectionUtil.getInjectionHost(psiFile);
 
     if (host == null) {
       host = psiFile.getOriginalFile();

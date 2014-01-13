@@ -5,7 +5,22 @@
 package gw.lang.shell;
 
 import gw.config.CommonServices;
-import gw.lang.parser.*;
+import gw.lang.GosuShop;
+import gw.lang.parser.ExternalSymbolMapSymbolTableWrapper;
+import gw.lang.parser.GosuParserFactory;
+import gw.lang.parser.IDynamicFunctionSymbol;
+import gw.lang.parser.IExpression;
+import gw.lang.parser.IGosuParser;
+import gw.lang.parser.IGosuProgramParser;
+import gw.lang.parser.IParseResult;
+import gw.lang.parser.IParseTree;
+import gw.lang.parser.IParsedElement;
+import gw.lang.parser.ISourceCodeTokenizer;
+import gw.lang.parser.ISymbol;
+import gw.lang.parser.ISymbolTable;
+import gw.lang.parser.ITypeUsesMap;
+import gw.lang.parser.ParserOptions;
+import gw.lang.parser.StandardSymbolTable;
 import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.IMemberAccessExpression;
@@ -137,7 +152,7 @@ class InteractiveShell implements Runnable
             JavaTypes.pVOID().equals(expression.getType()) ||
             expression instanceof INotAWordExpression;
     if (!noReturnValue && _logOutput ) {
-      _cr.printString( OUTPUT_PREFIX + StandardSymbolTable.toString( val ) );
+      _cr.printString( OUTPUT_PREFIX + GosuShop.toString( val ) );
       _cr.printNewline();
     }
     return val;
@@ -284,7 +299,7 @@ class InteractiveShell implements Runnable
         }
         else
         {
-          _cr.printString( "    " + symbol.getName() + " : " + symbol.getType() + " = " + StandardSymbolTable.toString(symbol.getValue()) + "\n" );
+          _cr.printString( "    " + symbol.getName() + " : " + symbol.getType() + " = " + GosuShop.toString( symbol.getValue() ) + "\n" );
         }
       }
       _cr.printNewline();

@@ -48,6 +48,20 @@ class ObjectEqualsAsOpFixTest extends GosuTestCase {
     test({f}, "a == c")
   }
 
+  function testObjectEqualsToEqual02() {
+    var f = new GosuClassFile (
+        "package some.pkg\n" +
+            "uses java.util.*\n" +
+            "uses java.lang.*\n" +
+            "\n" +
+            "class A {\n" +
+            "  function foo() {\n" +
+            "  if([[!^^\"1\".equals(\"2\")]]) {\n" +
+            "  }\n" +
+            "}")
+    test({f}, "\"1\" != \"2\"")
+  }
+
   function test(resources: GosuTestingResource[], replace: String) {
     var markers = getAllMarkers(resources.map(\r -> configureByText(r.fileName, r.content)))
     var initialCaret = markers.getCaret(MarkerType.CARET1)

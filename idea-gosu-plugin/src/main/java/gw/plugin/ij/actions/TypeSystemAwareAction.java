@@ -41,4 +41,11 @@ public abstract class TypeSystemAwareAction extends AnAction {
 
   }
 
+  public static void printTiming(String description, double thresholdSecs, long start) {
+    final double dt = (System.nanoTime() - start) * 1e-9;
+    if (dt >= thresholdSecs) {
+      System.out.printf(description + " done in %.3fs.\n", dt);
+    }
+  }
+
 }

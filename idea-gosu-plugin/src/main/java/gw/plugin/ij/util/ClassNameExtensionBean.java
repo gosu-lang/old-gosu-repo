@@ -16,7 +16,7 @@ public class ClassNameExtensionBean extends AbstractExtensionPointBean {
     try {
       return iface.cast(Class.forName(className).newInstance());
     } catch (Exception e) {
-      IDEAUtil.showNonFatalError("Couldn't instantiate property resolver " + className, e);
+      ExceptionUtil.showNonFatalError("Couldn't instantiate property resolver " + className, e);
     }
     return null;
   }

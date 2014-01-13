@@ -5,10 +5,9 @@
 package gw.internal.gosu.parser.expressions;
 
 import gw.internal.gosu.parser.Expression;
-import gw.internal.gosu.parser.statements.TryCatchFinallyStatement;
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.internal.gosu.parser.statements.CatchClause;
-
-
+import gw.internal.gosu.parser.statements.TryCatchFinallyStatement;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
@@ -17,6 +16,9 @@ import gw.lang.parser.expressions.IBlockExpression;
 import gw.lang.parser.expressions.ILocalVarDeclaration;
 import gw.lang.parser.statements.IForEachStatement;
 import gw.lang.parser.statements.IFunctionStatement;
+
+import java.util.Collections;
+import java.util.List;
 
 public class LocalVarDeclaration extends Expression implements ILocalVarDeclaration
 {
@@ -81,33 +83,42 @@ public class LocalVarDeclaration extends Expression implements ILocalVarDeclarat
 
     if( elem instanceof IFunctionStatement ) {
       IDynamicFunctionSymbol dfs = ((IFunctionStatement)elem).getDynamicFunctionSymbol();
-      for( ISymbol symbol: dfs.getArgs() ) {
-        if( _strLocalVarName.equals( symbol.getName() ) ) {
-          return symbol;
+      List<ISymbol> args = dfs.getArgs();
+      if( args != null ) {
+        for( ISymbol symbol: args ) {
+          if( _strLocalVarName.equals( symbol.getName() ) ) {
+            return symbol;
+          }
         }
       }
     }
     else if( elem instanceof IBlockExpression ) {
-      for(ISymbol symbol : ((IBlockExpression)elem).getArgs()) {
-        if( _strLocalVarName.equals(symbol.getName())) {
-          return symbol;
+      List<ISymbol> args = ((IBlockExpression)elem).getArgs();
+      if( args != null ) {
+        for(ISymbol symbol : args ) {
+          if( _strLocalVarName.equals(symbol.getName())) {
+            return symbol;
+          }
         }
       }
     }
     else if( elem instanceof IForEachStatement ) {
       ISymbol symbol = ((IForEachStatement)elem).getIdentifier();
-      if( _strLocalVarName.equals(symbol.getName())) {
+      if( symbol != null && _strLocalVarName.equals(symbol.getName())) {
         return symbol;
       }
       symbol = ((IForEachStatement)elem).getIndexIdentifier();
-      if( _strLocalVarName.equals(symbol.getName())) {
+      if( symbol != null && _strLocalVarName.equals(symbol.getName())) {
         return symbol;
       }
     }
     else if( elem instanceof TryCatchFinallyStatement ) {
-      for(CatchClause catchClause : ((TryCatchFinallyStatement)elem).getCatchStatements() ) {
-        if( _strLocalVarName.equals(catchClause.getSymbol().getName())) {
-          return catchClause.getSymbol();
+      List<CatchClause> catchStatements = ((TryCatchFinallyStatement)elem).getCatchStatements();
+      if( catchStatements != null ) {
+        for(CatchClause catchClause : catchStatements ) {
+          if( _strLocalVarName.equals(catchClause.getSymbol().getName())) {
+            return catchClause.getSymbol();
+          }
         }
       }
     }
@@ -120,4 +131,11 @@ public class LocalVarDeclaration extends Expression implements ILocalVarDeclarat
     return new String[]{_strLocalVarName};
   }
 
+  @Override
+  public List<IGosuAnnotation> getAnnotations()
+  {
+    return getSymbol() == null
+           ? Collections.<IGosuAnnotation>emptyList()
+           : getSymbol().getAnnotations();
+  }
 }

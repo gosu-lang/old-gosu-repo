@@ -7,7 +7,6 @@ package gw.plugin.ij.actions;
 import com.intellij.ide.actions.ElementCreator;
 import com.intellij.ide.util.TreeJavaClassChooserDialog;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.Ref;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
@@ -102,6 +101,11 @@ public class CreateEnhancementDialog extends TreeJavaClassChooserDialog {
   @Override
   protected void doOKAction() {
     if (myCreator.tryCreate(getEnteredName()).length == 0) {
+      if (getTabbedPane().getSelectedIndex() == 0) {
+        // Workaround: AbstractTreeClassChooserDialog isn't intended to be stopped here, so GotoByNamePanel is
+        // already deactivated at this point. We have to restore it (and there is no way to set previous selection)
+        getGotoByNamePanel().rebuildList(false);
+      }
       return;
     }
     super.doOKAction();
@@ -146,11 +150,6 @@ public class CreateEnhancementDialog extends TreeJavaClassChooserDialog {
                                          @NotNull final FileCreator<T> creator) {
       final Ref<T> created = Ref.create(null);
       myDialog.myCreator = new ElementCreator(myProject, errorTitle) {
-//        @Override
-//        protected void checkBeforeCreate(String newName) throws IncorrectOperationException {
-//          creator.checkBeforeCreate(newName, myDialog.getEnhancedClassName(), myDialog.getTemplateName());
-//        }
-
         @Nullable
         @Override
         protected PsiElement[] create(@NotNull String newName) throws Exception {

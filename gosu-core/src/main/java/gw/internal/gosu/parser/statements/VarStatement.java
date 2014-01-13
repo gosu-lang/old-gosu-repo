@@ -4,28 +4,27 @@
 
 package gw.internal.gosu.parser.statements;
 
+import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
 import gw.internal.gosu.parser.Expression;
+import gw.internal.gosu.parser.IGosuAnnotation;
 import gw.internal.gosu.parser.ModifierInfo;
 import gw.internal.gosu.parser.Statement;
 import gw.internal.gosu.parser.expressions.BlockExpression;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
-
-
 import gw.lang.parser.GlobalScope;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.ISymbol;
+import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.parser.statements.IClassStatement;
 import gw.lang.parser.statements.ITerminalStatement;
-import gw.lang.parser.expressions.IVarStatement;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
-import gw.internal.gosu.parser.IGosuAnnotation;
-import gw.internal.gosu.parser.CannotExecuteGosuException;
 import gw.util.GosuObjectUtil;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -358,9 +357,11 @@ public class VarStatement extends Statement implements IVarStatement
     }
   }
 
-  public List<IGosuAnnotation> getGosuAnnotations()
+  public List<IGosuAnnotation> getAnnotations()
   {
-    return _modifiers.getAnnotations();
+    return _modifiers == null
+           ? Collections.<IGosuAnnotation>emptyList()
+           : _modifiers.getAnnotations();
   }
 
   public String getFullDescription()

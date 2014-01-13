@@ -496,7 +496,10 @@ public class EnhancementIndex implements IEnhancementIndex
 
   public void addEntry( IType enhancedType, IGosuEnhancement enhancement )
   {
-    getEnhancementIndexForType( enhancedType.getName() ).add( enhancement.getName() );
+    ArrayList<String> enhancementIndexForType = getEnhancementIndexForType( enhancedType.getName() );
+    if( !enhancementIndexForType.contains( enhancement.getName() ) ) {
+      enhancementIndexForType.add( enhancement.getName() );
+    }
   }
 
   /**

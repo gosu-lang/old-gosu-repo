@@ -148,8 +148,7 @@ public class GosuVarPropertyInfo extends GosuBaseAttributedFeatureInfo implement
   }
 
   public boolean isWritable(IType whosAskin) {
-    //## todo: handle should return false if final?  See isWritable() below
-    return true;
+    return !isFinal();
   }
 
   public boolean isWritable()

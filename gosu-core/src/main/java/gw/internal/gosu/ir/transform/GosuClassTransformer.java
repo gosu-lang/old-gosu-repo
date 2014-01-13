@@ -132,7 +132,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private IRClass compile()
   {
-    if( !_gsClass.isValid() /*|| !_gsClass.isDefinitionsCompiled()*/ )
+    if( !_gsClass.isValid() || !_gsClass.isDefinitionsCompiled() )
     {
       //noinspection ThrowableResultOfMethodCallIgnored
       throw GosuExceptionUtil.forceThrow( _gsClass.getParseResultsException() );
@@ -305,7 +305,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
                                                field.getIdentifierName().toString(),
                                                getDescriptor( field.getType() ),
                                                null );
-      fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getGosuAnnotations(), getGosuClass().getTypeInfo() ) ) );
+      fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getAnnotations(), getGosuClass().getTypeInfo() ) ) );
       _irClass.addField( fieldDecl );
     }
   }
@@ -318,7 +318,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
                                                field.getIdentifierName().toString(),
                                                getDescriptor( field.getType() ),
                                                null );
-      fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getGosuAnnotations(), getGosuClass().getTypeInfo() ) ) );
+      fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getAnnotations(), getGosuClass().getTypeInfo() ) ) );
       _irClass.addField( fieldDecl );
     }
 
@@ -721,8 +721,8 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         return;
       }
 
-      IRType superRetDescriptor = getDescriptor( superDfs.getReturnType() );
-      IRType overrideRetDescriptor = getDescriptor( dfs.getReturnType() );
+      IRType superRetDescriptor = getDescriptorNoStructures( superDfs.getReturnType() );
+      IRType overrideRetDescriptor = getDescriptorNoStructures( dfs.getReturnType() );
 
       String superParamDescriptors = getParameterDescriptors( superDfs.getArgTypes() );
       String overrideParamDescriptors = getParameterDescriptors( dfs.getArgTypes() ); // e.g., foo( o: String ) -> foo( o: T )
@@ -1644,11 +1644,22 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     return fieldStmts;
   }
 
+  private IRType getDescriptorNoStructures( IType type )
+  {
+    if( type instanceof IGosuClassInternal && ((IGosuClassInternal)type).isStructure() ) {
+      type = JavaTypes.OBJECT();
+    }
+    return getDescriptor( type );
+  }
+
   private String getParameterDescriptors( IType[] types )
   {
     StringBuilder sb = new StringBuilder();
     for( IType type : types )
     {
+      if( type instanceof IGosuClassInternal && ((IGosuClassInternal)type).isStructure() ) {
+        type = JavaTypes.OBJECT();
+      }
       sb.append( getDescriptor( type ).getName() );
     }
     return sb.toString();

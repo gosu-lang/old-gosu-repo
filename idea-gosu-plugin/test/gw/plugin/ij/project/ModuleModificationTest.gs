@@ -18,7 +18,7 @@ uses gw.lang.reflect.TypeSystem
 uses gw.plugin.ij.framework.GosuTestCase
 uses gw.plugin.ij.sdk.GosuSdkAdditionalData
 uses gw.plugin.ij.util.GosuModuleUtil
-uses gw.plugin.ij.util.IDEAUtil
+uses gw.plugin.ij.util.ExecutionUtil
 uses gw.test.AssertUtil
 uses gw.testharness.Disabled
 
@@ -162,7 +162,7 @@ class ModuleModificationTest extends GosuTestCase {
   // private
 
   function renameSourceFolder(folder: String, newFolder: String) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushModule(GosuModuleUtil.getModule(Module))
       try {
         var modulePath = Module.ModuleFile.Parent.findChild(Module.Name)
@@ -175,7 +175,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   function addSourceFolder(folder: String) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushModule(GosuModuleUtil.getModule(Module))
       try {
         var modulePath = Module.ModuleFile.Parent.findChild(Module.Name)
@@ -191,7 +191,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   function removeSourceFolder(folder: String) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushModule(GosuModuleUtil.getModule(Module))
       try {
         var model = ModuleRootManager.getInstance(Module).ModifiableModel as RootModelImpl
@@ -214,7 +214,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   static function addDependency(parent: Module, m: Module, exported: boolean) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       var model = ModuleRootManager.getInstance(parent).ModifiableModel as RootModelImpl
       var entry = model.addModuleOrderEntry(m)
       entry.setExported(exported)
@@ -223,7 +223,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   static function exportDependency(parent: Module, m: Module, exported: boolean) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushGlobalModule()
       try {
         var model = ModuleRootManager.getInstance(parent).ModifiableModel as RootModelImpl
@@ -240,7 +240,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   static function makeDependencyLast(parent: Module, m: Module) {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushGlobalModule()
       try {
         var model = ModuleRootManager.getInstance(parent).ModifiableModel as RootModelImpl
@@ -255,7 +255,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   function removeDependency() {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushModule(GosuModuleUtil.getModule(Module))
       try {
         var model = ModuleRootManager.getInstance(Module).ModifiableModel as RootModelImpl
@@ -274,7 +274,7 @@ class ModuleModificationTest extends GosuTestCase {
   function addJar(): String {
     var jarPath: String = null;
 
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       TypeSystem.pushModule(GosuModuleUtil.getModule(Module))
       try {
         var manager = ProjectRootManagerImpl.getInstance(Project)
@@ -296,7 +296,7 @@ class ModuleModificationTest extends GosuTestCase {
   }
 
   function removeJar() {
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       var model = ModuleRootManager.getInstance(Module).ModifiableModel as RootModelImpl
       var lib = model.ModuleLibraryTable.getLibraryByName("myLib") as LibraryImpl
       model.ModuleLibraryTable.removeLibrary(lib)
@@ -312,7 +312,7 @@ class ModuleModificationTest extends GosuTestCase {
     iml.createNewFile()
 
     var model = ModuleManager.getInstance(Project).ModifiableModel
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       model.newModule(iml.AbsolutePath, StdModuleTypes.JAVA.Id)
       model.commit()
     }, true)
@@ -322,7 +322,7 @@ class ModuleModificationTest extends GosuTestCase {
 
   function removeModule(m: Module) {
     var model = ModuleManager.getInstance(Project).ModifiableModel
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       model.disposeModule(m)
       model.commit()
     }, true)
@@ -330,7 +330,7 @@ class ModuleModificationTest extends GosuTestCase {
 
   function renameModule(m: Module, newName: String) {
     var model = ModuleManager.getInstance(Project).ModifiableModel
-    IDEAUtil.runWriteActionInDispatchThread(\-> {
+    runWriteActionInDispatchThread(\-> {
       model.renameModule(m, newName)
       model.commit()
     }, true)

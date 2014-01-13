@@ -12,11 +12,9 @@ import gw.plugin.ij.lang.psi.api.types.IGosuCodeReferenceElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeElement;
 import gw.plugin.ij.lang.psi.api.types.IGosuTypeParameterList;
 import gw.plugin.ij.lang.psi.impl.expressions.GosuReferenceExpressionImpl;
-import gw.plugin.ij.util.IDEAUtil;
-import org.jetbrains.annotations.NotNull;
+import gw.plugin.ij.util.ExecutionUtil;
+import gw.plugin.ij.util.SafeCallable;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.concurrent.Callable;
 
 public class GosuBlockInvocationImpl extends GosuReferenceExpressionImpl<IBlockInvocation> implements IGosuCodeReferenceElement, IGosuTypeElement {
   public GosuBlockInvocationImpl(GosuCompositeElement node) {
@@ -50,10 +48,9 @@ public class GosuBlockInvocationImpl extends GosuReferenceExpressionImpl<IBlockI
 
   @Override
   public PsiElement resolve() {
-    return IDEAUtil.runInModule(
-        new Callable<PsiElement>() {
-          @Nullable
-          public PsiElement call() throws Exception {
+    return ExecutionUtil.execute(new SafeCallable<PsiElement>(this) {
+      @Nullable
+      public PsiElement execute() throws Exception {
 //            IMethodInfo methodInfo = null;
 //            IBlockInvocation parsedElement = getParsedElement();
 //            IFunctionType functionType = parsedElement.getFunctionType();
@@ -74,8 +71,8 @@ public class GosuBlockInvocationImpl extends GosuReferenceExpressionImpl<IBlockI
 //            } else {
 //              return null;
 //            }
-            return null;
-          }
-        }, this);
+        return null;
+      }
+    });
   }
 }

@@ -34,7 +34,7 @@ import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.filetypes.GosuFileTypes;
 import gw.plugin.ij.lang.psi.impl.AbstractGosuClassFileImpl;
 import gw.plugin.ij.util.DelayedRunner;
-import gw.plugin.ij.util.IDEAUtil;
+import gw.plugin.ij.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,7 +90,7 @@ public class FileModificationManager implements PsiDocumentTransactionListener, 
 
   @Nullable
   private VirtualFile getVirtualFile(@NotNull PsiFile psiFile) {
-    return psiFile instanceof AbstractGosuClassFileImpl ? IDEAUtil.getFileFromPsi(psiFile) : psiFile.getVirtualFile();
+    return psiFile instanceof AbstractGosuClassFileImpl ? FileUtil.getFileFromPsi(psiFile) : psiFile.getVirtualFile();
   }
 
   private String getRefreshTaskId(@NotNull VirtualFile virtualFile) {
@@ -129,7 +129,7 @@ public class FileModificationManager implements PsiDocumentTransactionListener, 
     if (psiFile instanceof PsiClassOwner) {
       String newText = doc.getText();
       for (IFileListener fileListener : fileListeners) {
-        fileListener.modified(IDEAUtil.toIFile(file), oldText, newText);
+        fileListener.modified(FileUtil.toIFile(file), oldText, newText);
       }
     }
   }
@@ -195,22 +195,22 @@ public class FileModificationManager implements PsiDocumentTransactionListener, 
       }
 
       final String oldFileName = (String) event.getOldValue();
-      final IFile oldFile = IDEAUtil.toIDirectory(newFile.getParent()).file(oldFileName);
+      final IFile oldFile = FileUtil.toIDirectory(newFile.getParent()).file(oldFileName);
       fireDeletedEvent(oldFile);
-      fireCreatedEvent(IDEAUtil.toIResource(newFile));
+      fireCreatedEvent(FileUtil.toIResource(newFile));
     }
   }
 
   private void fireModifiedEvent(VirtualFile file) {
-    fireModifiedEvent(IDEAUtil.toIResource(file));
+    fireModifiedEvent(FileUtil.toIResource(file));
   }
 
   private void fireDeletedEvent(VirtualFile file) {
-    fireDeletedEvent(IDEAUtil.toIResource(file));
+    fireDeletedEvent(FileUtil.toIResource(file));
   }
 
   private void fireCreatedEvent(VirtualFile file) {
-    fireCreatedEvent(IDEAUtil.toIResource(file));
+    fireCreatedEvent(FileUtil.toIResource(file));
   }
 
   private void fireModifiedEvent(IResource file) {

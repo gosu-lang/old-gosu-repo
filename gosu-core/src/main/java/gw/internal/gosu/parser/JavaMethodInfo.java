@@ -22,8 +22,6 @@ import gw.lang.reflect.IMethodCallHandler;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IScriptabilityModifier;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeVariableType;
-import gw.lang.reflect.ModifiedParameterInfo;
 import gw.lang.reflect.SimpleParameterInfo;
 import gw.lang.reflect.TypeInfoUtil;
 import gw.lang.reflect.TypeSystem;
@@ -41,13 +39,11 @@ import gw.lang.reflect.java.IJavaClassWildcardType;
 import gw.lang.reflect.java.IJavaMethodDescriptor;
 import gw.lang.reflect.java.IJavaMethodInfo;
 import gw.lang.reflect.java.JavaExceptionInfo;
-import gw.lang.reflect.java.JavaTypes;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  */
@@ -600,13 +596,6 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
       return null;
     }
 
-// Disabling this "hack" with modifying method signatures, all prevously written source code should work without problems.
-// TODO: remove completely in future
-//      IParameterInfo[] fixedParamInfo = maybeFixJavaCovarianceHandicappedMethods( container, paramTypes, bKeepTypeVars );
-//      if( fixedParamInfo != null )
-//      {
-//        return fixedParamInfo;
-//      }
     IParameterInfo[] pi = new IParameterInfo[paramTypes.length];
     for( int i = 0; i < paramTypes.length; i++ )
     {
@@ -626,88 +615,6 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
     }
     return pi;
 
-  }
-
-  /**
-   * Fixes the argument type of some common methods that make no assumption about the type of the argument internally
-   * but which are handicapped by java's covariance rules with wildcard types.  For example, Collection<T>.contains(Object)
-   * takes an argument of type Object rather than T so that if you have a collection parameterized on a wildcard type
-   * (e.g. Collection<? extends CharSequence>) you can still invoke the contains method.
-   *
-   * @param container
-   * @param paramTypes
-   *@param bKeepTypeVars @return
-   */
-  private static IParameterInfo[] maybeFixJavaCovarianceHandicappedMethods( IFeatureInfo container, IJavaClassType[] paramTypes, boolean bKeepTypeVars )
-  {
-    IType intrinsicType = container.getOwnersType();
-    String displayName = container.getDisplayName();
-    if( (displayName.equals("contains") ||
-         displayName.equals("remove")) &&
-                                                        paramTypes.length == 1 &&
-                                                        paramTypes[0] instanceof IJavaClassInfo &&
-                                                        ((IJavaClassInfo)paramTypes[0]).getJavaType() == JavaTypes.OBJECT() &&
-                                                        JavaTypes.COLLECTION().isAssignableFrom(intrinsicType.getGenericType()) )
-    {
-      TypeVarToTypeMap map = resolveTypes( intrinsicType, JavaTypes.COLLECTION(), bKeepTypeVars );
-      return new IParameterInfo[]{new ModifiedParameterInfo( container, map.getByString( "E" ), JavaTypes.OBJECT(), 0 )};
-    }
-
-    if( (displayName.equals("indexOf") ||
-         displayName.equals("lastIndexOf")) &&
-                                                        paramTypes.length == 1 &&
-                                                        paramTypes[0] instanceof IJavaClassInfo &&
-                                                        ((IJavaClassInfo)paramTypes[0]).getJavaType() == JavaTypes.OBJECT() &&
-                                                        JavaTypes.LIST().isAssignableFrom(intrinsicType.getGenericType()) )
-    {
-      TypeVarToTypeMap map = resolveTypes( intrinsicType, JavaTypes.LIST(), bKeepTypeVars );
-      return new IParameterInfo[]{new ModifiedParameterInfo( container, map.getByString( "E" ), JavaTypes.OBJECT(), 0 )};
-    }
-
-    if( (displayName.equals("retainAll") ||
-         displayName.equals("containsAll") ||
-         displayName.equals("removeAll")) )
-    {
-      if( paramTypes.length == 1 &&
-          paramTypes[0] instanceof IJavaClassParameterizedType &&
-          paramTypes[0].getConcreteType() instanceof IJavaClassInfo &&
-          ((IJavaClassInfo) paramTypes[0].getConcreteType()).getJavaType() == JavaTypes.COLLECTION() &&
-          JavaTypes.COLLECTION().isAssignableFrom(intrinsicType.getGenericType()) )
-      {
-        TypeVarToTypeMap map = resolveTypes( intrinsicType, JavaTypes.COLLECTION(), bKeepTypeVars );
-        return new IParameterInfo[]{new ModifiedParameterInfo( container,
-            JavaTypes.COLLECTION().getParameterizedType(map.getByString("E")),
-            JavaTypes.COLLECTION().getParameterizedType(JavaTypes.OBJECT()), 0 )};
-      }
-    }
-
-    if( (displayName.equals("get") ||
-         displayName.equals("containsKey") ||
-         displayName.equals("remove") ||
-         displayName.equals("containsValue")) &&
-                                                               paramTypes.length == 1 &&
-                                                               paramTypes[0] instanceof IJavaClassInfo &&
-                                                               ((IJavaClassInfo)paramTypes[0]).getJavaType() == JavaTypes.OBJECT() &&
-                                                               JavaTypes.MAP().isAssignableFrom(intrinsicType.getGenericType()) )
-    {
-      TypeVarToTypeMap map = resolveTypes( intrinsicType, JavaTypes.MAP(), bKeepTypeVars );
-      IType type = displayName.equals("containsValue") ? map.getByString( "V" ) : map.getByString( "K" );
-      return new IParameterInfo[]{new ModifiedParameterInfo( container, type, JavaTypes.OBJECT(), 0 )};
-    }
-    return null;
-  }
-
-  private static TypeVarToTypeMap resolveTypes( IType type, IType declaringType, boolean bKeepTypeVars )
-  {
-    TypeVarToTypeMap paramsByName = TypeLord.mapTypeByVarName( type, declaringType, bKeepTypeVars );
-    for( Map.Entry<Object, IType> entry : paramsByName.entrySet() )
-    {
-      if( !bKeepTypeVars && entry.getValue() instanceof ITypeVariableType )
-      {
-        entry.setValue( ((ITypeVariableType)entry.getValue()).getBoundingType() );
-      }
-    }
-    return paramsByName;
   }
 
   @Override

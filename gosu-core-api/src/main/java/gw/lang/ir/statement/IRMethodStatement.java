@@ -27,7 +27,7 @@ public class IRMethodStatement extends IRStatement {
     _methodBody = methodBody;
     _name = name;
     _modifiers = modifiers;
-    _returnType = returnType;
+    _returnType = maybeEraseStructuralType( returnType );
     _parameters = maybeEraseStructuralSymbolTypes( parameters );
     _annotations = Collections.emptyList();
     setParentToThis( methodBody );

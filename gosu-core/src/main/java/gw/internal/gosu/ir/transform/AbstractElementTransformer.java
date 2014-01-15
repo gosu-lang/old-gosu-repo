@@ -2918,4 +2918,17 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     return unboxValueToType( irProp.getType(), getCall );
   }
 
+  protected void assignStructuralTypeOwner( IExpression rootExpr, IRExpression irMethodCall )
+  {
+    if( rootExpr != null && rootExpr.getType() instanceof IGosuClass && ((IGosuClass)rootExpr.getType()).isStructure() )
+    {
+      IRExpression mc = irMethodCall;
+      while( mc instanceof IRCompositeExpression )
+      {
+        List<IRElement> elements = ((IRCompositeExpression)mc).getElements();
+        mc = (IRExpression)elements.get( elements.size() -1 );
+      }
+      ((IRMethodCallExpression)mc).setStructuralTypeOwner( GosuClassIRType.get( TypeLord.getPureGenericType( rootExpr.getType() ) ) );
+    }
+  }
 }

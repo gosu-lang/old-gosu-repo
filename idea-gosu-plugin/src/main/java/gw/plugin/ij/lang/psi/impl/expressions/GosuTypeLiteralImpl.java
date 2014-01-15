@@ -92,7 +92,7 @@ public class GosuTypeLiteralImpl extends GosuReferenceExpressionImpl<ITypeLitera
     } else if (pe instanceof Identifier) {
       return  ((Identifier) pe).getType();
     } else {
-      throw new RuntimeException("Expecting a ITypeLiteralExpression or an Identifier but found a " + pe.getClass().getSimpleName());
+      return null;
     }
   }
 

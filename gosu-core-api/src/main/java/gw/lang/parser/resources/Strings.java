@@ -351,6 +351,8 @@ public class Strings extends ListResourceBundle
        {Res.MSG_ASSERTIONS_NOT_ALLOWED_HERE.getKey(), "Assert statement not allowed here" },
        {Res.MSG_ARRAY_NOT_SUPPORTED.getKey(), "Array type not supported for {0}"},
        {Res.MSG_IMPROPER_USE_OF_KEYWORD.getKey(), "Improper use of keyword, {0}" },
+       {Res.MSG_USES_STMT_CONFLICT.getKey(), "Already using type, {0}" },
+       {Res.MSG_USES_STMT_DUPLICATE.getKey(), "Duplicate uses statement" },
        {Res.MSG_ARRAY_INDEX_MUST_BE_INT.getKey(), "Arrays must be indexed with an int value"},
        {Res.MSG_PARAM_TYPE_CANT_BE_INFERRED_FROM_LATE_BOUND_EXPRESSION.getKey(), "Parameter type can't be inferred from late bound expression type"},
        {Res.MSG_LATER_ASSIGNMENT_MAKES_EXPRESSION_ILLEGAL.getKey(), "This assignment is not allowed because {1} was infered to type {0} by a typeis expression.  \n" +
@@ -398,6 +400,7 @@ public class Strings extends ListResourceBundle
        {Res.MSG_STATEMENTS_MUST_BE_ENCLOSED_IN_CURLIES_IN_BLOCKS.getKey(), "\"{0}\" statements in a block body must be enclosed in curly brackets" },
        {Res.MSG_NOT_AN_ENHANCEABLE_TYPE.getKey(), "{0} does not support enhancements." },
        {Res.MSG_CANNOT_REFERENCE_CLASS_TYPE_VAR_IN_STATIC_CONTEXT.getKey(), "You cannot reference class type variables in a static context." },
+       {Res.MSG_CANNOT_REFERENCE_THIS_IN_STATIC_CONTEXT.getKey(), "You cannot reference 'this' in a static context." },
        {Res.MSG_CANNOT_CALL_NON_STATIC_METHOD_FROM_STATIC_CONTEXT.getKey(), "You cannot reference non-static methods in a static context." },
        {Res.MSG_CANNOT_REFERENCE_NON_STATIC_PROPERTY_FROM_STATIC_CONTEXT.getKey(), "You cannot reference non-static properties in a static context." },
        {Res.MSG_CANNOT_READ_A_WRITE_ONLY_PROPERTY.getKey(), "Write-only properties may only be written" },

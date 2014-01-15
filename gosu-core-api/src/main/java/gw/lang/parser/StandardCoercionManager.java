@@ -753,16 +753,23 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
       IMethodInfo fromMi = fromMethods.findAssignableMethod( toMi );
       if( fromMi == null ) {
         if( toMi.getDisplayName().startsWith( "@" ) ) {
+          // Find matching property/field
           IPropertyInfo fromPi = fromTypeInfo.getProperty( toMi.getDisplayName().substring( 1 ) );
           if( fromPi != null ) {
             if( toMi.getParameters().length == 0 ) {
-              return toMi.getReturnType().equals( fromPi.getFeatureType() ) ||
-                     arePrimitiveTypesAssignable( toMi.getReturnType(), fromPi.getFeatureType() );
+              boolean bAssignable = toMi.getReturnType().equals( fromPi.getFeatureType() ) ||
+                                    arePrimitiveTypesAssignable( toMi.getReturnType(), fromPi.getFeatureType() );
+              if( bAssignable ) {
+                continue;
+              }
             }
             else {
-              return fromPi.isWritable( toType ) &&
-                     (fromPi.getFeatureType().equals( toMi.getParameters()[0].getFeatureType() ) ||
-                      arePrimitiveTypesAssignable( fromPi.getFeatureType(), toMi.getParameters()[0].getFeatureType() ));
+              boolean bAssignable = fromPi.isWritable( toType ) &&
+                                    (fromPi.getFeatureType().equals( toMi.getParameters()[0].getFeatureType() ) ||
+                                    arePrimitiveTypesAssignable( fromPi.getFeatureType(), toMi.getParameters()[0].getFeatureType() ));
+              if( bAssignable ) {
+                continue;
+              }
             }
           }
         }

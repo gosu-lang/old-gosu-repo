@@ -20,12 +20,13 @@ public class IRMethodCallExpression extends IRExpression {
   private IRExpression _root;
   private List<IRExpression> _args;
   private boolean _isSpecial;
+  private IRType _structureTypeOwner;
 
   public IRMethodCallExpression(String name, IRType ownersType, boolean isInterface, IRType returnType, List<IRType> parameterTypes, IRExpression root, List<IRExpression> args) {
     _name = name;
     _ownersType = ownersType;
     _interface = isInterface;
-    _returnType = returnType;
+    _returnType = maybeEraseStructuralType( ownersType, returnType );
     _parameterTypes = maybeEraseStructuralTypes( ownersType, parameterTypes );
     _root = root;
     _args = args;
@@ -43,7 +44,7 @@ public class IRMethodCallExpression extends IRExpression {
   }
 
   public IRType getOwnersType() {
-    return _ownersType;
+    return _structureTypeOwner == null ? _ownersType : _structureTypeOwner;
   }
 
   public IRType getReturnType() {
@@ -77,5 +78,9 @@ public class IRMethodCallExpression extends IRExpression {
   @Override
   public IRType getType() {
     return _returnType;
+  }
+
+  public void setStructuralTypeOwner( IRType gosuClassIRType ) {
+    _structureTypeOwner = gosuClassIRType;
   }
 }

@@ -6,6 +6,7 @@ import gw.lang.parser.ISource;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.TypeInfoUtil;
@@ -203,13 +204,26 @@ public class StructuralTypeProxyGenerator {
     if( pi.getDescription() != null ) {
       sb.append( "\n/** " ).append( pi.getDescription() ).append( " */\n" );
     }
-    sb.append( "  property get " ).append( pi.getName() ).append( "() : " ).append( ifacePropertyType.getName() ).append( " {\n" )
-      .append( "    return _root." ).append( pi.getName() ).append( " as " ).append( ifacePropertyType.getName() ).append( "\n" )
-      .append( "  }\n" );
+    ITypeInfo rootTypeInfo = rootType.getTypeInfo();
+    // Have to handle private for inner class case e.g., a privagte field on the inner class implements a property on a structure
+    boolean bPrivate = rootTypeInfo instanceof IRelativeTypeInfo && ((IRelativeTypeInfo) rootTypeInfo).getProperty( rootType, pi.getName() ).isPrivate();
+    sb.append( "  property get " ).append( pi.getName() ).append( "() : " ).append( ifacePropertyType.getName() ).append( " {\n" );
+    if( bPrivate ) {
+      sb.append( "    return _root[\"" ).append( pi.getName() ).append( "\"] as " ).append( ifacePropertyType.getName() ).append( "\n" );
+    }
+    else {
+      sb.append( "    return _root." ).append( pi.getName() ).append( " as " ).append( ifacePropertyType.getName() ).append( "\n" );
+    }
+    sb.append( "  }\n" );
     if( pi.isWritable( pi.getOwnersType() ) ) {
-      sb.append( "  property set " ).append( pi.getName() ).append( "( value: " ).append( ifacePropertyType.getName() ).append( " ) {\n" )
-        .append( "    _root." ).append( pi.getName() ).append( " = value" ).append( maybeCastPropertyAssignment( pi, rootType ) )
-        .append( "  }\n" );
+      sb.append( "  property set " ).append( pi.getName() ).append( "( value: " ).append( ifacePropertyType.getName() ).append( " ) {\n" );
+      if( bPrivate ) {
+        sb.append( "    _root[\"" ).append( pi.getName() ).append( "\"] = value" ).append( maybeCastPropertyAssignment( pi, rootType ) );
+      }
+      else {
+        sb.append( "    _root." ).append( pi.getName() ).append( " = value" ).append( maybeCastPropertyAssignment( pi, rootType ) );
+      }
+      sb.append( "  }\n" );
     }
   }
 }

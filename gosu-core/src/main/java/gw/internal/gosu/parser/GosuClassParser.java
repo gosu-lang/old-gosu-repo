@@ -1649,14 +1649,25 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
   private ClassType parseAnonymousClassHeader( IGosuClassInternal gsClass )
   {
     ClassType classType = ClassType.Class;
-    if( !getOwner().parseTypeLiteral() )
+    IType instanceClass;
+    ParsedElement elem;
+    if( match( null, null, '(', true ) )
+    {
+      // The type name is inferred in this case e.g., var obj : Object = new() {}
+      instanceClass = gsClass.getSupertype();
+      elem = getClassStatement();
+    }
+    else if( !getOwner().parseTypeLiteral() )
     {
       throw new InnerClassNotFoundException();
     }
-    TypeLiteral superTypeLiteral = (TypeLiteral)popExpression();
+    else
+    {
+      elem = popExpression();
+      instanceClass = ((TypeLiteral)elem).getType().getType();
+    }
+    eatParenthesized( elem, Res.MSG_EXPECTING_FUNCTION_CLOSE );
     //getLocationsList().remove( superTypeLiteral.getLocation() ); // rely on the new-expr to keep the type literal *it* parses
-    eatParenthesized( superTypeLiteral, Res.MSG_EXPECTING_FUNCTION_CLOSE );
-    IType instanceClass = superTypeLiteral.getType().getType();
     instanceClass = TypeLord.makeDefaultParameterizedType( instanceClass );
     if( instanceClass.isInterface() )
     {
@@ -1726,6 +1737,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         verify( getClassStatement(), !Modifier.isInternal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_internal, classType.name() );
         verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
         verify( getClassStatement(), !Modifier.isAbstract( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_abstract, classType.name() );
+        verify( getClassStatement(), !Modifier.isTransient( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_transient, classType.name() );
         verifyNoAbstractHideOverrideStaticModifierDefined( getClassStatement(), false, modifiers.getModifiers(), Keyword.KW_enhancement );
         gsClass.setModifierInfo(modifiers);
       }
@@ -1738,6 +1750,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         verify( getClassStatement(), !Modifier.isHide( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, classType.name() );
         verify( getClassStatement(), !Modifier.isOverride( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, classType.name() );
         verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
+        verify( getClassStatement(), !Modifier.isTransient( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_transient, classType.name() );
         gsClass.setModifierInfo(modifiers);
       }
     }
@@ -1749,6 +1762,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         verify( getClassStatement(), !Modifier.isHide( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, classType.name() );
         verify( getClassStatement(), !Modifier.isOverride( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, classType.name() );
         verify( getClassStatement(), !Modifier.isFinal( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_final, classType.name() );
+        verify( getClassStatement(), !Modifier.isTransient( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_transient, classType.name() );
         gsClass.setModifierInfo(modifiers);
       }
     }
@@ -1759,6 +1773,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       {
         verify( getClassStatement(), !Modifier.isHide( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_hide, classType.name() );
         verify( getClassStatement(), !Modifier.isOverride( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_override, classType.name() );
+        verify( getClassStatement(), !Modifier.isTransient( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_transient, classType.name() );
         gsClass.setModifierInfo(modifiers);
       }
     }
@@ -1768,6 +1783,7 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       if( bSetModifiers )
       {
         verifyNoAbstractHideOverrideModifierDefined( getClassStatement(), false, modifiers.getModifiers(), Keyword.KW_final );
+        verify( getClassStatement(), !Modifier.isTransient( modifiers.getModifiers() ), Res.MSG_ILLEGAL_USE_OF_MODIFIER, Keyword.KW_transient, classType.name() );
         gsClass.setModifierInfo(modifiers);
       }
     }
@@ -2148,26 +2164,39 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
 
       IGosuClassInternal innerGsClass;
 
-      // Ensure that there are no inner classes with duplicate names
-      if( enclosingGsClass.getKnownInnerClassesWithoutCompiling().containsKey( T._strValue ) )
+      innerGsClass = (IGosuClassInternal)enclosingGsClass.getKnownInnerClassesWithoutCompiling().get( strInnerClass );
+      if( innerGsClass != null )
       {
-        innerGsClass = (IGosuClassInternal)enclosingGsClass.getKnownInnerClassesWithoutCompiling().get( T._strValue );
-        getClassStatement().addParseException( new ParseException( makeFullParserState(), Res.MSG_DUPLICATE_CLASS_FOUND, T._strValue ) );
+        // Duplicate inner class name
+        getClassStatement().addParseException( new ParseException( makeFullParserState(), Res.MSG_DUPLICATE_CLASS_FOUND, strInnerClass ) );
+        strInnerClass = strInnerClass + "_duplicate_" + nextIndexOfErrantDuplicateInnerClass( enclosingGsClass, innerGsClass );
       }
-      else
-      {
-        innerGsClass = (IGosuClassInternal)gsClass.getTypeLoader().makeNewClass(
-          new InnerClassFileSystemSourceFileHandle( classType, enclosingGsClass.getName(), strInnerClass, gsClass.isTestClass() ) );
-        innerGsClass.setEnclosingType( enclosingGsClass );
-        innerGsClass.setNamespace( enclosingGsClass.getNamespace() );
-        enclosingGsClass.addInnerClass( innerGsClass );
-      }
+
+      innerGsClass = (IGosuClassInternal)gsClass.getTypeLoader().makeNewClass(
+        new InnerClassFileSystemSourceFileHandle( classType, enclosingGsClass.getName(), strInnerClass, gsClass.isTestClass() ) );
+      innerGsClass.setEnclosingType( enclosingGsClass );
+      innerGsClass.setNamespace( enclosingGsClass.getNamespace() );
+      enclosingGsClass.addInnerClass( innerGsClass );
 
       advanceToClassBodyStart();
 
       return innerGsClass;
     }
     return null;
+  }
+
+  public int nextIndexOfErrantDuplicateInnerClass( IGosuClassInternal enclosingGsClass, IGosuClassInternal innerClass )
+  {
+    int iMax = -1;
+    String strName = innerClass.getRelativeName() + "_duplicate_";
+    while( true )
+    {
+      IType existingInnerClass = enclosingGsClass.getKnownInnerClassesWithoutCompiling().get( strName + ++iMax );
+      if( existingInnerClass == null )
+      {
+        return iMax;
+      }
+    }
   }
 
   private IGosuClassInternal getGosuObjectInterface()
@@ -2707,20 +2736,31 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
       for( IGosuClass c : enclosingGsClass.getKnownInnerClassesWithoutCompiling().values() )
       {
         IGosuClassInternal innerClass = (IGosuClassInternal)c;
-        if( !innerClass.isDeclarationsCompiled() )
+        if( innerClass.getRelativeName().equals( strInnerClass ) )
         {
-          if( innerClass.getRelativeName().equals( strInnerClass ) )
+          int i = 0;
+          String relativeName = innerClass.getName();
+          while( innerClass.isDeclarationsCompiled() )
           {
-            Map<String, Set<IFunctionSymbol>> restoreDfsDecls = copyDFSDecls();
-            new GosuClassParser( getOwner(), innerClass ).parseDeclarations( innerClass );
-            if( innerClass.isInterface() )
+            // The inner class is already declaration-compiled, maybe this is a duplicate inner class...
+
+            String duplicate = relativeName + "_duplicate_" + i++;
+            innerClass = (IGosuClassInternal)TypeSystem.getByFullNameIfValid( duplicate );
+            if( innerClass == null )
             {
-              ModifierInfo mi = (ModifierInfo)innerClass.getModifierInfo();
-              mi.setModifiers( Modifier.setStatic( mi.getModifiers(), true ));
+              return;
             }
-            getOwner().setDfsDeclInSetByName( restoreDfsDecls );
-            break;
           }
+
+          Map<String, Set<IFunctionSymbol>> restoreDfsDecls = copyDFSDecls();
+          new GosuClassParser( getOwner(), innerClass ).parseDeclarations( innerClass );
+          if( innerClass.isInterface() )
+          {
+            ModifierInfo mi = (ModifierInfo)innerClass.getModifierInfo();
+            mi.setModifiers( Modifier.setStatic( mi.getModifiers(), true ));
+          }
+          getOwner().setDfsDeclInSetByName( restoreDfsDecls );
+          break;
         }
       }
     }
@@ -3388,6 +3428,20 @@ public class GosuClassParser extends ParserBase implements IGosuClassParser, ITo
         IGosuClassInternal innerClass = (IGosuClassInternal)c;
         if( innerClass.getRelativeName().equals( strInnerClass ) )
         {
+          int i = 0;
+          String relativeName = innerClass.getName();
+          while( innerClass.isDefinitionsCompiled() )
+          {
+            // The inner class is already definition-compiled, maybe this is a duplicate inner class...
+
+            String duplicate = relativeName + "_duplicate_" + i++;
+            innerClass = (IGosuClassInternal)TypeSystem.getByFullNameIfValid( duplicate );
+            if( innerClass == null )
+            {
+              return null;
+            }
+          }
+
           new GosuClassParser( getOwner(), innerClass ).parseDefinitions( innerClass );
           return innerClass;
         }

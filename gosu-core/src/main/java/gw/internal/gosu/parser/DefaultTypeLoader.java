@@ -8,8 +8,6 @@ import gw.config.CommonServices;
 import gw.fs.IDirectory;
 import gw.internal.gosu.coercer.FunctionToInterfaceClassGenerator;
 import gw.internal.gosu.compiler.GosuClassLoader;
-import gw.lang.reflect.java.IJavaClassType;
-import gw.lang.reflect.java.asm.AsmClass;
 import gw.internal.gosu.parser.java.classinfo.JavaSourceClass;
 import gw.lang.reflect.IDefaultTypeLoader;
 import gw.lang.reflect.IErrorType;
@@ -25,7 +23,10 @@ import gw.lang.reflect.gs.IGosuObject;
 import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.java.IJavaClassInfo;
+import gw.lang.reflect.java.IJavaClassType;
 import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.java.JavaTypes;
+import gw.lang.reflect.java.asm.AsmClass;
 import gw.lang.reflect.module.IModule;
 
 import java.net.URL;
@@ -273,6 +274,8 @@ public class DefaultTypeLoader extends SimpleTypeLoader implements IExtendedType
     _classInfoCache.clear();
 
     _module.getFileRepository().typesRefreshed( null );
+
+    JavaTypes.flushCache();
   }
 
   public void clearMisses() {

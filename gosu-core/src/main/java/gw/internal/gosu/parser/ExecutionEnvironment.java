@@ -15,6 +15,7 @@ import gw.lang.init.GosuPathEntry;
 import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.IGosuParser;
 import gw.lang.parser.IGosuProgramParser;
+import gw.lang.parser.ILanguageLevel;
 import gw.lang.parser.IParseResult;
 import gw.lang.parser.ParserOptions;
 import gw.lang.reflect.IType;
@@ -615,14 +616,18 @@ public class ExecutionEnvironment implements IExecutionEnvironment
       try {
         clazz = Class.forName(className);
       } catch (ClassNotFoundException e) {
-        getLogger().error("Class " + className
-                + " could not be found. Gosu code might fail to compile at runtime.");
+        if( !ILanguageLevel.Util.STANDARD_GOSU() ) {
+          getLogger().error("Class " + className
+                  + " could not be found. Gosu code might fail to compile at runtime.");
+        }
         continue;
       }
       CodeSource codeSource = clazz.getProtectionDomain().getCodeSource();
       if (codeSource == null) {
-        getLogger().error("Code source for " + clazz.getName()
-                + " is null. Gosu code might fail to compile at runtime.");
+        if( !ILanguageLevel.Util.STANDARD_GOSU() ) {
+          getLogger().error("Code source for " + clazz.getName()
+                  + " is null. Gosu code might fail to compile at runtime.");
+        }
         continue;
       }
       // url might be jar:<url>!/, e.g. jar:file:/gitmo/jboss-5.1.2/common/lib/servlet-api.jar!/

@@ -16,7 +16,6 @@ uses gw.xml.XmlParseOptions
 uses gw.xml.ws.AsyncResponse
 uses gw.xml.ws.WsdlFault
 uses gw.xml.ws.WebServiceException
-uses java.io.InputStream
 uses java.util.concurrent.TimeUnit
 uses java.util.concurrent.TimeoutException
 uses gw.xsd.w3c.xml.attributes.Lang

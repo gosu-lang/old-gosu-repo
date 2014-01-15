@@ -1343,44 +1343,54 @@ public final class GosuParser extends ParserBase implements IGosuParser
 
   private IType getNumberContextType( List<IType> contextTypes )
   {
-    IType onlyNumberContextType = null;
-    if( contextTypes != null )
+    if( contextTypes == null )
     {
-      boolean bNumberCtxTypeFound = false;
+      return null;
+    }
+
+    IType onlyNumberContextType = null;
+    boolean bNumberCtxTypeFound = false;
+    IType prior = null;
+    for( IType contextType : contextTypes )
+    {
+      if( prior != null && prior != contextType )
+      {
+        // Ambiguous context types
+        return null;
+      }
+      prior = contextType;
+
+      IType compType = contextType.isPrimitive() ? TypeSystem.getBoxType( contextType ) : contextType;
+      if( JavaTypes.NUMBER().isAssignableFrom( compType ) &&
+          !JavaTypes.NUMBER().equals( compType ) )
+      {
+        if( onlyNumberContextType == null )
+        {
+          onlyNumberContextType = contextType;
+          bNumberCtxTypeFound = true;
+        }
+        else
+        {
+          onlyNumberContextType = null;
+          break;
+        }
+      }
+    }
+    if( !bNumberCtxTypeFound )
+    {
       for( IType contextType : contextTypes )
       {
         IType compType = contextType.isPrimitive() ? TypeSystem.getBoxType( contextType ) : contextType;
-        if( JavaTypes.NUMBER().isAssignableFrom( compType ) &&
-            !JavaTypes.NUMBER().equals( compType ) )
+        if( JavaTypes.OBJECT().equals( compType ) || JavaTypes.NUMBER().equals( compType ) )
         {
           if( onlyNumberContextType == null )
           {
             onlyNumberContextType = contextType;
-            bNumberCtxTypeFound = true;
           }
           else
           {
             onlyNumberContextType = null;
             break;
-          }
-        }
-      }
-      if( !bNumberCtxTypeFound )
-      {
-        for( IType contextType : contextTypes )
-        {
-          IType compType = contextType.isPrimitive() ? TypeSystem.getBoxType( contextType ) : contextType;
-          if( JavaTypes.OBJECT().equals( compType ) || JavaTypes.NUMBER().equals( compType ) )
-          {
-            if( onlyNumberContextType == null )
-            {
-              onlyNumberContextType = contextType;
-            }
-            else
-            {
-              onlyNumberContextType = null;
-              break;
-            }
           }
         }
       }
@@ -5040,6 +5050,9 @@ public final class GosuParser extends ParserBase implements IGosuParser
         getTokenizer().restoreToMark( markBefore );
         return false;
       }
+      verify( peekExpression(), !GosuObjectUtil.equals( strFunction, Keyword.KW_this.toString() ) ||
+                                !isParsingStaticFeature() ||
+                                isParsingConstructor(), Res.MSG_CANNOT_REFERENCE_THIS_IN_STATIC_CONTEXT );
       return true;
     }
 
@@ -10103,6 +10116,8 @@ public final class GosuParser extends ParserBase implements IGosuParser
     if( match( null, Keyword.KW_uses, true ) )
     {
       List<IUsesStatement> usesList = new ArrayList<IUsesStatement>();
+      UsesStatementList stmtList = new UsesStatementList();
+      stmtList.setUsesStatements( usesList );
       while( match( null, Keyword.KW_uses ) )
       {
         getOwner().parseUsesStatement( t, bResolveUsesTypes );
@@ -10110,15 +10125,21 @@ public final class GosuParser extends ParserBase implements IGosuParser
         UsesStatement stmt = (UsesStatement)popStatement();
         //noinspection ThrowableResultOfMethodCallIgnored
         stmt.removeParseWarningRecursively( Res.MSG_DEPRECATED_MEMBER ); // don't show these in uses statements
-        usesList.add(stmt);
+        IUsesStatement duplicate = stmtList.conflicts( stmt );
+        if( duplicate != null )
+        {
+          if( warn( stmt, !duplicate.getTypeName().equals( stmt.getTypeName() ), Res.MSG_USES_STMT_DUPLICATE ) )
+          {
+            verify( stmt, false, Res.MSG_USES_STMT_CONFLICT, duplicate.getTypeName() );
+          }
+        }
+        usesList.add( stmt );
         getOwner().checkInstruction( true );
         iOffset = getTokenizer().getTokenStart();
         iLineNum = getTokenizer().getLineNumber();
       }
-      UsesStatementList stmtList = new UsesStatementList();
-      stmtList.setUsesStatements(usesList);
-      pushStatement(stmtList);
-      setLocation(iUsesListOffset, iUsesListLineNum, iColumn, true);
+      pushStatement( stmtList );
+      setLocation( iUsesListOffset, iUsesListLineNum, iColumn, true );
       popStatement();
       return stmtList;
     }

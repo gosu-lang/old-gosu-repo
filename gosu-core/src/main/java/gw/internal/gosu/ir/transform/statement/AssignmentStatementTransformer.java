@@ -73,7 +73,7 @@ public class AssignmentStatementTransformer extends AbstractStatementTransformer
       {
         // Lhs is a Field
         DynamicSymbol field = (DynamicSymbol)symbol;
-        IRProperty irProperty = IRPropertyFactory.createIRProperty( (DynamicSymbol) symbol );
+        IRProperty irProperty = IRPropertyFactory.createIRProperty( symbol );
         IRExpression root = pushRoot(field, irProperty);
         return setField( irProperty, root, rhsValue );
       }
@@ -81,7 +81,7 @@ public class AssignmentStatementTransformer extends AbstractStatementTransformer
       {
         // Captured symbol is stored as a Field on an anonymous inner class (one elem array of symbol's type)
         // e.g., val$myFiield[0] = value
-        IRProperty irProp = IRPropertyFactory.createIRProperty( getGosuClass(), (CapturedSymbol) symbol );
+        IRProperty irProp = IRPropertyFactory.createIRProperty( getGosuClass(), symbol );
         return buildArrayStore( getField( irProp, pushThis() ),
               numericLiteral(0), rhsValue, irProp.getType().getComponentType() );
       }

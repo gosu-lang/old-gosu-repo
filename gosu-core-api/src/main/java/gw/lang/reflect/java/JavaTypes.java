@@ -52,21 +52,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.locks.Lock;
 
 public class JavaTypes {
-  private static ConcurrentHashMap<Class<?>, Future<IJavaType>> CACHE = new ConcurrentHashMap<Class<?>, Future<IJavaType>>();
+  private static Map<Class, IJavaType> CACHE = new ConcurrentHashMap<Class, IJavaType>();
 
   static {
     TypeSystem.addShutdownListener(new TypeSystemShutdownListener() {
       public void shutdown() {
-        CACHE.clear();
+        flushCache();
       }
     });
   }
@@ -395,80 +390,55 @@ public class JavaTypes {
 
   // utilities
 
-  private interface Computable<A, V> {
-    V compute(A arg);
+  private static IJavaType findTypeFromJre(Class c) {
+    IJavaType type = (IJavaType) TypeSystem.get(c, TypeSystem.getExecutionEnvironment().getJreModule());
+    IExecutionEnvironment execEnv = type.getTypeLoader().getModule().getExecutionEnvironment();
+    if (execEnv.getProject().isDisposed()) {
+      throw new IllegalStateException("Whoops.... the project associated with type, " + type.getName() + ", is stale. ExecEnv: " + execEnv.getProject());
+    }
+    return type;
   }
 
-  private final static Computable<Class<?>, IJavaType> computeJRE = new Computable<Class<?>, IJavaType>() {
-    @Override
-    public IJavaType compute(Class c) {
-      IJavaType type = (IJavaType) TypeSystem.get(c, TypeSystem.getExecutionEnvironment().getJreModule());
-      IExecutionEnvironment execEnv = type.getTypeLoader().getModule().getExecutionEnvironment();
-      if (execEnv.getProject().isDisposed()) {
-        throw new IllegalStateException("Whoops.... the project associated with type, " + type.getName() + ", is stale. ExecEnv: " + execEnv.getProject());
-      }
-      return type;
-    }
-  };
-
-  private final static Computable<Class<?>, IJavaType> computeGosu = new Computable<Class<?>, IJavaType>() {
-    @Override
-    public IJavaType compute(Class c) {
-      return (IJavaType) TypeSystem.get(c, TypeSystem.getGlobalModule());
-    }
-  };
-
-  public static RuntimeException launderThrowable(Throwable t) {
-    if (t instanceof RuntimeException) {
-      return (RuntimeException) t;
-    } else if (t instanceof Error) {
-      throw (Error) t;
-    } else {
-      throw new IllegalStateException("Not unchecked", t);
-    }
+  private static IJavaType findTypeFromProject(Class c) {
+    return (IJavaType) TypeSystem.get(c, TypeSystem.getGlobalModule());
   }
 
-  private static IJavaType getOrEvalCachedType(final Class<?> c, final Computable<Class<?>, IJavaType> eval) {
-    while (true) {
-      Future<IJavaType> typeFuture = CACHE.get(c);
-      if (typeFuture == null) {
-        FutureTask<IJavaType> ft = new FutureTask<IJavaType>(new Callable<IJavaType>() {
-          @Override
-          public IJavaType call() throws Exception {
-            return eval.compute(c);
+  private static IJavaType getCachedType( Class c, boolean bFromJre ) {
+    IJavaType type = CACHE.get( c );
+    if( type == null ) {
+      TypeSystem.lock();
+      try {
+        type = CACHE.get( c );
+        if( type == null ) {
+          if( bFromJre ) {
+            type = findTypeFromJre( c );
           }
-        });
-        typeFuture = CACHE.putIfAbsent(c, ft);
-        if (typeFuture == null) {
-          typeFuture = ft;
-          ft.run();
+          else {
+            type = findTypeFromProject( c );
+          }
+          CACHE.put( c, type );
         }
       }
-      try {
-        return typeFuture.get();
-      } catch (CancellationException e) {
-        CACHE.remove(c, typeFuture);
-      } catch (ExecutionException e) {
-        CACHE.remove(c, typeFuture);
-        throw launderThrowable(e.getCause());
-      } catch (InterruptedException e) {
-        CACHE.remove(c, typeFuture);
-        throw launderThrowable(e.getCause());
+      finally {
+        TypeSystem.unlock();
       }
     }
-
+    return type;
   }
 
   public static IJavaType getJreType(final Class<?> c) {
-    return getOrEvalCachedType(c, computeJRE);
+    return getCachedType( c, true );
   }
 
   public static IJavaType getGosuType(final Class<?> c) {
-    return getOrEvalCachedType(c, computeGosu);
+    return getCachedType( c, false );
   }
 
   public static IJavaType getSystemType(Class<?> c) {
     return getGosuType(c);
   }
 
+  public static void flushCache() {
+    CACHE.clear();
+  }
 }

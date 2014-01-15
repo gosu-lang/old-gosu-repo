@@ -5,7 +5,6 @@ uses java.io.FileOutputStream
 uses java.io.BufferedReader
 uses java.io.FileInputStream
 uses java.nio.ByteBuffer
-uses gw.util.StreamUtil
 uses java.lang.Integer
 uses java.nio.BufferOverflowException
 uses java.lang.NullPointerException

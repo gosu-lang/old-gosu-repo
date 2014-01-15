@@ -27,6 +27,7 @@ import gw.lang.parser.MemberAccessKind;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfoMethodInfo;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
@@ -113,6 +114,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
         else
         {
           irMethodCall = callMethod( irMethod, irRoot, irArgs, namedArgOrder );
+          assignStructuralTypeOwner( rootExpr, irMethodCall );
         }
       }
       else
@@ -244,8 +246,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     {
       // Include temp var assignments so named args are evaluated in lexical order before the call
       callElements.add( miCall );
-      IRCompositeExpression composite = new IRCompositeExpression( callElements );
-      miCall = composite;
+      miCall = new IRCompositeExpression( callElements );
     }
     return miCall;
   }
@@ -261,7 +262,7 @@ public class BeanMethodCallExpressionTransformer extends AbstractExpressionTrans
     if( irMethod != null && !irMethod.isStatic() )
     {
       IRType type = irMethod.getTargetRootIRType();
-      if( !type.isAssignableFrom( root.getType() ) )
+      if( !type.isAssignableFrom( root.getType() ) && (!(rootExpr.getType() instanceof IGosuClass) || !((IGosuClass)rootExpr.getType()).isStructure()) )
       {
         root = buildCast( type, root );
       }

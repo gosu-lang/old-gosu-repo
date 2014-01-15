@@ -1001,7 +1001,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       }
       if( !AbstractElementTransformer.isBytecodeType( superDfs.getReturnType() ) )
       {
-        String returnClassName = method.getReturnTypeName();
+        String returnClassName = getDescriptor( method.getReturnClassInfo() ).getName();
         String superReturnClassName = getDescriptor( superDfs.getReturnType() ).getName();
         if( !returnClassName.equals( superReturnClassName ) )
         {

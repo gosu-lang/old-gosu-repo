@@ -1,0 +1,614 @@
+---
+layout: main
+---
+    <!-- Getting Started -->
+    <section id="getting-started">
+      <div class="page-header">
+        <h1>Getting Started</h1>
+      </div>
+      <p>Did you <a href="downloads.html">download</a> Gosu yet? Good.</p>
+      <p>Getting started with Gosu is pretty easy. Assuming you have it setup correctly, just type <code>gosu</code> at a command prompt. You should see something like this:</p>
+      <div class="img">
+        <img src="/img/tester.png">
+        <div>The Gosu Editor</div>
+      </div>
+      <p>Once you have the Gosu Editor up, you can being playing around as you like.  No need to worry about defining full <code>class</code> definitions, either.  Simple code snippets work just fine.  Here are some useful keyboard shortcuts:</p>
+      <ul>
+        <li><strong>Ctrl+Space</strong> - Code completion</li>
+        <li><strong>Ctrl+T</strong> - Show the inferred type of whatever is below the cursor</li>
+        <li><strong>Ctrl+W</strong> - Expand the selection</li>
+        <li><strong>F5</strong> - Execute the code</li>
+      </ul>
+    </section>
+
+    <!-- Getting Started -->
+    <section id="basics">
+      <div class="page-header">
+        <h1>The Basics</h1>
+      </div>
+      <h2>Variables and Type Declarations</h2>
+      <p>It's true that gosu is strongly styped, however, you can often get away without explicitly declaring the type.  Check it out:</p>
+      <pre class="prettyprint">
+ var foo = "Foo" // a String
+ var one = 1     // a Number
+ var guess : String = null  // Must declare the type because it's not inferrable
+</pre>
+      <h2>Operators</h2>
+      <p>Gosu supports all of the standard Java operators, with a few caveats and bonuses:</p>
+      <ul>
+        <li><code>++</code> / <code>--</code> - Just like the Java operators, except they cannot be used within another statement</li>
+        <li><code>==</code> - Tests for object equality, just like <code>.equals()</code></li>
+        <li><code>===</code> - Tests for <em>instance</em> equality</li>
+        <li><code><></code> - The same as <code>!=</code></li>
+        <li><code><</code>,<code>></code>, etc - Standard comparison semantics which also works on <code>java.lang.Comparable</code> objects</li>
+      </ul>
+      <h2>Loops</h2>
+      <p>Gosu supports all the standard loop variations: <code>for</code>, <code>while</code>, <code>do ... while</code> etc.</p>
+      <h3>The <em>for</em> loop</h3>
+      <p>The <code>for</code> loop in Gosu allows you to iterate over arrays as well as anything that implements the <code>java.lang.Iterable</code> interface.</p>
+      <pre class="prettyprint">
+ var list = { "one", "two", "three" } // Create a java.lang.List<String>
+ for ( num in list ) {
+   print ( num ) // num is of type String here
+ }</pre>
+      <p>If you also want to know the index (zero-based) while you iterate:</p>
+<pre class="prettyprint">
+ var list = { "one", "two", "three" }
+ for ( num in list index i ) {
+   print ( "${i} : ${num}" ) // i is an int, and num is still of type String
+ }</pre>
+      <p>If you need to get at the iterator, you can do that, too:</p>
+<pre class="prettyprint">
+ var list = { "one", "two", "three" }
+ for ( num in list iterator iter ) {
+   iter.remove()
+ }</pre>
+      <p>If you're purely interested in iterating over a range of numbers, you can easily do that using the range operator like so:</p>
+<pre class="prettyprint">
+ // Range from 0 through 5
+ for ( i in 0..5 ) {
+   print ( i ) // Prints 0-5
+ }
+
+ // Range from 0 up to 5
+ for ( i in 0..|5 ) {
+   print ( i ) // Prints 0-4
+ }
+
+ // Range from 1 up to 5
+ for ( i in 0|..|5 ) {
+   print ( i ) // Prints 1-4
+ }
+</pre>
+      <h2>Properties</h2>
+      <p>Gosu properties are an easy way of exposing Class field variables.  Consider the standard Java boilerplate:</p>
+<pre class="prettyprint">
+ public class Foo {
+   private String _bar = "bar";
+   public void setBar( String value ) {
+     _bar = value;
+   }
+   public String getBar() {
+     return _bar;
+   }
+ }</pre>
+      <p>That's a pretty verbose way of letting users gain access to this field variable, yet Java developers are forced to do it time and again.  Now consider the same field visibility as exposed through Gosu:</p>
+<pre class="prettyprint">
+ public class Foo {
+   var _bar = "bar" as Bar
+ }</pre>
+      <p>Only want to expose a getter?  No problem</p>
+<pre class="prettyprint">
+ public class Foo {
+   var _bar = "bar" readonly as Bar
+ }</pre>
+      <p>Gosu properties aren't limited to simple getter/setter shorthand either.  You can define your own properties however you like:
+<pre class="prettyprint">
+ public class Foo {
+   var _bar = "bar" as Bar
+   var _foo = "foo"
+   property get FooBar() : String {
+     return _foo + _bar
+   }
+   property set MyFoo( value : String ) {
+     _foo = value
+   }
+ }</pre>
+      <p>Accessing properties is super clean, too.  Continuing with the class from above:</p>
+<pre class="prettyprint">
+ var f = new Foo()
+ f.Bar = "su"       // set the private field _bar to a new value
+ print ( f.FooBar ) // use our custom readonly property, prints "foosu"
+ f.MyFoo = "Go"     // use the custom writable property to set the new value for _foo
+ print ( f.FooBar ) // Now prints "Gosu" 
+</pre>
+      <h2>Null Safety</h2>
+      <p>Nobody likes getting NullPointerExceptions. At the same time, sometimes it's just not necessary to know if an intermediary function call evaluates to null or not.  Luckily Gosu provides a way to short-circuit the evaluation of a statement should any intermediate result evaluate to null.  To use the null safe operator, simply replace <code>.</code> with <code>.?</code>.  Consider the following Java code:</p>
+<pre class="prettyprint">
+ public class MyTime {
+   public Date timestamp = null;
+ } 
+
+ ... 
+ long timeInMillis = new MyTime().timestamp.getTime();  // NullPointerException because 'timestamp' is null!
+
+ ...
+ long timeInMillis2 = 0l;
+ Date time = new MyTime().timestamp;
+ if ( time != null ) {
+   timeInMillis2 = time.getTime();
+ }</pre>
+      <p>Now compare that same code with the Null-Safe Gosu form:</p>
+<pre class="prettyprint">
+ var timeInMillis = new MyTime().timestamp?.Time  // NullPointerException is avoided here because of the null safe ?. operator
+</pre>
+
+      <h2>Classes</h2>
+      <p>Gosu classes are defined with much the same syntax as other programming languages.  You can define classes inside of a Gosu program, or in a file ending with the <code>.gs</code> extension.  Here is a basic class:
+        <pre class="prettyprint">
+ package example
+
+ uses java.util.List
+
+ class SampleClass {
+   var _names : List&lt;String> // a private class variable, which is a list of Strings
+
+   // A public constructor
+   construct( names : List&lt;String> ) {
+     _names = names
+   }
+
+   // A public function
+   function printNames( prefix : String ) {
+     for( n in _names ) {
+       print( prefix + n )
+     }
+   }
+
+   // A public property getter, making 'Names' a read-only property
+   property get Names() : List&lt;String> {
+     return _names
+   }
+ }
+</pre>
+        The above code demonstrates the following features:
+        <ul>
+          <li>The <code>uses</code> statement, which is identical to the <code>import</code> statement in Java, and makes a class (or package of classes) available for use without qualification.</li>
+          <li>A class variable, declared using the <code>var</code> keyword, just like local variables.  Class variables default to private access.  You can declare them to be <code>static</code> as well.</li>
+          <li>A class constructor, declared using the <code>construct</code> keyword.  This constructor allows you to declare new instances of<code>SampleClass</code> like so:
+<pre class="prettyprint">
+ var c = new SampleClass({"joe", "john", "jack"})
+</pre> NOTE: Constructors default to public access.</li>
+          <li>A function, declared using the <code>function</code> keyword.  This function takes a <code>String</code> argument, and returns no value, so no return type declaration is necessary.  It can be invoked like so:
+<pre class="prettyprint">
+ var c = new SampleClass({"joe", "john", "jack"})
+ c.printNames("* ")
+</pre></li>
+          <li>A property getter, declared using the <code>property</code> and <code>get</code> keywords.  This property returns a list of strings.  It can be invoked like so:
+<pre class="prettyprint">
+ var c = new SampleClass({"joe", "john", "jack"})
+ print( c.Names )
+</pre></li>
+        </ul>
+      </p>
+
+      <h3>Named Arguments and Default Parameters</h3>
+      <p>Gosu supports names arguments and default parameter values to help smooth out APIs.  Let's say you wanted to make the argument to <code>printNames()</code> optional, with a default value of <code>"> "</code>.  You could change the declaration to:
+<pre class="prettyprint">
+ // A public function
+ function printNames( prefix : String = "> ") {
+   for( n in _names ) {
+     print( prefix + n )
+   }
+ }
+</pre>
+        And now invoke it like so:
+        <pre class="prettyprint">
+ var c = new SampleClass({"joe", "john", "jack"})
+ c.printNames() // No argument is necessary, it will use the default value of "> "
+</pre>
+      Additionally, Gosu allows you to use named arguments when you are working with non-overloaded methods on Gosu classes:
+      <pre class="prettyprint">
+ var c = new SampleClass({"joe", "john", "jack"})
+ c.printNames(:prefix = "* ")
+</pre>
+      This can be used to clarify code, so you don't end up with stuff like this:
+      <pre class="prettyprint">
+ someMethod(true, false, null, false, true)  //bwah?
+ 
+ someMethod( :enableLogging = true, :debug = false, 
+             :contextObject = null, :trace = false, 
+             :summarizeTiming = true)  //Oh, I see
+</pre>    
+      </p>
+
+      <h3>Superclasses, Interfaces and Delegates</h3>
+      <p>Gosu classes can extend other classes and implement interfaces, just like in Java, using the <code>extends</code> and <code>implements</code> keywords respectively.
+      </p>
+      <p>
+        One interesting additional feature of Gosu is the ability to delegate the implementation of an interface to a class variable:
+      <pre class="prettyprint">
+ uses java.lang.Runnable
+
+ class MyRunnable implements Runnable {
+   //A delegate, exposed as the Impl property
+   delegate _runnable represents Runnable
+  
+   property get Impl : Runnable {
+     return _runnable
+   }
+  
+   property set Impl( r : Runnable ) {
+     _runnable = r
+   }
+ }
+</pre>
+        The class <code>MyRunnable</code> does not declare a <code>run()</code> method, like <code>Runnable</code> requires.  This is because the delegate field <code>_runnable</code> implements the method for it:
+        <pre class="prettyprint">
+ var x = new MyRunnable()
+ x.Impl = new Runnable() {
+   function run() {
+     print("Hello, Delegation")
+   }
+ }
+ x.run() // prints "Hello, Delegation"
+</pre>
+      Delegates give you a convenient way to favor <a href="http://www.artima.com/lejava/articles/designprinciples4.html">composition over inheritance</a>.</p>
+
+      <h2>The <em>Using</em> Statement</h2>
+      <p>The <code>using</code> statement allows you to wrap sections of code that require connections to be closed to be handled automatically when the block finishes.  Instead of writing code like this:</p>
+<pre class="prettyprint">
+ var conn = getConnection()
+ try {
+   conn.execute( "Some advanced SQL" )
+ } finally {
+   conn.close() 
+ }
+</pre>
+      <p>You could instead use the <code>using</code> statement which will handle closing the <code>Connection</code> for you:</p>
+<pre class="prettyprint">
+ using( var conn = getConnection() ) {
+   conn.execute( "Some advanced SQL" )
+ }
+</pre>
+    </section>
+
+    <!-- Gosu Programs -->
+    <section id="gsp">
+      <div class="page-header">
+        <h1>Gosu Program Files <small>Say goodbye to <code>public static void main()</code></small></h1>
+      </div>
+      <p>Gosu doesn't have the concept of a <code>public static void main(String[] args)</code> entrypoint. Instead, it has programs, which are just bits of code in file ending a <code>.gsp</code> extension.</p>
+      <p>Here is a simple <em>Hello World</em> application, in the file hello.gsp:</p>
+<pre class="prettyprint">
+ print ( "Hello World!" )
+</pre>
+      <p>Running the program?  Simple:</p>
+<pre>
+ $> gosu hello.gsp
+ Hello World!
+</pre>
+      <h2>Program Classpaths and the Shebang</h2>
+      <p>Gosu programs can embed a classpath in their source, obviating the need for users to pass in a correct classpath externally:
+      <pre class="prettyprint">
+ #! /path/to/gosu
+ classpath "../src,../lib/sweet_lib1.jar"
+  
+ print( "Here is a sweet library object: ${new SweetLibraryObject()}")
+</pre>
+      The classpath statement is comma delimited, to avoid system specific dependencies.  Each path on it will be added to the classpath.  If a path points at a folder and that folder contains jars, all those jars will be added to the classpath as well.
+      </p>
+      <p>This makes it much more pleasant to run gosu programs on *nix:
+<pre>
+ $> ./my_sweet_gosu_program.gsp
+ Here is a sweet library object: super.SweetLibraryObject@12b27c3
+</pre>
+      No wrapping scripts, no complicated class paths.
+      </p>
+
+    </section>
+
+    <!-- Blocks -->
+    <a id="blocks"></a>
+    <section>
+      <div class="page-header">
+        <h1>Blocks <small>Also known as closures or lamba expressions</small></h1>
+      </div>
+Blocks (also called closures or lambda expressions) are a simple way to specify an inline function.  They have a lot of uses, but they really shine in data structure manipulation:
+      <pre class="prettyprint">
+ var lstOfStrings = {"This", "is", "a", "list"}
+ var longStrings = lstOfStrings.where( \ s -> s.length > 2 )
+ print( longStrings.join(", ") )  // prints "This, list"
+</pre>
+      The funny <code>\-></code> thing is the block.  It declares a mini-function that says "Given a String <code>s</code> return whether <code>s.length</code> is greater than two".  You can think of it as an inline version of this function:
+      <pre class="prettyprint">
+ function isLongerThanTwo( s : String ) : boolean {
+   return s.length > 2
+ }
+</pre>
+      Or, if you prefer, this anonymous inner class:
+      <pre class="prettyprint">
+ var inner = new com.google.common.base.Predicate&lt;String>() {
+   function apply( s : String ) : boolean {
+     return s.length > 2
+   }
+ }
+</pre>      
+      Blocks allow you to express this logic much more succinctly.
+      </p>
+      <p>
+      Note that I didn't have to declare a type for the block's parameter, <code>s</code>, like I did in the function and anonymous class above.  This because the block is defined in a context where Gosu can figure out the argument is a String.  Typically you will not have to define the types of the arguments of blocks.
+      </p>
+      <p>With blocks you can often remove loads of iterative code you would end up writing in Java.  Consider this java code:
+
+      <pre class="prettyprint">
+ List&lt;String> lstOfStrings = Arrays.asList("This", "is", "a", "list");
+
+ List&lt;String> longStrings = new ArrayList&lt;String>();
+  
+ for( String s : lstOfStrings ) {
+   if( s.length() > 2 ) {
+     longStrings.add( s.toUpperCase() );
+   }
+ }
+  
+ Collections.sort(longStrings, new Comparator&lt;String>() {
+   public int compare( String s, String s2 ) {
+     return s.compareTo( s2 );
+   }
+ })
+
+ StringBuilder sb = new StringBuilder();
+ for( String s : longStrings ) {
+   if(sb.length() != 0) {
+     sb.append(", ");
+   }
+   sb.append(s);
+ }
+
+ System.out.println(sb.toString());
+</pre>
+
+      This code can be written in Gosu like so:
+<pre class="prettyprint">
+ var lstOfStrings = {"This", "is", "a", "list"}
+ var longStrings = lstOfStrings.where( \ s -> s.length > 2 )
+                               .map( \ s -> s.toUpperCase() )  // converts each string to upper case
+                               .orderBy( \ s -> s )            // there is a .order() method that could be used here instead
+ print( longStrings.join(", ") ) // prints "LIST, THIS"
+</pre>
+      In Gosu the code more clearly expressed the algorithm, it is less coupled (there is no mix of algorithmic steps in a for-loop, for example) and certainly less verbose.
+      </p>
+      <p>
+      Blocks have other uses, but, by and large, the big win with them is in Collection manipulation.
+      </p>
+      <h4>Blocks and Interfaces</h4>
+      <p>
+      Java has many interfaces that contain a single method, which are used as a stand-in for actual closures.  In order to facilitate Java interoperability, Gosu blocks and one-method interfaces are automatically converted between one another:
+      <pre class="prettyprint">
+ var r : Runnable
+ r = \-> print("This block was converted to a Runnable")
+</pre>
+      This makes some Java APIs very enjoyable to work with in Gosu.
+      </p>
+    </section>
+
+    <!-- Enhancements -->
+    <section id="enhancements">
+      <div class="page-header">
+        <h1>Enhancements</h1>
+      </div>
+      <p>Enhancements provide a way to add methods and properties to existing types. They are similar to <a href="http://msdn.microsoft.com/en-us/library/bb383977.aspx">Extension Methods</a> in C#, but do not need to be explicitly imported. Enhancements are defined in files ending with a .gsx suffix and cannot be defined inline with other Gosu resources.  Here is an example enhancement for the type <code>java.lang.String</code></p>
+<pre class="prettyprint">
+ package example
+
+ enhancement MyStringEnhancement : String {
+   function printWarning() {
+     print ( "WARNING: " + this );
+   }
+ }
+</pre>
+      <p>In enhancements, the <code>this</code> symbol refers to the <em>enhanced type</em>, as opposed to the enhancement itself.</p>
+      <p>Once an enhancement has been added to your classpath, you can use it in any place you have an object of the enhanced type with no need to explicitly import the enhancement itself.  Therefore, using the enhancement above is as simple as just calling the new function anywhere you have a String:</p>
+<pre class="prettyprint">
+ "I'm not sure I can go back to Java".printWarning()
+</pre>
+     <h2>Semantics And Limitations</h2>
+     The above code can be thought of as shorthand for this code:
+     <pre class="prettyprint">
+ example.MyStringEnhancement.print( "Warning: " + "Hello World" )
+</pre>
+      Enhancements are <em>statically</em> dispatched.  This means they cannot be used to implement interfaces or to achieve polymorphism</p>
+
+      <h2>Generics</h2>
+      Enhancements can be generic, so you can add an enhancement to <code>List&lt;T></code>:
+      <pre class="prettyprint">
+ package example
+ 
+ uses java.util.List
+ 
+ enhancement MyListEnhancement&lt;T> : List&lt;T> {
+   function firstAndLast() : List&lt;T> {
+     return {this.first(), this.last()}
+   }
+ }
+</pre>
+      This method will now be available on all generic lists, and will be properly typed.
+      <h3>Type Variable Reification</h3>
+      <p>
+      Unlike in Java, type variables <em>can</em> be used in general expressions in Gosu.  In Enhancements, the type variables are statically, rather than dynamically, reified, much like enhancement methods are statically, rather than dynamically dispatched.  The enhancement method <code>toTypedArray():T[]</code> on <code>Iterable&lt;T></code> demonstrates this:
+      <pre class="prettyprint">
+ var lstOfStrings : List&lt;String> = {"a", "b", "c"}
+ var arrOfStrings = lstOfStrings.toTypedArray() //returns a String[]
+  
+ var lstOfObjs : List&lt;Object> = lstOfStrings //type variables are covariant in Gosu, see <a href="generics.html">generics</a>        
+ var arrOfObjs = lstOfObjs.toTypedArray() //returns an Object[]
+</pre>
+      This "best effort" reification usually does what you want, but can occasionally lead to surprising results.
+      </p>
+
+      <h3>Enhancing Parameterized Types</h3>
+      <p>A really neat trick with enhancements is that you can enhance <em>parameterized</em> types:</p>
+      <pre class="prettyprint">
+ package example
+  
+ uses java.util.*
+  
+ enhancement MyListOfDatesEnhancement : List&lt;Date> {
+   function allBetween( start : Date, end : Date ) : List&lt;Date>{
+     var lst = new ArrayList&lt;Date>()
+     for( d in this ) {
+       if( start &lt;= d and d &lt;= end ) {
+         lst.add( d )          
+       }
+     }
+     return lst 
+     // NOTE: you would normally write this using blocks:
+     //  return this.where( \ d -> start &lt;= d and d &lt;= end )
+   }
+ }
+</pre>
+      This is how all lists of comparable objects have the <code>sort()</code> method on them, while other lists do not.
+      </p>
+    </section>
+
+    <!-- Strings -->
+    <section id="strings">
+      <div class="page-header">
+        <h1>Playing with Strings</h1>
+      </div>
+      <p>For starters, String literals can be expressed using either double or single quotes:</p>
+<pre class="prettyprint">
+ var s1 = "I'm a String"
+ var s2 = 'I\'m also a String!'
+</pre>
+      <p>Strings support concatenation:</p>
+<pre class="prettyprint">
+ var s1 = "Hello"
+ var s2 = "World!"
+ print ( s1 + " " + s2 )  // prints "Hello World!"
+</pre>
+      <p>Strings also support inline templates:</p>
+<pre class="prettyprint">
+ var s1 = "Hello"
+ var s2 = "World!"
+ print ( "${s1} ${s2}" )  // prints "Hello World!"
+</pre>
+      <p>Because Strings are such a common starting point when dealing with web applications, there are also a bunch of handy <em>enhancements</em> which allows for easy conversion to other types:</p>
+<pre class="prettyprint">
+ var bool = "true".toBoolean()
+ var integ = "42".toInt()
+ var dubble = "42.2".toDouble()
+ var date = "01/25/2012".toDate()
+</pre>
+      <p>Here is a short sample of additional enhancements which have also been added to the String type:</p>
+      <ul>
+        <li><code>repeat(n:int)</code> - Repeat the String <code>n</code> times</li>
+        <li><code>chomp()</code> - Removes a trailing newline from the end of the String, if present</li>
+        <li><code>chop()</code> - Remove the last character from the String</li>
+        <li><code>elide(len:int)</code> - Cap the String at a fixed length and replace the last three characters with '...' to denote truncation</li>
+        <li><code>rightPad(w:int)</code>, <code>leftPad(w:int)</code>, <code>center(w:int)</code> - Format the string with additional whitespace</li>
+        <li><code>notBlank()</code> - Returns true if the string is not null and contains at least one non-whitespace character
+      </ul>
+
+      <h2>Gosu Template Files (.gst)</h2>
+        <p>Gosu supports string templates as first class citizens in the language.  A Gosu String Template is a file that ends in the <code>.gst</code> extension.  Here is an example definition, <code>sample.Sample.gst</code>:
+      <pre class="prettyprint">
+ &lt;% params( names : String[] ) %>
+ All Names: &lt;% for( name in names ) { %>
+   * ${name} 
+ &lt;% } %>
+</pre>
+      The template explicitly declares the names and types of its arguments.  You can render the template by calling the <code>render()</code> or <code>renderToString()</code> methods:
+      <pre class="prettyprint">
+ var str = sample.Sample.renderToString( {"Joe", "John", "Josh"} )
+</pre>
+      Note that the static <code>renderToString()</code> method is statically typed, and takes exactly the parameters specified by the template, so everything is type checked.
+      <p>There is also a static <code>render()</code> method that takes a writer, as well as the arguments to the template, for more efficient creation of large strings.
+      </p>
+    </section>
+
+    <!-- Collections -->
+    <section id="collections">
+      <div class="page-header">
+        <h1>Collections++ <small>All the things you wanted to do with Java collections, now you can.</small></h1>
+      </div>
+      <h2>Shorthand <em>List</em> and <em>Map</em> Syntax</h2>
+      <p>The Collections types <code>java.util.List</code> and <code>java.util.Map</code> are commonly used datastructures. They can also be fairly verbose to write when applying type information when using Java:</p>
+<pre class="prettyprint">
+ List&lt;Map&lt;String, Object&gt;&gt; list = new ArrayList&lt;Map&lt;String, Object&gt;&gt;();
+ Map&lt;String, Object&gt; map = new HashMap&lt;String, Object&gt;();
+ map.put( "isOverlyVerbose", true );
+ list.add( map );
+</pre>
+      <p>Luckily Gosu provides a shorthand syntax for these two types, allowing the above code to simply be written as:</p>
+<pre class="prettyprint">
+ var list = { { "isOverlyVerbose" -> false } }
+</pre>
+      <h2>Standard Collection / Iterable Enhancements</h2>
+            <table class="table table-bordered table-striped">
+        <thead>
+          <tr><th>Enhancement Function or Property</th></tr>
+        </thead>
+        <tbody>
+<tr><td class="function">allMatch( cond(elt1 : T):boolean ) : boolean
+	<div>Returns true if all elements in this collection match the given condition and false otherwise</div></td></tr>
+<tr><td class="function">average( select:block(elt:T):java.lang.Number ) : BigDecimal<div>Return the average of the mapped value</div></td></tr>
+<tr><td class="function">concat( that : Collection&lt;T> ) : Collection&lt;T><div>Return a new list that is the concatenation of the two lists</div></td></tr>
+<tr><td class="function">Count() : int<div>Return the number of elements in this Iterable object</div></td></tr>
+<tr><td class="function">countWhere( cond(elt:T):boolean ) : int<div>Return the count of elements in this collection that match the given condition</div></td></tr>
+<tr><td class="function">disjunction( that : Collection&lt;T> ) : Set&lt;T><div>Returns a the set disjunction of this collection and the other collection, that is, all elements that are in one collection <em>not</em> and not the other</div></td></tr>
+<tr><td class="function">each( operation(elt : T) )<div>This method will invoke the operation on each element in the Collection</div></td></tr>
+<tr><td class="function">eachWithIndex( operation(elt : T, index : int ) )<div>This method will invoke the operation on each element in the Collection, passing in the index as well as the element</div></td></tr>
+<tr><td class="function">first() : T<div>Returns the first element in this collection.  If the collection is empty, null is returned</div></td></tr>
+<tr><td class="function">firstWhere( cond(elt:T):boolean ) : T<div>Returns the first element in this collection that matches the given condition.
+If no element matches the criteria, null is returned</div></td></tr>
+<tr><td class="function">fold( aggregator(elt1 : T, elt2 : T):T ) : T<div>Returns all the values of this collection folded into a single value</div></td></tr>
+<tr><td class="function">hasMatch( cond(elt1 : T):boolean ) : boolean<div>Returns true if any elements in this collection match the given condition and false otherwise</div></td></tr>
+<tr><td class="function">intersect( that : Collection&lt;T> ) : Set&lt;T><div>Return the set intersection of these two collections</div></td></tr>
+<tr><td class="function">join( delimiter : String  ) : String<div>Coerces each element in the collecion to a string and joins them together with the
+given delimiter</div></td></tr>
+<tr><td class="function">last() : T<div>Returns the last element in this collection.  If the collection is empty, null is returned</div></td></tr>
+<tr><td class="function">lastWhere( cond(elt:T):boolean ) : T<div>Returns the last element in this collection that matches the given condition.
+If the collection is empty, null is returned</div></td></tr>
+<tr><td class="function">map&lt;Q>( mapper(elt : T):Q ) : List&lt;Q><div>Maps the values of the collection to a list of values by calling the
+mapper block on each element</div></td></tr>
+<tr><td class="function">maxBy( comparison(elt : T):Comparable ) : T<div>Returns the maximum value of this collection with respect to the Comparable attribute calculated by the given block.  If more than one element has the maximum value, the first element encountered is returned</div></td></tr>
+<tr><td class="function">max&lt;R extends Comparable>( transform(elt:T):R ) : R<div>Returns the maximum value of the transformed elements</div></td></tr>
+<tr><td class="function">minBy( comparison(elt : T):Comparable ) : T<div>Returns the minimum value of this collection with respect to the Comparable attribute calculated by the given block.  If more than one element has the minimum value, the first element encountered is returned</div></td></tr>
+<tr><td class="function">min&lt;R extends Comparable>( transform(elt:T):R ) : R<div>Returns the minimum value of the transformed elements</div></td></tr>
+<tr><td class="function">partitionUniquely&lt;Q>( mapper(elt : T):Q ) : Map&lt;Q, T><div>Partitions each element into a Map where the keys are the value produce by the mapper block and the values are the elements of the Collection.  If two elements map to the same key an IllegalStateException is thrown</div></td></tr>
+<tr><td class="function">orderBy&lt;R extends Comparable>( value(elt:T):R ) : IOrderedList&lt;T><div>Returns a lazily-computed List that consists of the elements of this Collection, ordered by the value mapped to by the given block</div></td></tr>
+<tr><td class="function">orderByDescending&lt;R extends Comparable>( value(elt:T):R ) : IOrderedList&lt;T><div>Returns a lazily-computed List that consists of the elements of this Collection, descendingly ordered by the value mapped to by the given block</div></td></tr>
+<tr><td class="function">reduce&lt;V>( init : V, aggregator(val : V, elt2 : T):V ) : V<div>Returns all the values of this collection down to a single value</div></td></tr>
+<tr><td class="function">removeWhere( cond(elt:T):boolean ) <div>Removes all elements that match the given condition in this collection</div></td></tr>
+<tr><td class="function">retainWhere( cond(elt:T):boolean ) <div>Retains all elements that match the given condition in this collection</div></td></tr>
+<tr><td class="function">reverse() : List&lt;T><div>Returns a new list of the elements in the collection, in their reverse iteration order</div></td></tr>
+<tr><td class="function">single() : T<div>Returns a single element from this iterable, if only one exists.  It no elements are in this iterable, or if there are more than one elements in it, an IllegalStateException is thrown</div></td></tr>
+<tr><td class="function">singleWhere( cond(elt:T):boolean ) : T<div>Returns a single item matching the given condition.  If there is no such element or if multiple elements match the condition, and IllegalStateException is thrown</div></td></tr>
+<tr><td class="function">subtract( that : Collection&lt;T> ) : Set&lt;T><div>Returns the Set subtraction of that Collection from this Collection</div></td></tr>
+<tr><td class="function">toCollection() : Collection&lt;T><div>If this Iterable is already a Collection, return this Itearble cast to a Collection.
+Otherwise create a new Collection and copy this Iterable into it</div></td></tr>
+<tr><td class="function">toList() : List&lt;T><div>If this Iterable is already a List, return this Iterable cast to a List.
+Otherwise create a new List and copy this Iterable into it</div></td></tr>
+<tr><td class="function">toSet() : Set&lt;T><div>If this Iterable is already a Set, return this Iterable cast to a Set.  Otherwise create a new
+Set based on this Iterable</div></td></tr>
+<tr><td class="function">toTypedArray() : T[]<div>Returns a strongly-typed array of this Iterable, as opposed to the argumentless Iterable#toArray(), which
+returns an Object array.  This method takes advantage of static reification and, therefore, does not necessarily return an array that matches the theoretical runtime type of the Iterable, if actual reification were supported</div></td></tr>
+<tr><td class="function">union( that : Collection&lt;T> ) : Set&lt;T><div>Returns the set union of the two collections</div></td></tr>
+<tr><td class="function">where( cond(elt:T): boolean ) : List&lt;T><div>Returns all the elements of this collection for which the given condition is true</div></td></tr>
+<tr><td class="function">whereTypeIs&lt;R>( type : Type&lt;R> ) : List&lt;R><div>Returns all the elements of this collection that are assignable to the
+given type</div></td></tr>
+        </tbody>
+      </table>
+      <h2>Type-Specific Enhancements</h2>
+      <p>In addition to the enchancements listed above, there are often additional enchancements available based on the type of the Collection you are using. For instance, if you were using a <code>Map</code>, then you could do something like this to quickly write out a properties file:
+<pre class="prettyprint">
+ var map = {
+   "app.deploy.port" -> 8080,
+   "app.deploy.vm.maxmem" -> "1024m",
+   "app.deploy.vm.maxperm" -> "256m"
+ }.writeToPropertiesFile( new File("/tmp/deploy.properties") )
+</pre>
+      <p>The best part is that if you can't find the enhancement you are looking for, it's trivial to create a new one that you can instantly use anywhere in your application</p>
+    </section>

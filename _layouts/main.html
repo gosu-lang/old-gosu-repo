@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>The Gosu Programming Language</title>
+
+	<script src="js/jquery-1.7.1.min.js"></script>
+	<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+	<script src="js/google-code-prettify/prettify.js"></script>
+	<link href='http://fonts.googleapis.com/css?family=Russo+One' rel='stylesheet' type='text/css'>
+	<link href='http://fonts.googleapis.com/css?family=Droid+Sans' rel='stylesheet' type='text/css'>
+	<link href='//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css' rel='stylesheet' type='text/css'>
+
+	<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/google-code-prettify/prettify.css">
+	<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+		<div class="container">
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+				<a class="navbar-brand" href="#">GOSU</a>
+			</div>
+			<div class="navbar-collapse collapse">
+				<ul class="nav navbar-nav">
+					<li><a href="/">Home</a></li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+						<ul class="dropdown-menu">
+							<li><a href="/docs.html#getting-started">Getting Started</a></li>
+							<li><a href="/docs.html#basics">The Basics</a></li>
+							<li><a href="/docs.html#gsp">Gosu Program Files</a></li>
+							<li><a href="/docs.html#blocks">Blocks</a></li>
+							<li><a href="/docs.html#enhancements">Enhancements</a></li>
+							<li><a href="/docs.html#strings">Playing with Strings</a></li>
+							<li><a href="/docs.html#collections">Collections++</a></li>
+							<li class="divider"></li>
+							<li><a href="/doc/index.html">Long form documentation</a></li>
+						</ul>
+					</li>
+					<li class="dropdown">
+						<a class="dropdown-toggle" href="/docs.html">Documentation</a>
+						<ul class="dropdown-menu">
+						</ul>
+					</li>
+					<li><a href="/downloads.html">Downloads</a></li>
+					<li><a href="/links.html">Links</a></li>
+				</ul>
+			</div><!--/.nav-collapse -->
+		</div>
+	</div>
+
+	<div class="container">
+		{{ content }}
+
+
+		<footer>
+			<p>&copy; Guidewire Software 2012</p>
+		</footer>
+
+	</div> <!-- /container -->
+
+	<script>
+	$('#topbar').dropdown();
+	prettyPrint();
+	</script>
+</body>
+</html>
+

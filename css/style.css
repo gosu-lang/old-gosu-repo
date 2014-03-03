@@ -1,0 +1,35 @@
+body {
+  padding-top:48px;
+  font-family: 'Droid Sans', sans-serif;
+  font-size 1.3em;
+}
+
+a.navbar-brand {
+  font-family: 'Russo One', sans-serif;
+  font-weight: bold;
+  font-size: 25px;
+  color: #504849 !important;
+}
+
+#hero-text {
+  font-family: 'Russo One', sans-serif;
+  font-weight: bold;
+  font-size: 92px;
+}
+
+/* Code styles */
+pre.prettyprint {
+  padding: 4px 2px;
+}
+
+span.com {
+  color: #8c8c8c;
+}
+
+span.kwd {
+  color: blue;
+}
+
+span.str {
+  color: #008a00;
+}

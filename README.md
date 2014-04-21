@@ -10,6 +10,8 @@ It was nominated Language of the Month in a Dr Dobb's [article](http://www.drdob
 
 * Open Type System (similar to F# type providers)
 * Type inference
+* Dynamic typing (similar to C#'s dynamic type)
+* Structural typing (similar Go's interfaces)
 * Enhancements  (similar to Extension Methods in C#)
 * Full Java interoperability
 * Blocks (also called closures or lambda expressions)

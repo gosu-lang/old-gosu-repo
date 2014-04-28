@@ -101,7 +101,8 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>2.9</version>
           <configuration>
-            <encoding>UTF-8</encoding>
+              <skip>true</skip>
+              <encoding>UTF-8</encoding>
           </configuration>
         </plugin>
         <plugin>

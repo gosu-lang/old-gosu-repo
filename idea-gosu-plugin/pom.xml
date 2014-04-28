@@ -150,7 +150,7 @@
     <connection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</connection>
     <url>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</url>
     <developerConnection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</developerConnection>
-    <tag>gosu-proj-0.10.J8</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>

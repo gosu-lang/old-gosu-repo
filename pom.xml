@@ -52,7 +52,7 @@
     <connection>scm:git:git@github.com:gosu-lang/gosu.git</connection>
     <url>scm:git:git@github.com:gosu-lang/gosu.git</url>
     <developerConnection>scm:git:git@github.com:gosu-lang/gosu.git</developerConnection>
-    <tag>gosu-proj-0.10.J8</tag>
+    <tag>HEAD</tag>
   </scm>
 
 </project>

@@ -15,6 +15,7 @@ public final class MethodScore implements Comparable<MethodScore>
   private IInvocableType _rawFuncType;
   private IInvocableType _inferredFuncType;
   private List<IExpression> _exprs;
+  private List _parserStates;
   private int[] _namedArgOrder;
 
   /**
@@ -75,23 +76,31 @@ public final class MethodScore implements Comparable<MethodScore>
     }
     else
     {
-      return _iScore < o._iScore ? 1 : -1;
+      return _iScore > o._iScore ? 1 : -1;
     }
-  }
-
-  public void setArguments( List<IExpression> argExpressions )
-  {
-    _exprs = argExpressions;
   }
 
   public List<IExpression> getArguments()
   {
     return _exprs;
   }
-
-  public boolean matchesArgSize( List<? extends IExpression> argExpressions )
+  public void setArguments( List<IExpression> argExpressions )
   {
-    return _rawFuncType.getParameterTypes().length == argExpressions.size();
+    _exprs = argExpressions;
+  }
+
+  public List getParserStates()
+  {
+    return _parserStates;
+  }
+  public void setParserStates( List parserStates )
+  {
+    _parserStates = parserStates;
+  }
+
+  public boolean matchesArgSize()
+  {
+    return _rawFuncType.getParameterTypes().length == _exprs.size();
   }
 
   public int[] getNamedArgOrder()

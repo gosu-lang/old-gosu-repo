@@ -4,15 +4,12 @@
 
 package gw.lang.reflect;
 
-import gw.config.CommonServices;
 import gw.lang.GosuShop;
-import gw.lang.parser.ICoercer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -191,7 +188,7 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
           mis.put( new FunctionType( methodInfo ), methodInfo );
         }
       }
-      List<MethodScore> list = scoreMethods( new ArrayList<IInvocableType>( mis.keySet() ), Arrays.asList( params ), Collections.EMPTY_LIST );
+      List<MethodScore> list = MethodScorer.instance().scoreMethods( new ArrayList<IInvocableType>( mis.keySet() ), Arrays.asList( params ), Collections.<IType>emptyList() );
       if( list.size() == 0 )
       {
         return null;
@@ -254,7 +251,7 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
           cis.put( GosuShop.getConstructorInfoFactory().makeConstructorType( constructorInfo ), constructorInfo );
         }
       }
-      List<MethodScore> list = scoreMethods( new ArrayList<IInvocableType>( cis.keySet() ), Arrays.asList( params ), Collections.EMPTY_LIST );
+      List<MethodScore> list = MethodScorer.instance().scoreMethods( new ArrayList<IInvocableType>( cis.keySet() ), Arrays.asList( params ), Collections.<IType>emptyList() );
       if( list.size() == 0 )
       {
         return null;
@@ -365,118 +362,5 @@ public interface ITypeInfo extends IAnnotatedFeatureInfo
       }
       return type;
     }
-
-    //## todo: Rewrite this.  Maybe use this technique: http://stackoverflow.com/questions/14315437/get-best-matching-overload-from-set-of-overloads
-    //## todo: Note it'll be easier to manage if the best match is designed to have the _lowest_ score.  Again the link above provides a decent strategy.
-    public static List<MethodScore> scoreMethods( List<? extends IInvocableType> listFunctionTypes, List<IType> argTypes, List<IType> inferringTypes )
-    {
-      ArrayList<MethodScore> scores = new ArrayList<MethodScore>();
-      // if there is only one method, don't bother scoring
-      if( listFunctionTypes.size() == 1 )
-      {
-        MethodScore score = new MethodScore();
-        IInvocableType functionType = listFunctionTypes.get( 0 );
-        score.setRawFunctionType( functionType );
-        score.setValid( true );
-        scores.add( score );
-      }
-      else
-      {
-        // if there are multiple methods, create scores for them
-        for( IInvocableType functionType : listFunctionTypes )
-        {
-          MethodScore score = new MethodScore();
-          score.setValid( true );
-          score.setRawFunctionType( functionType );
-          scores.add( score );
-        }
-
-        int assignabilityAmt = (argTypes.size() * (ICoercer.MAX_PRIORITY + 1)) + 1; // the amount to increment assignability matches by
-
-        for( int i = 0; i < argTypes.size(); i++ )
-        {
-          IType exprType = argTypes.get( i );
-
-          // keep track of all methods that are assignable at this parameter position
-          Map<IType, List<MethodScore>> bestMatches = new HashMap<IType, List<MethodScore>>();
-
-          for( MethodScore score : scores )
-          {
-            IType[] parameterTypes = score.getRawFunctionType().getParameterTypes();
-            if( argTypes.size() == parameterTypes.length )
-            {
-
-              IType parameterType = TypeSystem.boundTypes( parameterTypes[i], inferringTypes );
-              if( parameterType.isAssignableFrom( exprType ) )
-              {
-                score.incScore( assignabilityAmt );
-
-                // remove any existing assignable methods that are supertypes of this
-                for( Iterator<Map.Entry<IType, List<MethodScore>>> it = bestMatches.entrySet().iterator(); it.hasNext(); )
-                {
-                  Map.Entry<IType, List<MethodScore>> entry = it.next();
-                  if( !parameterType.equals( entry.getKey() ) )
-                  {
-                    if( parameterType.isAssignableFrom( entry.getKey() ) )
-                    {
-                      // an existing method score is better than this one, so null it out and break
-                      score = null;
-                      break;
-                    }
-                    else if( entry.getKey().isAssignableFrom( parameterType ) )
-                    {
-                      it.remove();
-                    }
-                  }
-                }
-                if( score != null )
-                {
-                  List<MethodScore> bestMatchList = bestMatches.get( parameterType );
-                  if( bestMatchList == null )
-                  {
-                    bestMatchList = new ArrayList<MethodScore>();
-                    bestMatches.put( parameterType, bestMatchList );
-                  }
-                  bestMatchList.add( score );
-                }
-              }
-              else
-              {
-                ICoercer iCoercer = CommonServices.getCoercionManager().findCoercer( parameterType, exprType, false );
-                if( iCoercer != null )
-                {
-                  score.incScore( iCoercer.getPriority( parameterType, exprType ) + 1 );
-                }
-                else
-                {
-                  // if the argument is neither coercable nor assignable, reset the method score to a very low value
-                  score.setScore( Integer.MIN_VALUE );
-                }
-              }
-            }
-            else
-            {
-              score.setScore( Long.MIN_VALUE );
-            }
-          }
-
-          // if there were any best matches, increment their scores
-          if( !bestMatches.isEmpty() )
-          {
-            for( List<MethodScore> methodScores : bestMatches.values() )
-            {
-              for( MethodScore score : methodScores )
-              {
-                score.incScore( assignabilityAmt );
-              }
-            }
-          }
-        }
-
-        Collections.sort( scores );
-      }
-      return scores;
-    }
-
   }
 }

@@ -123,6 +123,7 @@ abstract public class GosuTestCase extends DaemonAnalyzerTestCase {
   }
 
   private void stopPlugin() {
+    System.out.println("Closing project " + getProject().getBasePath());
     PluginLoaderUtil.instance(getProject()).closeProject( PluginFailureReason.NONE );
   }
 

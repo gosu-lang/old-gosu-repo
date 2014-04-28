@@ -220,7 +220,7 @@ public class Gosuc implements IGosuc {
     modules.add( jreModule );
   }
 
-  public static void updateJreModuleWithProjectSdk( GosucProject project, IJreModule jreModule ) {
+  protected void updateJreModuleWithProjectSdk( GosucProject project, IJreModule jreModule ) {
     GosucSdk projectSdk = project.getSdk();
     List<String> classFiles = projectSdk.getPaths();
     List<IDirectory> dirs = new ArrayList<IDirectory>();

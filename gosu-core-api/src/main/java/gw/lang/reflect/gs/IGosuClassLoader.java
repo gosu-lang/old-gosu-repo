@@ -21,8 +21,6 @@ public interface IGosuClassLoader
 
   Class defineClass( String name, byte[] bytes );
 
-  String getInterfaceMethodsClassName( ICompilableType gsClass );
-
   byte[] getBytes( ICompilableType gsClass );
 
   void assignParent( ClassLoader classLoader );

@@ -105,6 +105,7 @@ public class GosuTokenTypes {
   public static final GosuElementType TT_readonly = addKeyword("readonly");
   public static final GosuElementType TT_class = addKeyword("class");
   public static final GosuElementType TT_interface = addKeyword("interface");
+  public static final GosuElementType TT_annotation = addKeyword("annotation");
   public static final GosuElementType TT_structure = addKeyword("structure");
   public static final GosuElementType TT_enum = addKeyword("enum");
   public static final GosuElementType TT_super = addKeyword("super");

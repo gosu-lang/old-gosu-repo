@@ -4,32 +4,22 @@
 
 package gw.lang;
 
-import gw.lang.annotation.AnnotationUsage;
-import gw.lang.annotation.UsageModifier;
-import gw.lang.annotation.UsageTarget;
-import gw.lang.annotation.AnnotationUsages;
+import gw.lang.annotation.Order;
+import java.lang.annotation.Repeatable;
 
-@AnnotationUsages({
-  @AnnotationUsage(target = UsageTarget.MethodTarget, usageModifier = UsageModifier.Many),
-  @AnnotationUsage(target = UsageTarget.ConstructorTarget, usageModifier = UsageModifier.Many)
-})
-public class Param implements IAnnotation
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Repeatable(Params.class)
+public @interface Param
 {
-  private String FieldName;
-  private String FieldDescription;
+  @Order( index=0 )
+  String FieldName();
 
-  public Param(String FieldName, String FieldDescription )
-  {
-    this.FieldName = FieldName;
-    this.FieldDescription = FieldDescription;
-  }
-
-  public String getFieldName() {
-    return FieldName;
-  }
-
-  public String getFieldDescription() {
-    return FieldDescription;
-  }
-
+  @Order( index=1 )
+  String FieldDescription();
 }

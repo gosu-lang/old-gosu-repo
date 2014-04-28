@@ -51,7 +51,7 @@ public abstract class GosuBaseAttributedFeatureInfo extends BaseFeatureInfo impl
             ArrayList lst = new ArrayList<IAnnotationInfo>();
             for (int i = 0; i < rawAnnotations.size(); i++) {
               IGosuAnnotation gosuAnnotation = rawAnnotations.get(i);
-              lst.add(new GosuAnnotationInfo(gosuAnnotation, this, this.getOwnersType(), i));
+              lst.add(new GosuAnnotationInfo(gosuAnnotation, this, this.getOwnersType()));
             }
             lst.trimToSize();
             _declaredAnnotations = lst;

@@ -77,7 +77,7 @@ public class GosuMethodAsPropertyInspection extends BaseLocalInspectionTool impl
         TypeSystem.pushModule(module);
         try {
           IParsedElement parsedElement = method.getParsedElement();
-          if( parsedElement.isSuppressed( GosuMethodAsPropertyInspection.this ) ) {
+          if( parsedElement == null || parsedElement.isSuppressed( GosuMethodAsPropertyInspection.this ) ) {
             return;
           }
           if (parsedElement instanceof FunctionStatement) {

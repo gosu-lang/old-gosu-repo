@@ -116,46 +116,56 @@ public class BasePrimitiveCoercer extends StandardCoercer implements IResolvingC
   @Override
   public int getPriority( IType to, IType from )
   {
-    int iPriority = 2;
-    if(  to == from )
-    {
-      iPriority+=4;
+    //!! Note this "priority" is scored as follows: 0 is perfect, higher numbers are worse
+    //!! This is to support method scoring which is zero-preferenced.
+    return getPriorityOf( to, from );
+  }
+  public static int getPriorityOf( IType to, IType from )
+  {
+    if( to == from ) {
+      return 0;                       // score = 0
     }
-    else  if( isAWideingConversion( to, from ) )
-    {
-      iPriority+=3;
-    }
-    else if( hasLossOfPrecision(to, from) )
-    {
-      iPriority+=2;
-    }
-    else if( JavaTypes.OBJECT().equals( to ) )
-    {
-      iPriority++;
+    if( JavaTypes.OBJECT().equals( to ) ) {
+      return 8;                       // score = 8 (max)
     }
 
-    if( (isFloatFamily( to ) && isFloatFamily( from )) ||
-            (isIntFamily( to ) && isIntFamily( from )) )
-    {
-      iPriority++;
+    boolean bLosesInfo = losesInformation( from, to );
+    boolean bSameFamily = isInSameFamily( from, to );
+
+    int iScore = 1;
+    if( bLosesInfo ) {
+      iScore += 4;                    // score = 5
+      if( !bSameFamily ) {
+        iScore += 2;                  // score = 7
+      }
     }
-    return iPriority;
+    else if( bSameFamily ) {
+      iScore += distance( from, to ); // score = (2..4)
+    }
+    else {
+      iScore += 5;                    // score = 6
+    }
+    return iScore;
   }
 
-  private boolean hasLossOfPrecision(IType to, IType from) {
-    boolean[][] tab =
-                      {                                        //TO
-                          //FROM       boolean char    byte    short   int     long    float   double
-                          /*boolean*/  {false,  false,  false,  false,  false,  false,  false,  false },
-                          /*char   */  {false,  false,  false,  false,  false,  false,  false,  false },
-                          /*byte   */  {false,  false,  false,  false,  false,  false,  false,  false },
-                          /*short  */  {false,  false,  false,  false,  false,  false,  false,  false },
-                          /*int    */  {false,  false,  false,  false,  false,  false,  true,   false },
-                          /*long   */  {false,  false,  false,  false,  false,  false,  true,   true  },
-                          /*float  */  {false,  false,  false,  false,  false,  false,  false,  false },
-                          /*double */  {false,  false,  false,  false,  false,  false,  false,  false }
-                      };
+  private static int distance( IType from, IType to ) {
+    int iDistance = getIndex( to ) - getIndex( from );
+    return iDistance >= 0 ? iDistance : 5;
+  }
 
+  private static boolean losesInformation( IType from, IType to ) {
+    boolean[][] tab =
+    {                                        //TO
+      //FROM       boolean  byte    char    short   int     long    float   double
+      /*boolean*/  {false,  false,  false,  false,  false,  false,  false,  false },
+      /*char   */  {true,   true,   false,  true,   false,  false,  false,  false },
+      /*byte   */  {true,   false,  false,  false,  false,  false,  false,  false },
+      /*short  */  {true,   true,   true,   false,  false,  false,  false,  false },
+      /*int    */  {true,   true,   true,   true,   false,  false,  true,   false },
+      /*long   */  {true,   true,   true,   true,   true,   false,  true,   true  },
+      /*float  */  {true,   true,   true,   true,   true,   true,   false,  false },
+      /*double */  {true,   true,   true,   true,   true,   true,   true,   false },
+    };
     final int i = getIndex(from);
     final int j = getIndex(to);
     if(i == -1 || j == -1 )
@@ -165,7 +175,7 @@ public class BasePrimitiveCoercer extends StandardCoercer implements IResolvingC
     return tab[i][j];
   }
 
-  private int getIndex(IType type) {
+  private static int getIndex(IType type) {
     if( type == JavaTypes.pBOOLEAN() || type == JavaTypes.BOOLEAN() )
     {
       return 0;
@@ -201,46 +211,11 @@ public class BasePrimitiveCoercer extends StandardCoercer implements IResolvingC
     return -1;
   }
 
-  private boolean isAWideingConversion(IType to, IType from) {
-    boolean[][] tab =
-                        {                                   //TO
-                          //FROM       boolean  char    byte    short   int     long    float   double
-                          /*boolean*/  {true,   false,  false,  false,  false,  false,  false,  false},
-                          /*char   */  {false,  true,   false,  false,  true,   true,   true,   true },
-                          /*byte   */  {false,  false,  true,   true,   true,   true,   true,   true },
-                          /*short  */  {false,  false,  false,  true,   true,   true,   true,   true },
-                          /*int    */  {false,  false,  false,  false,  true,   true,   false,  true },
-                          /*long   */  {false,  false,  false,  false,  false,  true,   false,  false},
-                          /*float  */  {false,  false,  false,  false,  false,  false,  true,   true },
-                          /*double */  {false,  false,  false,  false,  false,  false,  false,  true }
-                        };
-
-    final int i = getIndex(from);
-    final int j = getIndex(to);
-    if(i == -1 || j == -1 )
-    {
-      return false;
-    }
-    return tab[i][j];
-  }
-
-  private boolean isFloatFamily( IType type )
-  {
-    return type == JavaTypes.FLOAT() ||
-           type == JavaTypes.pFLOAT() ||
-           type == JavaTypes.DOUBLE() ||
-           type == JavaTypes.pDOUBLE();
-  }
-
-  private boolean isIntFamily( IType type )
-  {
-    return type == JavaTypes.INTEGER() ||
-           type == JavaTypes.pINT() ||
-           type == JavaTypes.LONG() ||
-           type == JavaTypes.pLONG() ||
-           type == JavaTypes.SHORT() ||
-           type == JavaTypes.pSHORT() ||
-           type == JavaTypes.BYTE() ||
-           type == JavaTypes.pBYTE();
+  private static boolean isInSameFamily( IType t1, IType t2 ) {
+    int indexT1 = getIndex( t1 );
+    int indexT2 = getIndex( t2 );
+    return indexT1 == indexT2 ||
+           indexT1 > 1 && indexT1 < 6 && indexT2 > 1 && indexT2 < 6 ||
+           indexT1 > 5 && indexT2 > 5;
   }
 }

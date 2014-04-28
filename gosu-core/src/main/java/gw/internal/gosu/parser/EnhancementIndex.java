@@ -4,12 +4,9 @@
 
 package gw.internal.gosu.parser;
 
-import gw.internal.ext.org.antlr.runtime.ANTLRInputStream;
-import gw.internal.ext.org.antlr.runtime.CharStream;
-import gw.internal.ext.org.antlr.runtime.Token;
-import gw.internal.gosu.parser.java.JavaLexer;
+import gw.lang.GosuShop;
 import gw.lang.parser.CICS;
-import gw.lang.parser.Keyword;
+import gw.lang.parser.ISourceCodeTokenizer;
 import gw.lang.parser.TypeVarToTypeMap;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IMethodInfo;
@@ -30,10 +27,10 @@ import gw.lang.reflect.gs.ISourceFileHandle;
 import gw.util.GosuObjectUtil;
 import gw.util.StreamUtil;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -238,70 +235,44 @@ public class EnhancementIndex implements IEnhancementIndex
 
   private String parseEnhancedTypeName(RefreshRequest request) {
     try {
-      return parseEnhancedTypeName(request.file.openInputStream(), request.file.getBaseName());
+      return parseEnhancedTypeName(request.file.openInputStream());
     } catch (IOException e) {
       return IErrorType.NAME;
     }
   }
 
   public static String parseEnhancedTypeName(ISourceFileHandle sfh) {
-    return parseEnhancedTypeName(new ByteArrayInputStream(StreamUtil.toBytes(sfh.getSource().getSource())), sfh.getRelativeName());
+    return parseEnhancedTypeName(new ByteArrayInputStream(StreamUtil.toBytes(sfh.getSource().getSource())));
   }
 
-  public static String parseEnhancedTypeName(InputStream stream, String baseFileName) {
-    BufferedInputStream input = null;
-    try {
-      input = new BufferedInputStream(stream, 1024);
-      CharStream cs = new ANTLRInputStream(input);
-      JavaLexer lexer = new JavaLexer(cs);
-
-      Token token = lexer.nextToken();
-      while (not(token, Keyword.KW_enhancement.getName())) {
-        token = lexer.nextToken();
+  public static String parseEnhancedTypeName(InputStream stream) {
+    ISourceCodeTokenizer tokenizer = GosuShop.createSourceCodeTokenizer(new InputStreamReader(stream));
+    StringBuilder name = new StringBuilder();
+    boolean mark = false;
+    boolean enhancementFound = false;
+    tokenizer.nextToken();
+    String currentToken = tokenizer.getCurrentToken().getText();
+    while (!tokenizer.isEOF() && !currentToken.equals("{")) {
+      if(mark) {
+        if(currentToken.equals("<")) {
+          break;
       }
-
-      while (not(token, baseFileName)) {
-        token = lexer.nextToken();
+        name.append(currentToken);
       }
-      while (not(token, ":")) {
-        token = lexer.nextToken();
+      if (currentToken.equals("enhancement")) {
+        enhancementFound = true;
       }
-
-      StringBuilder name = new StringBuilder();
-      token = lexer.nextToken();
-      do {
-        name.append(token.getText());
-        token = lexer.nextToken();
-      } while (not(token, "{") && not(token, "<"));
-
-      return clean(name);
-    } catch (IOException e) {
-      return IErrorType.NAME;
-    } finally {
-      if (input != null)
-        try {
-          input.close();
-        } catch (IOException e) {
-        }
+      if (currentToken.equals(":") && enhancementFound) {
+        mark = true;
+      }
+      tokenizer.nextToken();
+      currentToken = tokenizer.getCurrentToken().getText();
     }
-  }
-
-  private static String clean(StringBuilder name) {
-    for (int i = 0; i < name.length(); ) {
-      if (Character.isWhitespace(name.charAt(i))) {
-        name.delete(i, i + 1);
-      } else {
-        i++;
-      }
+    String ret = name.toString();
+    if(ret.isEmpty() || !mark ) {
+      ret = IErrorType.NAME;
     }
-    return name.toString();
-  }
-
-  private static boolean not(Token token, String text) throws IOException {
-    if (token.getType() == JavaLexer.EOF) {
-      throw new IOException("EOF");
-    }
-    return !token.getText().equals(text);
+    return ret;
   }
 
   private ArrayList<String> getEnhancementIndexForType( String strEnhancedTypeName )

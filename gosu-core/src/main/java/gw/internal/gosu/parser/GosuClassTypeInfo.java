@@ -5,6 +5,7 @@
 package gw.internal.gosu.parser;
 
 import gw.config.CommonServices;
+import gw.lang.parser.IExpression;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ISymbolTable;
 import gw.lang.parser.expressions.IVarStatement;
@@ -79,7 +80,7 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
             for( int i = 0; i < annotations.size(); i++ )
             {
               IGosuAnnotation annotation = annotations.get( i );
-              result.add( new GosuAnnotationInfo( annotation, GosuClassTypeInfo.this, getGosuClass(), i ) );
+              result.add( new GosuAnnotationInfo( annotation, GosuClassTypeInfo.this, getGosuClass() ) );
             }
           }
           return result;
@@ -458,11 +459,11 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
 
       ArrayList constructors = new ArrayList();
 
-      if( _gsClass instanceof IGosuEnhancementInternal )
+      if( Modifier.isAnnotation( _gsClass.getModifiers() ) )
       {
-        //no constructors allowed on enhancements
+        constructors.add( makeStandardAnnotationConstructor() );
       }
-      else
+      else if( !(_gsClass instanceof IGosuEnhancementInternal) )
       {
         List<DynamicFunctionSymbol> mapConstructors = _gsClass.getConstructorFunctions();
         if( mapConstructors != null )
@@ -478,6 +479,33 @@ public class GosuClassTypeInfo extends BaseTypeInfo implements IGosuClassTypeInf
     {
       TypeSystem.unlock();
     }
+  }
+
+  private IConstructorInfo makeStandardAnnotationConstructor()
+  {
+    ArrayList<ParameterInfoBuilder> params = new ArrayList<ParameterInfoBuilder>();
+    ArrayList<ParameterInfoBuilder> paramsWDefaultValues = new ArrayList<ParameterInfoBuilder>();
+    Collection<DynamicFunctionSymbol> methods = _gsClass.getParseInfo().getMemberFunctions().values();
+    for( DynamicFunctionSymbol dfs : methods )
+    {
+      ParameterInfoBuilder pib = new ParameterInfoBuilder().withName( dfs.getDisplayName() ).withType( dfs.getReturnType() );
+      IExpression annotationDefault = dfs.getAnnotationDefault();
+      if( annotationDefault != null )
+      {
+        pib.withDefValue( annotationDefault );
+        paramsWDefaultValues.add( pib );
+      }
+      else
+      {
+        params.add( pib );
+      }
+    }
+    params.addAll( paramsWDefaultValues );
+
+    return new ConstructorInfoBuilder()
+      .withParameters( params.toArray( new ParameterInfoBuilder[params.size()] ) )
+      .withUserData( AnnotationConstructorGenerator.STANDARD_CTOR_WITH_DEFAULT_PARAM_VALUES )
+      .build( this );
   }
 
   private List createConstructorInfos( List<DynamicFunctionSymbol> functions )

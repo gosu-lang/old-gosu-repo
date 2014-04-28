@@ -31,6 +31,6 @@ public class AnnotationExpression extends NewExpression implements IAnnotationEx
       return super.evaluate();
     }
 
-    return new GosuAnnotationInfo( getAnnotation(), getAnnotation().getOwnersType().getTypeInfo(), (IGosuClassInternal)getGosuClass(), 0 );
+    return new GosuAnnotationInfo( getAnnotation(), getAnnotation().getOwnersType().getTypeInfo(), (IGosuClassInternal)getGosuClass() );
   }
 }

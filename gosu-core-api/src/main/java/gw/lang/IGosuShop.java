@@ -142,8 +142,6 @@ public interface IGosuShop extends IService
   IRTypeResolver getIRTypeResolver();
 
   IRClassCompiler getIRClassCompiler();
-  
-  Object evaluateAnnotation( IAnnotationInfo ai );
 
   IPropertyAccessor getLengthAccessor();
 

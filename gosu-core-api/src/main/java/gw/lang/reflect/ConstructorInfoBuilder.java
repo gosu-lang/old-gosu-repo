@@ -18,6 +18,7 @@ public class ConstructorInfoBuilder {
   private String _deprecated;
   private String _description;
   private IRelativeTypeInfo.Accessibility _accessibility = IRelativeTypeInfo.Accessibility.PUBLIC;
+  private Object _userData;
 
   public ConstructorInfoBuilder withAccessibility(IRelativeTypeInfo.Accessibility accessibility) {
     this._accessibility = accessibility;
@@ -45,6 +46,11 @@ public class ConstructorInfoBuilder {
 
   public ConstructorInfoBuilder withDescription(String description) {
     this._description = description;
+    return this;
+  }
+
+  public ConstructorInfoBuilder withUserData(Object userData) {
+    this._userData = userData;
     return this;
   }
 
@@ -86,7 +92,10 @@ public class ConstructorInfoBuilder {
     return new BuiltConstructorInfo(this, container);
   }
 
-  private static class BuiltConstructorInfo implements IConstructorInfo, IOptionalParamCapable {
+  public interface IBuilt {
+    Object getUserData();
+  }
+  private static class BuiltConstructorInfo implements IConstructorInfo, IOptionalParamCapable, IBuilt {
 
     private final IFeatureInfo _container;
     private final IParameterInfo[] _parameters;
@@ -95,10 +104,11 @@ public class ConstructorInfoBuilder {
     private final String _deprecated;
     private final String _description;
     private final IRelativeTypeInfo.Accessibility _accessibility;
+    private final Object _userData;
 
     public BuiltConstructorInfo(ConstructorInfoBuilder builder, IFeatureInfo container) {
       assert container != null;
-      assert builder._constructorHandler != null;
+//      assert builder._constructorHandler != null;
       this._container = container;
       this._parameters = new IParameterInfo[builder._parameters.length];
       for (int i = 0; i < builder._parameters.length; i++) {
@@ -112,6 +122,7 @@ public class ConstructorInfoBuilder {
       this._exceptions = Collections.unmodifiableList(Arrays.asList(tmp));
       this._deprecated = builder._deprecated;
       this._description = builder._description;
+      _userData = builder._userData;
       _accessibility = builder._accessibility;
     }
 
@@ -131,6 +142,10 @@ public class ConstructorInfoBuilder {
       return _exceptions;
     }
 
+    public Object getUserData() {
+      return _userData;
+    }
+
     @Override
     public boolean isDefault() {
       return false;
@@ -146,6 +161,10 @@ public class ConstructorInfoBuilder {
 
     public String getDeprecatedReason() {
       return _deprecated;
+    }
+
+    public boolean isDefaultImpl() {
+      return false;
     }
 
     public boolean isVisible( IScriptabilityModifier constraint) {

@@ -9,7 +9,7 @@ import gw.lang.reflect.*;
 
 import java.util.List;
 
-public interface IGosuMethodInfo extends IAttributedFeatureInfo, IGenericMethodInfo, IMethodInfo, IOptionalParamCapable, Comparable, IDFSBackedFeatureInfo
+public interface IGosuMethodInfo extends IAttributedFeatureInfo, IGenericMethodInfo, IMethodInfo, IOptionalParamCapable, Comparable, IDFSBackedFeatureInfo, ICanHaveAnnotationDefault
 {
   boolean isMethodForProperty();
 

@@ -51,7 +51,7 @@ public class AnnotationReflectUtil
     ArrayList<IExceptionInfo> lst = new ArrayList<IExceptionInfo>();
     for( IAnnotationInfo aThrows : evalThrows( typeInfo ) )
     {
-      lst.add( new SyntheticExceptionInfo( typeInfo, ((IType)aThrows.getFieldValue( "ExceptionType" )).getName(), (String)aThrows.getFieldValue( "Description" ) ) );
+      lst.add( new SyntheticExceptionInfo( typeInfo, ((IType)aThrows.getFieldValue( "ExceptionType" )).getName(), (String)aThrows.getFieldValue( "ExceptionDescription" ) ) );
     }
     return lst;
   }

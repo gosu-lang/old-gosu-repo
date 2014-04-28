@@ -126,41 +126,9 @@ public class GosuFieldAccessExpressionImpl extends GosuReferenceExpressionImpl<I
 
   //TODO-dp consider adding an extension point for these kinds of special cases
 
-  public TextRange getRangeInElement() {
-    if (isDisplayKey(getParsedElement())) {
-      return new TextRange(0, getTextLength());
-    } else {
-      return super.getRangeInElement();
-    }
-  }
-
-  public static boolean isDisplayKey(@Nullable IMemberAccessExpression parsedElement) {
-    if (parsedElement == null) {
-      return false;
-    }
-    IType rootType = parsedElement.getRootType();
-    return rootType != null && rootType.getName().startsWith("displaykey_") &&
-        !CompletionInitializationContext.DUMMY_IDENTIFIER_TRIMMED.equals(parsedElement.getMemberName());
-  }
-
   protected PsiElement handleElementRenameInner(String newElementName) throws IncorrectOperationException {
-    if (isDisplayKey(getParsedElement())) {
-      GosuCompositeElement oldNode = this.getNode();
-
-      PsiElement element = GosuPsiParseUtil.createReferenceNameFromText(this, "displaykey." + newElementName);
-      ASTNode newNode = new PsiMatcherImpl(element.getContainingFile())
-          .descendant(PsiMatchers.hasClass(GosuSyntheticClassDefinitionImpl.class))
-          .descendant(new ElementTypeMatcher(GosuElementTypes.ELEM_TYPE_ReturnStatement))
-          .descendant(PsiMatchers.hasClass(GosuFieldAccessExpressionImpl.class))
-          .getElement().getNode();
-
-      CodeEditUtil.setOldIndentation((TreeElement) newNode, 0); // this is to avoid a stupid exception
-      oldNode.getTreeParent().replaceChild(oldNode, newNode);
-      return this;
-    } else {
-      newElementName = makePropertyName( newElementName );
-      return super.handleElementRenameInner(newElementName);
-    }
+    newElementName = makePropertyName( newElementName );
+    return super.handleElementRenameInner(newElementName);
   }
 
   private String makePropertyName( String name ) {
@@ -176,17 +144,6 @@ public class GosuFieldAccessExpressionImpl extends GosuReferenceExpressionImpl<I
 
   @Override
   public List<TextRange> getRanges() {
-    if (isDisplayKey(getParsedElement())) {
-      List<TextRange> ranges = new ArrayList<>();
-      int startOffset = getNode().getStartOffset();
-      for (PsiElement psiChild = getFirstChild(); psiChild != null; psiChild = psiChild.getNextSibling()) {
-        TextRange range = psiChild.getTextRange();
-        ranges.add(range.shiftRight(-startOffset));
-      }
-      if (!ranges.isEmpty()) {
-        return ranges;
-      }
-    }
     return Collections.singletonList(getRangeInElement());
   }
 

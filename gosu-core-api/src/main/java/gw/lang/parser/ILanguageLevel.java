@@ -36,11 +36,7 @@ public interface ILanguageLevel
 
   //## todo: These all should be implied by the answer to isStandard() above... better, just stop supporting this crap
 
-  boolean allowNonLiteralArgsForJavaAnnotations();
-
   boolean allowAllImplicitCoercions();
 
   boolean supportsNakedCatchStatements();
-
-  boolean supportHistoricalJavaAnnotationConstructors();
 }

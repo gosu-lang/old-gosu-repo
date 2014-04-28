@@ -39,7 +39,6 @@ import gw.lang.parser.coercers.LongHighPriorityCoercer;
 import gw.lang.parser.coercers.LongPHighPriorityCoercer;
 import gw.lang.parser.coercers.MetaTypeToClassCoercer;
 import gw.lang.parser.coercers.NonWarningStringCoercer;
-import gw.lang.parser.coercers.RegExpMatchToBooleanCoercer;
 import gw.lang.parser.coercers.RuntimeCoercer;
 import gw.lang.parser.coercers.ShortCoercer;
 import gw.lang.parser.coercers.ShortHighPriorityCoercer;
@@ -49,6 +48,7 @@ import gw.lang.parser.coercers.StringCoercer;
 import gw.lang.parser.coercers.TypeVariableCoercer;
 import gw.lang.parser.exceptions.ParseException;
 import gw.lang.parser.resources.Res;
+import gw.lang.reflect.IAttributedFeatureInfo;
 import gw.lang.reflect.IBlockType;
 import gw.lang.reflect.IErrorType;
 import gw.lang.reflect.IFunctionType;
@@ -64,6 +64,7 @@ import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.ITypeVariableArrayType;
 import gw.lang.reflect.ITypeVariableType;
 import gw.lang.reflect.MethodList;
+import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuArrayClass;
 import gw.lang.reflect.gs.IGosuArrayClassInstance;
@@ -245,7 +246,7 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     //=============================================================================
     //  Anything can be coerced to a string
     //=============================================================================
-    if( JavaTypes.STRING() == lhsType )
+    if( JavaTypes.STRING() == lhsType && !(rhsType instanceof IErrorType) )
     {
       if( JavaTypes.pCHAR().equals( rhsType ) || JavaTypes.CHARACTER().equals( rhsType ) )
       {
@@ -297,10 +298,14 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
     // Class<T> <- Meta<T' instanceof JavaType>
     //=============================================================================
     if( (JavaTypes.CLASS().equals( lhsType.getGenericType() ) &&
-         rhsType instanceof IMetaType && ((IMetaType)rhsType).getType() instanceof IHasJavaClass) )
+         (rhsType instanceof IMetaType &&
+          (((IMetaType)rhsType).getType() instanceof IHasJavaClass ||
+           ((IMetaType)rhsType).getType() instanceof IMetaType && ((IMetaType)((IMetaType)rhsType).getType()).getType() instanceof IHasJavaClass)))  )
     {
       if( !lhsType.isParameterizedType() ||
           lhsType.getTypeParameters()[0].isAssignableFrom( ((IMetaType)rhsType).getType() ) ||
+          isStructurallyAssignable( lhsType.getTypeParameters()[0], rhsType ) ||
+          isStructurallyAssignable( lhsType.getTypeParameters()[0], ((IMetaType)rhsType).getType() ) ||
           (((IMetaType)rhsType).getType().isPrimitive() && canCoerce( lhsType.getTypeParameters()[0], ((IMetaType)rhsType).getType() )) )
       {
         return MetaTypeToClassCoercer.instance();
@@ -412,15 +417,6 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
         }
       }
     }
-
-    //=============================================================================
-    // Coerce gw.util.RegExpMatch to boolean
-    //=============================================================================
-    if( JavaTypes.pBOOLEAN().equals(lhsType) && rhsType.getName().equals("gw.util.RegExpMatch") )
-    {
-      return RegExpMatchToBooleanCoercer.instance();
-    }
-
     return null;
   }
 
@@ -734,6 +730,29 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
   }
   public static boolean isStructurallyAssignable_Laxed( IType toType, IType fromType )
   {
+//    if( fromType instanceof IMetaType && ((IMetaType)fromType).getType() instanceof IGosuClass && ((IGosuClass)((IMetaType)fromType).getType()).isStructure() )
+//    {
+//      // So that:
+//      // foo( MyStaticCharAtType )
+//      // function foo( t: Type<CharAt> ) {
+//      //   var c = (t as CharAt).charAt( 0 )
+//      //   ...
+//      // }
+//      //
+//      fromType = ((IMetaType)fromType).getType();
+//    }
+//    else if( JavaTypes.CLASS().isAssignableFrom( fromType ) && fromType.getTypeParameters()[0] instanceof IGosuClass && ((IGosuClass)((IMetaType)fromType).getType()).isStructure() )
+//    {
+//      // So that:
+//      // foo( MyStaticCharAtType )
+//      // function foo( t: Class<CharAt> ) {
+//      //   var c = (t as CharAt).charAt( 0 )
+//      //   ...
+//      // }
+//      //
+//      fromType = fromType.getTypeParameters()[0];
+//    }
+
     ITypeInfo fromTypeInfo = fromType.getTypeInfo();
     MethodList fromMethods = fromTypeInfo instanceof IRelativeTypeInfo
                              ? ((IRelativeTypeInfo)fromTypeInfo).getMethods( toType )
@@ -750,7 +769,10 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
       if( toMi.getOwnersType() instanceof IGosuEnhancement ) {
         continue;
       }
-      IMethodInfo fromMi = fromMethods.findAssignableMethod( toMi );
+      if( toMi instanceof IAttributedFeatureInfo && toMi.isDefaultImpl() || toMi.isStatic() ) {
+        continue;
+      }
+      IMethodInfo fromMi = fromMethods.findAssignableMethod( toMi, fromType instanceof IMetaType && (!(((IMetaType)fromType).getType() instanceof IGosuClass) || !((IGosuClass)((IMetaType)fromType).getType()).isStructure()) );
       if( fromMi == null ) {
         if( toMi.getDisplayName().startsWith( "@" ) ) {
           // Find matching property/field
@@ -1187,6 +1209,11 @@ public class StandardCoercionManager extends BaseService implements ICoercionMan
         TypeSystem.isBytecodeType( typeToCoerceTo ) )
     {
       return IdentityCoercer.instance(); // (perf) class-to-class downcast can use checkcast bytecode
+    }
+    if( typeToCoerceTo instanceof IGosuClass && ((IGosuClass)typeToCoerceTo).isStructure() &&
+        typeToCoerceFrom instanceof IMetaType )
+    {
+      return IdentityCoercer.instance();
     }
     return RuntimeCoercer.instance();
   }

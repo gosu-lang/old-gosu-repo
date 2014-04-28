@@ -13,7 +13,6 @@ import gw.internal.gosu.parser.expressions.TypeVariableDefinition;
 import gw.internal.gosu.parser.expressions.TypeVariableDefinitionImpl;
 import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.DelegateStatement;
-import gw.internal.gosu.parser.statements.StatementList;
 import gw.internal.gosu.parser.statements.VarStatement;
 import gw.lang.InternalAPI;
 import gw.lang.Returns;
@@ -69,8 +68,6 @@ import java.io.File;
 import java.io.InvalidClassException;
 import java.io.ObjectStreamException;
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,8 +84,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GosuClass extends AbstractType implements IGosuClassInternal
 {
   private static final long serialVersionUID = 5L;
-  public static final String CLASS_ANNOTATION_SLOT = "class";
-  public static final String EVAL_ANNOTATIONS_METHOD = "$evalAnnotations";
 
   private String _strFullName;
   private IType[] _typeParams;
@@ -130,7 +125,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   transient private List<ITypeVariableDefinition> _typeVarDefs;
   transient private GenericTypeVariable[] _genTypeVar;
   transient private GosuParser _parser;
-  transient private LockingLazyVar<Map<String, List>> _featureAnnotationMap;
   transient private ITypeUsesMap _typeUsesMap;
   transient private ModifierInfo _modifierInfo;
   transient private boolean _bCompiledToUberModule;
@@ -1111,7 +1105,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
     Map<String, DynamicFunctionSymbol> ctors = getParseInfo().getConstructorFunctions();
     //noinspection unchecked
-    return ctors.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( ctors );
+    return ctors.isEmpty() ? Collections.<DynamicFunctionSymbol>emptyList() : getUnmodifiableValues( ctors );
   }
 
   private List getUnmodifiableValues( Map functionSymbolMap )
@@ -1231,7 +1225,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     compileDeclarationsIfNeeded();
 
     Map<String, DynamicFunctionSymbol> memberFunctions = getParseInfo().getMemberFunctions();
-    return memberFunctions.isEmpty() ? Collections.<VarStatement>emptyList() : Collections.unmodifiableList( new ArrayList( memberFunctions.values() ) );
+    return memberFunctions.isEmpty() ? Collections.<DynamicFunctionSymbol>emptyList() : Collections.unmodifiableList( new ArrayList( memberFunctions.values() ) );
   }
 
   public DynamicFunctionSymbol getMemberFunction( IFunctionType funcType, String signature )
@@ -1324,7 +1318,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     compileDeclarationsIfNeeded();
 
     Map<String, DynamicPropertySymbol> properties = getParseInfo().getMemberProperties();
-    return properties.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( properties );
+    return properties.isEmpty() ? Collections.<DynamicPropertySymbol>emptyList() : getUnmodifiableValues( properties );
   }
 
   public DynamicPropertySymbol getMemberProperty( String name )
@@ -1338,7 +1332,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     compileDeclarationsIfNeeded();
 
     Map<String, VarStatement> fields = getParseInfo().getStaticFields();
-    return fields.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( fields );
+    return fields.isEmpty() ? Collections.<IVarStatement>emptyList() : getUnmodifiableValues( fields );
   }
 
   public VarStatement getStaticField( String name )
@@ -1359,7 +1353,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     compileDeclarationsIfNeeded();
 
     Map<String, VarStatement> fields = getParseInfo().getMemberFields();
-    return fields.isEmpty() ? Collections.<VarStatement>emptyList() : getUnmodifiableValues( fields );
+    return fields.isEmpty() ? Collections.<IVarStatement>emptyList() : getUnmodifiableValues( fields );
   }
 
   public Map<String, VarStatement> getMemberFieldsMap()
@@ -1393,19 +1387,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     compileDefinitionsIfNeeded();
 
     getParseInfo().addCapturedSymbolSilent(sym);
-  }
-
-  @Override
-  public Map<String, List> getRuntimeFeatureAnnotationMap()
-  {
-    try
-    {
-      return _featureAnnotationMap.get();
-    }
-    catch( Exception e )
-    {
-      throw GosuExceptionUtil.forceThrow( e );
-    }
   }
 
   public boolean ensureDefaultConstructor( ISymbolTable symbolTable )
@@ -1737,6 +1718,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       {
         if( JavaTypes.THROWS().equals( annotation.getType() ) ||
             JavaTypes.getGosuType( Returns.class ).equals( annotation.getType() ) ||
+            JavaTypes.PARAMS().equals( annotation.getType() ) ||
             JavaTypes.PARAM().equals( annotation.getType() ) )
         {
           it.remove();
@@ -1937,16 +1919,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
     return ClassType.Class;
   }
 
-  @Override
-  public List<StatementList> getAnnotationInitialization()
-  {
-    return getAnnotationInitialization( false );
-  }
-  public List<StatementList> getAnnotationInitialization( boolean bClearOnly )
-  {
-    return AnnotationBuilder.buildAnnotationInitMethodBody((ICompilableTypeInternal) getOrCreateTypeReference(), bClearOnly );
-  }
-
   public List<? extends IGosuAnnotation> getGosuAnnotations()
   {
     return getModifierInfo().getAnnotations();
@@ -2140,7 +2112,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       if( !(type instanceof ErrorType) )
       {
         IGosuClassInternal gsClass = Util.getGosuClassFrom( type );
-        if( gsClass != null )
+        if( gsClass != null && gsClass != getOrCreateTypeReference() )
         {
           gsClass.putClassMembers( owner, table, gsContextClass, bStatic );
         }
@@ -2603,6 +2575,11 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
             unimpled = getUnimplementedMethods( gsInterface, pThis, unimpled, true, false );
             for( IMethodInfo mi : gsInterface.getTypeInfo().getMethods() )
             {
+              if( mi.isDefaultImpl() )
+              {
+                //## todo: see if there are other
+                continue;
+              }
               GosuMethodInfo gmi = (GosuMethodInfo)mi;
               IFunctionType type = new FunctionType( gmi );
               if( unimpled.contains( type ) )
@@ -2657,14 +2634,14 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
   public List<IFunctionType> getUnimplementedMethods()
   {
     List<IFunctionType> emptyList = Collections.emptyList();
-    if( isAbstract() )
-    {
-      return emptyList;
-    }
-    return getUnimplementedMethods( emptyList, (IGosuClassInternal) getOrCreateTypeReference());
+//    if( isAbstract() )
+//    {
+//      return emptyList;
+//    }
+    return getUnimplementedMethods( emptyList, (IGosuClassInternal) getOrCreateTypeReference(), isAbstract() );
   }
 
-  public List<IFunctionType> getUnimplementedMethods( List<IFunctionType> unimpled, IGosuClassInternal implClass )
+  public List<IFunctionType> getUnimplementedMethods( List<IFunctionType> unimpled, IGosuClassInternal implClass, boolean bAcceptAbstract )
   {
     for( IType iface : _interfaces )
     {
@@ -2688,16 +2665,19 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
       iface = Util.getGosuClassFrom( iface );
       if( iface != null )
       {
-        unimpled = getUnimplementedMethods( (IGosuClassInternal)iface, implClass, unimpled, true, false );
+        unimpled = getUnimplementedMethods( (IGosuClassInternal)iface, implClass, unimpled, true, bAcceptAbstract );
       }
     }
-    IType superType = getSupertype();
-    if( superType != null && superType.isAbstract() )
+    if( !bAcceptAbstract )
     {
-      IGosuClassInternal gsSuper = Util.getGosuClassFrom( superType );
-      if (gsSuper != null) {
-        unimpled = getUnimplementedMethods( gsSuper, implClass, unimpled, false, false );
-        unimpled = gsSuper.getUnimplementedMethods( unimpled, implClass );
+      IType superType = getSupertype();
+      if( superType != null && superType.isAbstract() )
+      {
+        IGosuClassInternal gsSuper = Util.getGosuClassFrom( superType );
+        if (gsSuper != null) {
+          unimpled = getUnimplementedMethods( gsSuper, implClass, unimpled, false, false );
+          unimpled = gsSuper.getUnimplementedMethods( unimpled, implClass, bAcceptAbstract );
+        }
       }
     }
     return unimpled;
@@ -2712,7 +2692,7 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
     for( IMethodInfo mi : gsIface.getTypeInfo().getMethods( gsIface ) )
     {
-      if( !mi.isAbstract() )
+      if( !mi.isAbstract() && !mi.isDefaultImpl() )
       {
         continue;
       }
@@ -2960,54 +2940,6 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
           return getClassStatement() != null && !getClassStatement().hasParseExceptions() ? Boolean.TRUE : Boolean.FALSE;
         }
       };
-
-    _featureAnnotationMap = new LockingLazyVar<Map<String, List>>()
-    {
-      @Override
-      protected Map<String, List> init()
-      {
-        if( isParameterizedType() )
-        {
-          return getGenericType().getRuntimeFeatureAnnotationMap();
-        }
-        else
-        {
-          if( isProxy() )
-          {
-            return Collections.emptyMap();
-          }
-
-          try
-          {
-            Class classToLoadAnnotationsFrom;
-            if( isInterface() )
-            {
-              classToLoadAnnotationsFrom = Class.forName( getName() + "." + ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS, false, getBackingClass().getClassLoader() );
-            }
-            else
-            {
-              classToLoadAnnotationsFrom = getBackingClass();
-            }
-            Method declaredMethod = classToLoadAnnotationsFrom.getDeclaredMethod( EVAL_ANNOTATIONS_METHOD );
-            declaredMethod.setAccessible( true );
-            return (Map) declaredMethod.invoke( null );
-          }
-          catch( InvocationTargetException e )
-          {
-            throw GosuExceptionUtil.forceThrow( e.getTargetException() );
-          }
-          catch( Exception e )
-          {
-            throw GosuExceptionUtil.forceThrow( e );
-          }
-        }
-      }
-    };
-  }
-
-  public String getInterfaceMethodsClassName()
-  {
-    return getName() + "." + ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS;
   }
 
   public void validateAncestry(List<IType> visited) {
@@ -3150,6 +3082,8 @@ public class GosuClass extends AbstractType implements IGosuClassInternal
 
   @Override
   public boolean isAnnotation() {
-    return JavaTypes.IANNOTATION().isAssignableFrom(this);
+    return Modifier.isAnnotation( getModifiers() )
+    //## todo: kill IANNOTATION check if/after we completely remove support for old-style Gosu annotations
+    || JavaTypes.IANNOTATION().isAssignableFrom(this);
   }
 }

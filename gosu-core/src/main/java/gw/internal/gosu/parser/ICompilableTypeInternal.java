@@ -26,7 +26,8 @@ public interface ICompilableTypeInternal extends ICompilableType {
 
   IVarStatement getMemberField( String charSequence );
 
-  void addBlock(IBlockClass blockClass);
+  void addBlock( IBlockClass blockClass );
+  void removeBlock( IBlockClass blockClass );
 
   int getBlockCount();
 
@@ -59,10 +60,6 @@ public interface ICompilableTypeInternal extends ICompilableType {
     
   int getAnonymousInnerClassCount();
     
-  String getInterfaceMethodsClassName();
-
-  List<StatementList> getAnnotationInitialization();
-
   List<? extends IGosuAnnotation> getGosuAnnotations();
 
   boolean shouldFullyCompileAnnotations();

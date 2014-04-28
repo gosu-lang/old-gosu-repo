@@ -4,6 +4,7 @@
 
 package gw.lang.reflect.gs;
 
+import gw.lang.parser.Keyword;
 import gw.lang.reflect.IDefaultTypeLoader;
 
 public enum ClassType
@@ -15,6 +16,7 @@ public enum ClassType
   Class,
   Interface,
   Structure,
+  Annotation,
   Enum,
   JavaClass,
   Unknown
@@ -33,6 +35,7 @@ public enum ClassType
         this == Class ||
         this == Interface ||
         this == Structure ||
+        this == Annotation ||
         this == Enum;
   }
 
@@ -69,6 +72,28 @@ public enum ClassType
         return GosuClassTypeLoader.GOSU_TEMPLATE_FILE_EXT;
       default:
         return "";
+    }
+  }
+
+  public String keyword() {
+    switch( this ) {
+      case Enhancement:
+        return Keyword.KW_enhancement.getName();
+      case Interface:
+        return Keyword.KW_interface.getName();
+      case Structure:
+        return Keyword.KW_structure.getName();
+      case Annotation:
+        return Keyword.KW_annotation.getName();
+      case Enum:
+        return Keyword.KW_annotation.getName();
+      case Class:
+      case Program:
+      case Template:
+      case Eval:
+         return Keyword.KW_class.getName();
+      default:
+        return "<unknown>";
     }
   }
 

@@ -249,8 +249,6 @@ public interface IGosuParser extends IParserPart
 
   IExpression popExpression();
 
-  String parseDotPathWord();
-
   void setTokenizer( ISourceCodeTokenizer tokenizer );
 
   void setIgnoreWarnings(Set<ResourceKey> ignoreWarnings);

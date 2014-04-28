@@ -189,13 +189,16 @@ public class Res
   public static final ResourceKey MSG_CONTINUE_OUTSIDE_LOOP = new ResourceKey("MSG_CONTINUE_OUTSIDE_LOOP");
   public static final ResourceKey MSG_EXPECTING_ARROW_AFTER_BLOCK_ARGS = new ResourceKey("MSG_EXPECTING_ARROW_AFTER_BLOCK_ARGS");
   public static final ResourceKey MSG_EXPECTING_CLOSE_BRACE_FOR_BLOCK = new ResourceKey("MSG_EXPECTING_CLOSE_BRACE_FOR_BLOCK");
+  public static final ResourceKey MSG_UNEXPECTED_ARROW = new ResourceKey("MSG_UNEXPECTED_ARROW");
   public static final ResourceKey MSG_EXPECTING_ARROW_AFTER_MAP_KEY = new ResourceKey("MSG_EXPECTING_ARROW_AFTER_MAP_KEY");
   public static final ResourceKey MSG_EXPECTING_CLOSE_BRACE_FOR_INITIALIZER = new ResourceKey("MSG_EXPECTING_CLOSE_BRACE_FOR_INITIALIZER");
   public static final ResourceKey MSG_CANNOT_CONSTRUCT_ABSTRACT_CLASS = new ResourceKey("MSG_CANNOT_CONSTRUCT_ABSTRACT_CLASS");
   public static final ResourceKey MSG_CANNOT_CONSTRUCT_RECURSIVE_CLASS = new ResourceKey("MSG_CANNOT_CONSTRUCT_RECURSIVE_CLASS");
+  public static final ResourceKey MSG_RECURSIVE_CONSTRUCTOR = new ResourceKey("MSG_RECURSIVE_CONSTRUCTOR");
   public static final ResourceKey MSG_MODIFIER_ABSTRACT_NOT_ALLOWED_HERE = new ResourceKey("MSG_MODIFIER_ABSTRACT_NOT_ALLOWED_HERE");
   public static final ResourceKey MSG_NOT_ALLOWED_IN_INTERFACE = new ResourceKey("MSG_NOT_ALLOWED_IN_INTERFACE");
   public static final ResourceKey MSG_UNIMPLEMENTED_METHOD = new ResourceKey("MSG_UNIMPLEMENTED_METHOD");
+  public static final ResourceKey MSG_INHERITS_UNRELATED_DEFAULTS = new ResourceKey("MSG_INHERITS_UNRELATED_DEFAULTS");
   public static final ResourceKey MSG_INTERFACE_CANNOT_EXTEND_CLASS = new ResourceKey("MSG_INTERFACE_CANNOT_EXTEND_CLASS");
   public static final ResourceKey MSG_CLASS_CANNOT_EXTEND_INTERFACE = new ResourceKey("MSG_CLASS_CANNOT_EXTEND_INTERFACE");
   public static final ResourceKey MSG_CLASS_MUST_HAVE_PACKAGE = new ResourceKey("MSG_CLASS_MUST_HAVE_PACKAGE");
@@ -218,7 +221,6 @@ public class Res
   public static final ResourceKey MSG_CANNOT_PARAMETERIZE_NONGENERIC = new ResourceKey("MSG_CANNOT_PARAMETERIZE_NONGENERIC");
   public static final ResourceKey MSG_TYPE_PARAM_NOT_ASSIGNABLE_TO = new ResourceKey("MSG_TYPE_PARAM_NOT_ASSIGNABLE_TO");
   public static final ResourceKey MSG_TYPE_NOT_ANNOTATION = new ResourceKey("MSG_TYPE_NOT_ANNOTATION");
-  public static final ResourceKey MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION = new ResourceKey("MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION");
   public static final ResourceKey MSG_MISPLACED_META_ANNOTATION = new ResourceKey("MSG_MISPLACED_META_ANNOTATION");
   public static final ResourceKey MSG_MISPLACED_ANNOTATION = new ResourceKey("MSG_MISPLACED_ANNOTATION");
   public static final ResourceKey MSG_ANNOTATION_WHEN_NONE_ALLOWED = new ResourceKey("MSG_ANNOTATION_WHEN_NONE_ALLOWED");
@@ -248,6 +250,7 @@ public class Res
   public static final ResourceKey MSG_SHOULD_HAVE_FOUND_METHOD_AT_LINE = new ResourceKey("MSG_SHOULD_HAVE_FOUND_METHOD_AT_LINE");
   public static final ResourceKey MSG_VOID_EXPRESSION_NOT_ALLOWED = new ResourceKey("MSG_VOID_EXPRESSION_NOT_ALLOWED");
   public static final ResourceKey MSG_EXPECTING_RETURN_TYPE_OR_FUN_BODY = new ResourceKey("MSG_EXPECTING_RETURN_TYPE_OR_FUN_BODY");
+  public static final ResourceKey MSG_INVALID_TYPE_FOR_ANNOTATION_MEMBER = new ResourceKey("MSG_INVALID_TYPE_FOR_ANNOTATION_MEMBER");
   public static final ResourceKey MSG_ABSTRACT_METHOD_CANNOT_BE_ACCESSED_DIRECTLY = new ResourceKey( "MSG_ABSTRACT_METHOD_CANNOT_BE_ACCESSED_DIRECTLY" );
   public static final ResourceKey MSG_ERRANT_TYPE_VAR = new ResourceKey("MSG_ERRANT_TYPE_VAR");
   public static final ResourceKey MSG_USING_VOID_RETURN_TYPE_FROM_NON_NULL_EXPR = new ResourceKey("MSG_USING_VOID_RETURN_TYPE_FROM_NON_NULL_EXPR");
@@ -287,6 +290,7 @@ public class Res
   public static final ResourceKey MSG_MISSING_OVERRIDE_MODIFIER = new ResourceKey("MSG_MISSING_OVERRIDE_MODIFIER");
   public static final ResourceKey MSG_STATIC_METHOD_CANNOT_OVERRIDE = new ResourceKey("MSG_STATIC_METHOD_CANNOT_OVERRIDE");
   public static final ResourceKey MSG_NO_IMPLEMENTS_ALLOWED = new ResourceKey("MSG_NO_IMPLEMENTS_ALLOWED");
+  public static final ResourceKey MSG_NO_EXTENDS_ALLOWED = new ResourceKey("MSG_NO_EXTENDS_ALLOWED");
   public static final ResourceKey MSG_FUNCTION_NOT_OVERRIDE = new ResourceKey("MSG_FUNCTION_NOT_OVERRIDE");
   public static final ResourceKey MSG_FUNCTION_NOT_OVERRIDE_PROPERTY = new ResourceKey("MSG_FUNCTION_NOT_OVERRIDE_PROPERTY");
   public static final ResourceKey MSG_SUBCLASS_OBJECT = new ResourceKey("MSG_SUBCLASS_OBJECT");
@@ -452,6 +456,7 @@ public class Res
   public static final ResourceKey MSG_EXPLICIT_TYPE_RECOMMENDED_FOR_CATCH_STMTS = new ResourceKey( "MSG_EXPLICIT_TYPE_RECOMMENDED_FOR_CATCH_STMTS");
   public static final ResourceKey MSG_SUPER_NOT_ACCESSIBLE_FROM_BLOCK= new ResourceKey("MSG_SUPER_NOT_ACCESSIBLE_FROM_BLOCK");
   public static final ResourceKey MSG_GENERIC_PROPERTIES_NOT_SUPPORTED = new ResourceKey( "MSG_GENERIC_PROPERTIES_NOT_SUPPORTED" );
+  public static final ResourceKey MSG_GENERIC_ANNOTATIONS_NOT_SUPPORTED = new ResourceKey( "MSG_GENERIC_ANNOTATIONS_NOT_SUPPORTED" );
   public static final ResourceKey MSG_CATCH_STMT_CANNOT_EXECUTE = new ResourceKey( "MSG_CATCH_STMT_CANNOT_EXECUTE" );
   public static final ResourceKey MSG_IMONITOR_LOCK_SHOULD_ONLY_BE_USED_WITHIN_USING_STMTS = new ResourceKey( "MSG_IMONITOR_LOCK_SHOULD_ONLY_BE_USED_WITHIN_USING_STMTS" );
   public static final ResourceKey MSG_STATIC_MODIFIER_NOT_ALLOWED_HERE = new ResourceKey( "MSG_STATIC_MODIFIER_NOT_ALLOWED_HERE" );

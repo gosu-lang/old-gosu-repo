@@ -137,14 +137,14 @@ public class MethodList extends DynamicArray<IMethodInfo> {
     throw new RuntimeException("Not supported");
   }
 
-  public IMethodInfo findAssignableMethod( IMethodInfo miTo ) {
+  public IMethodInfo findAssignableMethod( IMethodInfo miTo, boolean bStatic ) {
     IMethodInfo foundMethod = null;
     String mname = miTo.getDisplayName();
     IParameterInfo[] toParams = miTo.getParameters();
     int iTopScore = 0;
     outer:
     for( IMethodInfo miFrom : this ) {
-      if( miFrom.getDisplayName().equals( mname ) ) {
+      if( miFrom.isStatic() == bStatic && miFrom.getDisplayName().equals( mname ) ) {
         IType fromReturnType = miFrom.getReturnType();
         IType toReturnType = miTo.getReturnType();
         fromReturnType = TypeSystem.replaceTypeVariableTypeParametersWithBoundingTypes( fromReturnType, miFrom.getOwnersType() );

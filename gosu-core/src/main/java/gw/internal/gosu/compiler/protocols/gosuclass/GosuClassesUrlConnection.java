@@ -6,9 +6,6 @@ package gw.internal.gosu.compiler.protocols.gosuclass;
 
 import gw.internal.gosu.compiler.GosuClassLoader;
 import gw.internal.gosu.compiler.SingleServingGosuClassLoader;
-import gw.internal.gosu.ir.TransformingCompiler;
-import gw.internal.gosu.parser.GosuClass;
-import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
@@ -25,8 +22,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  */
@@ -35,17 +30,8 @@ public class GosuClassesUrlConnection extends URLConnection {
     "java/", "javax/", "sun/"
   };
   private ICompilableType _type;
-  private boolean _bInterfaceAnnotationMethods;
   private boolean _bDirectory;
   private boolean _bInvalid;
-
-  //public static final ConcurrentHashMap<URL, URL> _visited = new ConcurrentHashMap<URL, URL>();
-  private static ThreadLocal<Set<String>> INITIATED_BY_HANDLER = new ThreadLocal<Set<String>>() {
-    @Override
-    protected Set<String> initialValue() {
-      return new HashSet<String>();
-    }
-  };
 
   public GosuClassesUrlConnection( URL url ) {
     super( url );
@@ -74,10 +60,6 @@ public class GosuClassesUrlConnection extends URLConnection {
         int iIndexClass = strType.lastIndexOf( ".class" );
         if( iIndexClass > 0 ) {
           strType = strType.substring( 0, iIndexClass ).replace( '$', '.' );
-          if( strType.endsWith( '.' + GosuClass.ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS ) ) {
-            _bInterfaceAnnotationMethods = true;
-            strType = strType.substring( 0, strType.lastIndexOf( '.' ) );
-          }
           maybeAssignGosuType( strType );
         }
         else if( strPath.endsWith( "/" ) ) {
@@ -127,10 +109,6 @@ public class GosuClassesUrlConnection extends URLConnection {
     return false;
   }
 
-  public static boolean isInitiatedByHandler(String strName) {
-    return INITIATED_BY_HANDLER.get().contains(strName);
-  }
-
   private boolean ignoreJavaClass( String strClass ) {
     for( String namespace: JAVA_NAMESPACES_TO_IGNORE ) {
       if( strClass.startsWith( namespace ) ) {
@@ -169,13 +147,8 @@ public class GosuClassesUrlConnection extends URLConnection {
         ClassLoader loader = TypeSystem.getGosuClassLoader().getActualLoader();
         TypeSystemLockHelper.getTypeSystemLockWithMonitor( loader );
         try {
-          if( _bInterfaceAnnotationMethods ) {
-            _buf = TransformingCompiler.compileInterfaceMethodsClass( (IGosuClassInternal)_type, false );
-          }
-          else {
-            //System.out.println( "Compiling: " + _type.getName() );
-            _buf = GosuClassLoader.instance().getBytes( _type);
-          }
+          //System.out.println( "Compiling: " + _type.getName() );
+          _buf = GosuClassLoader.instance().getBytes( _type);
           _pos = 0;
           _count = _buf.length;
         }

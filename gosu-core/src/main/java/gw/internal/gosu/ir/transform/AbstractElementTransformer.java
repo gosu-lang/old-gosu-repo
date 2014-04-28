@@ -2863,7 +2863,7 @@ public abstract class AbstractElementTransformer<T extends IParsedElement>
     for( int i = 0; i < gosuAnnotations.size(); i++ )
     {
       IGosuAnnotation ga = gosuAnnotations.get( i );
-      annotationInfos.add( new GosuAnnotationInfo( ga, fiAnnotated, (IGosuClassInternal)ga.getOwnersType(), i ) );
+      annotationInfos.add( new GosuAnnotationInfo( ga, fiAnnotated, (IGosuClassInternal)ga.getOwnersType() ) );
     }
     return annotationInfos;
   }

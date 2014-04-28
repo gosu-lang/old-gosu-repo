@@ -61,7 +61,7 @@ public final class ClassStatement extends Statement implements IClassStatement
   @Override
   public String toString()
   {
-    return (_gsClass.isInterface() ? "interface " : "class " ) + _gsClass.getName() + "{ ... }";
+    return _gsClass.getClassType().keyword() + " " + _gsClass.getName() + "{ ... }";
   }
 
   public IGosuClassInternal getGosuClass()

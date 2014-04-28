@@ -24,12 +24,6 @@ public class TransformingCompiler
     return _compileClass( gsClass, debug, irClass );
   }
 
-  public static byte[] compileInterfaceMethodsClass( IGosuClassInternal gsClass, boolean debug )
-  {
-    IRClass irClass = GosuClassTransformer.compileInterfaceMethodsClass( gsClass );
-    return _compileClass( gsClass, debug, irClass );
-  }
-
   private static byte[] _compileClass( ICompilableType gsClass, boolean debug, IRClass irClass )
   {
     if( BytecodeOptions.isTreeVerifcationEnabled() )

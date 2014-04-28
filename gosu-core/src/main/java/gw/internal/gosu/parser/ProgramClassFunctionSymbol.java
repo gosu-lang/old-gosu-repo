@@ -23,7 +23,7 @@ public class ProgramClassFunctionSymbol extends DynamicFunctionSymbol implements
     SyntheticFunctionStatement stmt = (SyntheticFunctionStatement)getValueDirectly();
     stmt.setDfsOwner( this );
     setClassMember( true );
-    setName( (String)mi.getName() );
+    setName( mi.getName() );
     _scriptPartId = new ScriptPartId( gsClass, null );
   }
 

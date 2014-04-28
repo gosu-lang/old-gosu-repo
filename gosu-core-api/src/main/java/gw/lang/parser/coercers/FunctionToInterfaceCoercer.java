@@ -121,6 +121,10 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
         {
           it.remove();
         }
+        else if( !methodInfo.isAbstract() )
+        {
+          it.remove();
+        }
       }
 
       if( list.size() == 1 )
@@ -147,7 +151,7 @@ public class FunctionToInterfaceCoercer extends BaseCoercer implements IResolvin
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return 2;
   }
 
   public IType resolveType( IType target, IType source )

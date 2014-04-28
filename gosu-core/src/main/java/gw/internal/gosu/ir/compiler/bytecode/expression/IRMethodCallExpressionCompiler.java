@@ -15,6 +15,8 @@ import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
 import gw.lang.ir.expression.IRMethodCallExpression;
+import gw.lang.reflect.TypeSystem;
+import gw.lang.reflect.gs.IGosuClass;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
@@ -137,10 +139,24 @@ public class IRMethodCallExpressionCompiler extends AbstractBytecodeCompiler {
     if( proxyByClass == null ) {
       PROXY_CACHE.put( iface, proxyByClass = new ConcurrentHashMap<Class, Constructor>() );
     }
-    Class rootClass = root.getClass();
+    boolean bStaticImpl;
+    Class rootClass;
+    if( root instanceof IGosuClass ) {
+      bStaticImpl = true;
+      rootClass = ((IGosuClass) root).getBackingClass();
+    }
+    else if( root instanceof Class ) {
+      bStaticImpl = true;
+      rootClass = (Class)root;
+      root = TypeSystem.get( rootClass );
+    }
+    else {
+      bStaticImpl = false;
+      rootClass = root.getClass();
+    }
     Constructor proxyClassCtor = proxyByClass.get( rootClass );
     if( proxyClassCtor == null ) {
-      Class proxyClass = createProxy( iface, rootClass );
+      Class proxyClass = createProxy( iface, rootClass, bStaticImpl );
       proxyByClass.put( rootClass, proxyClassCtor = proxyClass.getConstructors()[0] );
     }
     try {
@@ -151,9 +167,9 @@ public class IRMethodCallExpressionCompiler extends AbstractBytecodeCompiler {
     }
   }
 
-  private static Class createProxy( String iface, Class rootClass ) {
+  private static Class createProxy( String iface, Class rootClass, boolean bStaticImpl ) {
     String relativeProxyName = rootClass.getSimpleName() + "_structuralproxy_" + iface.replace( '.', '_' );
-    return StructuralTypeProxyGenerator.makeProxy( iface, rootClass, relativeProxyName );
+    return StructuralTypeProxyGenerator.makeProxy( iface, rootClass, relativeProxyName, bStaticImpl );
   }
 
   /**

@@ -4,6 +4,10 @@
 
 package gw.test;
 
+import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.util.GosuObjectUtil;
 import gw.testharness.DoNotRunTest;
@@ -24,25 +28,15 @@ public class TestMetadata implements ITestMetadata {
   private HashMap<String, String> _attributes = new HashMap<String, String>();
   private boolean _doNotRunTest;
 
-  public TestMetadata(Annotation testAnnotation) {
-    Class<? extends Annotation> annotationType = testAnnotation.annotationType();
-    for (Annotation metaAnnotation : annotationType.getAnnotations()) {
-      if (metaAnnotation instanceof DoNotRunTest) {
+  public TestMetadata(IAnnotationInfo testAnnotation) {
+    IType annotationType = testAnnotation.getType();
+    for( IAnnotationInfo metaAnnotation : annotationType.getTypeInfo().getAnnotations() ) {
+      if( metaAnnotation.getType().getName().equals( DoNotRunTest.class.getName() ) ) {
         _doNotRunTest = true;
       }
     }
-    for (Method method : TypeSystem.getDeclaredMethods( annotationType )) {
-      try {
-        addAttribute(method.getName(), GosuObjectUtil.toString(method.invoke(testAnnotation)));
-      } catch (IllegalAccessException e) {
-        e.printStackTrace();
-      } catch (InvocationTargetException e) {
-        e.printStackTrace();
-      } catch (Exception e) {
-        // Happens if these things are out of order...
-        throw new RuntimeException("Got weird error fetching attribute '" + method.getName() + "' with annotation '" +
-            testAnnotation + "'");
-      }
+    for( IMethodInfo method : ((IRelativeTypeInfo)annotationType.getTypeInfo()).getDeclaredMethods() ) {
+      addAttribute( method.getDisplayName(), GosuObjectUtil.toString( testAnnotation.getFieldValue( method.getDisplayName() ) ) );
     }
     _name = annotationType.getName();
   }

@@ -60,6 +60,9 @@ public class GosuFileViewProvider extends SingleRootFileViewProvider {
       }
 
       for (PsiReference ref : refs) {
+        if (!(ref instanceof PsiElement)) {
+          return ref;
+        }
         if (((PsiElement) ref).getTextRange().containsOffset(offset)) {
           return psiReference;
         }

@@ -5,9 +5,6 @@
 package gw.internal.gosu.loader;
 
 import gw.internal.gosu.compiler.GosuClassLoader;
-import gw.internal.gosu.ir.TransformingCompiler;
-import gw.internal.gosu.parser.GosuClass;
-import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.ICompilableType;
@@ -23,24 +20,15 @@ public class Loader {
   };
 
   public static Object getBytesOrClass(String strType) {
-    boolean bInterfaceAnnotationMethods = false;
     ICompilableType type = null;
 
     if (!ignoreJavaClass(strType)) {
       strType = strType.replace('$', '.');
-      if (strType.endsWith('.' + GosuClass.ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS)) {
-        bInterfaceAnnotationMethods = true;
-        strType = strType.substring(0, strType.lastIndexOf('.'));
-      }
       type = maybeAssignGosuType(strType);
     }
 
     if (type != null) {
-      if (bInterfaceAnnotationMethods) {
-        return TransformingCompiler.compileInterfaceMethodsClass((IGosuClassInternal) type, false);
-      } else {
-        return GosuClassLoader.instance().getBytes(type);
-      }
+      return GosuClassLoader.instance().getBytes(type);
     }
 
     // FIXME: Copied from PluginContainer. Why do we need to treat them specially?

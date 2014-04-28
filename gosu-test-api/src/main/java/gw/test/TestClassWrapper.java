@@ -119,29 +119,29 @@ public class TestClassWrapper extends TestSuite {
     }
   }
 
-  static private Set<TestMetadata> getTestMethodMetadata(TestClass test, String method) {
-    Set<TestMetadata> set = new HashSet<TestMetadata>();
-    IMethodInfo testMethod = test.getType().getTypeInfo().getMethod(method);
-    if(testMethod == null) {
-      throw new IllegalStateException( "Method not found: " + test.getName() + "." + method);
-    }
-    for (IAnnotationInfo ai : testMethod.getAnnotations()) {
-      if (isMetaAnnotationInfo(ai)) {
-        set.add(new TestMetadata((Annotation) ai.getInstance()));
-      }
-    }
-    return set;
-  }
+//  static private Set<TestMetadata> getTestMethodMetadata(TestClass test, String method) {
+//    Set<TestMetadata> set = new HashSet<TestMetadata>();
+//    IMethodInfo testMethod = test.getType().getTypeInfo().getMethod(method);
+//    if(testMethod == null) {
+//      throw new IllegalStateException( "Method not found: " + test.getName() + "." + method);
+//    }
+//    for (IAnnotationInfo ai : testMethod.getAnnotations()) {
+//      if (isMetaAnnotationInfo(ai)) {
+//        set.add(new TestMetadata((Annotation) ai.getInstance()));
+//      }
+//    }
+//    return set;
+//  }
 
-  static private Set<TestMetadata> getTestClassMetadata(TestClass test) {
-    Set<TestMetadata> set = new HashSet<TestMetadata>();
-    for (IAnnotationInfo ai : test.getType().getTypeInfo().getAnnotations()) {
-      if (isMetaAnnotationInfo(ai)) {
-        set.add(new TestMetadata((Annotation) ai.getInstance()));
-      }
-    }
-    return set;
-  }
+//  static private Set<TestMetadata> getTestClassMetadata(TestClass test) {
+//    Set<TestMetadata> set = new HashSet<TestMetadata>();
+//    for (IAnnotationInfo ai : test.getType().getTypeInfo().getAnnotations()) {
+//      if (isMetaAnnotationInfo(ai)) {
+//        set.add(new TestMetadata((Annotation) ai.getInstance()));
+//      }
+//    }
+//    return set;
+//  }
 
   private static boolean isMetaAnnotationInfo(IAnnotationInfo ai) {
     boolean isMetadata = false;

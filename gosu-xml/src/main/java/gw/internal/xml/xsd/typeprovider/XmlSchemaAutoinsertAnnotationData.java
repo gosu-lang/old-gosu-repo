@@ -7,7 +7,6 @@ package gw.internal.xml.xsd.typeprovider;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IFeatureInfo;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.java.JavaTypes;
 
 /**
@@ -24,8 +23,7 @@ class XmlSchemaAutoinsertAnnotationData implements IAnnotationInfo
 
   @Override
   public Object getInstance() {
-    ITypeInfo autoinsertTypeInfo = JavaTypes.AUTOINSERT().getTypeInfo();
-    return autoinsertTypeInfo.getConstructor().getConstructor().newInstance();
+    return MyAutoinsert.instance();
   }
 
   @Override

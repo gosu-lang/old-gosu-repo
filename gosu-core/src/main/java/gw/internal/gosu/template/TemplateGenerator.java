@@ -134,6 +134,7 @@ public class TemplateGenerator implements ITemplateGenerator
   }
     
   private static ThreadLocal<Stack<RuntimeData>> g_runtimeData = new ThreadLocal<Stack<RuntimeData>>();
+  public static final int SUBSTR_CHUNKSIZE = 2048;
 
   private String _fqn;
   private String _scriptStr;

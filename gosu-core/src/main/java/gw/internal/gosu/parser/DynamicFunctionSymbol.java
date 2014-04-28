@@ -29,6 +29,7 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
   private String _superGenericName;
   private DynamicFunctionSymbol _superDfs;
   private boolean _bLoopImplicitReturn;
+  private IExpression _annotationDefault;
 
   /**
    * Constructs a DynamicFunctionSymbol for use with an IGosuParser's ISymbolTable.
@@ -521,5 +522,14 @@ public class DynamicFunctionSymbol extends AbstractDynamicSymbol implements IDyn
   public boolean isLoopImplicitReturn()
   {
     return _bLoopImplicitReturn;
+  }
+
+  public IExpression getAnnotationDefault()
+  {
+    return _annotationDefault;
+  }
+  public void setAnnotationDefault( IExpression annotationDefault )
+  {
+    _annotationDefault = annotationDefault;
   }
 }

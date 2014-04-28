@@ -13,6 +13,7 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.impl.ActionManagerImpl;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.compiler.CompilerManager;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
@@ -243,31 +244,43 @@ public class PluginLoaderUtil {
       }
     }
 
-    // pre -startup
-    try {
-      for (ITypeSystemStartupContributor pluginListener : getStartupContributors()) {
-        pluginListener.beforeTypesystemStartup(_project);
-      }
-    } catch (Exception e) {
-      reportStartupError(e);
-      return;
-    }
+    ApplicationManager.getApplication().invokeAndWait(
+      new Runnable() {
+        public void run() {
+          ApplicationManager.getApplication().runWriteAction(new Runnable() {
+              public void run() {
+                // pre -startup
+                try {
+                  for (ITypeSystemStartupContributor pluginListener : getStartupContributors()) {
+                    pluginListener.beforeTypesystemStartup(_project);
+                  }
+                } catch (Exception e) {
+                  reportStartupError(e);
+                  return;
+                }
 
-    // !PW leaks reference to GosuLoader, if we ever want to support clean unloading of plugin
-    _applicationConnection = ApplicationManager.getApplication().getMessageBus().connect();
+                // !PW leaks reference to GosuLoader, if we ever want to support clean unloading of plugin
+                _applicationConnection = ApplicationManager.getApplication().getMessageBus().connect();
 
-    setDumbMode(true);
-    try {
-      startTypeSystem();
-      initGosuPlugin();
-      for (ITypeSystemStartupContributor pluginListener : getStartupContributors()) {
-        pluginListener.afterTypesystemStartup(_project);
-      }
-    } catch (Throwable e) {
-      reportStartupError(e);
-    } finally {
-      setDumbMode(false);
-    }
+
+                setDumbMode(true);
+                try {
+                  startTypeSystem();
+                  initGosuPlugin();
+                  for (ITypeSystemStartupContributor pluginListener : getStartupContributors()) {
+                    pluginListener.afterTypesystemStartup(_project);
+                  }
+                  System.out.println( "Initialized Gosu with IJ Project: " + _project );
+                } catch (Throwable e) {
+                  reportStartupError(e);
+                  System.out.println( "¿prolbem?" );
+                } finally {
+                  setDumbMode(false);
+                }
+              }
+          });
+        }
+      }, ModalityState.defaultModalityState() );
   }
 
   private boolean hasRanPreviously() {
@@ -283,6 +296,7 @@ public class PluginLoaderUtil {
           if (TypeSystem.getCurrentModule() != null) {
             System.out.println("Cleaning type system, but current top module is not null!");
           }
+          System.out.println("Stopping Type System " + TypeSystem.getExecutionEnvironment() );
           stopTypeSystem();
         } catch (Throwable e) {
           reportStartupError(e);

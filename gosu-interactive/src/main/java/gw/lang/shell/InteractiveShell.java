@@ -417,8 +417,8 @@ class InteractiveShell implements Runnable
 
       if ( additionalInput.trim().length() == 0 )
       {
-        break;
-      }
+          break;
+        }
       s = s + additionalInput + "\n";
     }
     cr.setDefaultPrompt( GOSU_PROMPT );

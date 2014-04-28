@@ -29,7 +29,7 @@ public class RuntimeCoercer extends BaseCoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return 1;
   }
 
   public static RuntimeCoercer instance()

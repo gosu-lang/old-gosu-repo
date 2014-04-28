@@ -4,8 +4,10 @@
 
 package gw.internal.gosu.parser;
 
+import gw.config.CommonServices;
 import gw.internal.gosu.parser.expressions.NewExpression;
 import gw.internal.gosu.parser.expressions.StringLiteral;
+import gw.internal.gosu.parser.expressions.TypeAsExpression;
 import gw.internal.gosu.parser.expressions.TypeLiteral;
 import gw.lang.Param;
 import gw.lang.Throws;
@@ -64,9 +66,15 @@ public class GosuDocAnnotation implements Serializable, IGosuAnnotation
           newExpression.setType( _type );
           if( _type.getName().equals( Throws.class.getName() ) )
           {
-            // throws starts with a type literal, then a string description
-            newExpression.setConstructor( _type.getTypeInfo().getConstructor(JavaTypes.ITYPE(), JavaTypes.STRING() ) );
-            newExpression.setArgs( exprArray( new TypeLiteral( TypeSystem.getByFullName( _args[0] ) ), new StringLiteral( _args[1] ) ) );
+            // throws starts with a Class ref, then a string description
+            newExpression.setConstructor( _type.getTypeInfo().getConstructor(JavaTypes.CLASS().getParameterizedType( JavaTypes.OBJECT() ), JavaTypes.STRING() ) );
+            TypeLiteral lhs = new TypeLiteral( TypeSystem.getByFullName( _args[0] ) );
+            initLocation( lhs );
+            TypeAsExpression typeAsExpr = new TypeAsExpression();
+            typeAsExpr.setLHS( lhs );
+            typeAsExpr.setType( JavaTypes.CLASS() );
+            typeAsExpr.setCoercer( CommonServices.getCoercionManager().resolveCoercerStatically( JavaTypes.CLASS(), lhs.getType() ) );
+            newExpression.setArgs( exprArray( typeAsExpr, new StringLiteral( _args[1] ) ) );
           }
           else if( _type.getName().equals( Param.class.getName() ) )
           {

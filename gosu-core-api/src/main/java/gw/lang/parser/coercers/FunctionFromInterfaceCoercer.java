@@ -85,6 +85,6 @@ public class FunctionFromInterfaceCoercer extends BaseCoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return 2;
   }
 }

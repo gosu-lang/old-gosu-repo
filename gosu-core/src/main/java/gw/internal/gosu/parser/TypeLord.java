@@ -11,6 +11,7 @@ import gw.lang.parser.IGosuParser;
 import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.ScriptabilityModifiers;
+import gw.lang.parser.StandardCoercionManager;
 import gw.lang.parser.StandardSymbolTable;
 import gw.lang.parser.TypeSystemAwareCache;
 import gw.lang.parser.TypeVarToTypeMap;
@@ -1150,8 +1151,12 @@ public class TypeLord
 //        }
 
           if( paramType != JavaTypes.OBJECT() &&
-              (paramTypesFrom == null || paramTypesFrom.length <= i ||
-               !paramType.isAssignableFrom( paramTypesFrom[i] )) )
+              (paramTypesFrom == null ||
+               paramTypesFrom.length <= i ||
+               (!paramType.isAssignableFrom( paramTypesFrom[i] ) &&
+                !StandardCoercionManager.isStructurallyAssignable( paramType, paramTypesFrom[i] ) &&
+                !(JavaTypes.CLASS().isAssignableFrom( to ) &&
+                  StandardCoercionManager.isStructurallyAssignable( paramType, MetaType.getLiteral( paramTypesFrom[i] ) )))) )
           {
             return false;
           }

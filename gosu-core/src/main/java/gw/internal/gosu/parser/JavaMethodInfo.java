@@ -5,6 +5,7 @@
 package gw.internal.gosu.parser;
 
 import gw.internal.ext.org.objectweb.asm.Opcodes;
+import gw.internal.gosu.parser.java.classinfo.JavaSourceDefaultValue;
 import gw.lang.Deprecated;
 import gw.lang.GosuShop;
 import gw.lang.PublishedName;
@@ -536,6 +537,13 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
   }
 
   @Override
+  public boolean isDefaultImpl() {
+    // Default methods are public non-abstract instance methods declared in an interface.
+    return ((getModifiers() & (java.lang.reflect.Modifier.ABSTRACT | java.lang.reflect.Modifier.PUBLIC | java.lang.reflect.Modifier.STATIC)) ==
+            java.lang.reflect.Modifier.PUBLIC) && getOwnersType().isInterface();
+  }
+
+  @Override
   public boolean isDeprecated()
   {
     return isJavadocDeprecated() || super.isDeprecated() || getMethod().isAnnotationPresent( Deprecated.class ) || getMethod().isAnnotationPresent( java.lang.Deprecated.class );
@@ -554,6 +562,19 @@ public class JavaMethodInfo extends JavaBaseFeatureInfo implements IJavaMethodIn
       return gwDeprecated == null ? null : (String) gwDeprecated.getFieldValue( "value" );
     }
     return deprecated;
+  }
+
+  @Override
+  public boolean hasAnnotationDefault() {
+
+    Object defaultValue = getMethod().getDefaultValue();
+    return defaultValue != null &&
+           defaultValue != JavaSourceDefaultValue.NULL;
+  }
+
+  @Override
+  public Object getAnnotationDefault() {
+    return getMethod().getDefaultValue();
   }
 
   private IParameterInfo[] convertParameterDescriptors( boolean bKeepTypeVars )

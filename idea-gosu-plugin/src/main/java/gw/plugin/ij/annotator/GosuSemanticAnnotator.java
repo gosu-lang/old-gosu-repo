@@ -308,6 +308,8 @@ public class GosuSemanticAnnotator implements Annotator {
     COLOR_MAP.put(GosuElementTypes.TT_readonly, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_class, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_interface, GosuHighlighterColors.KEYWORD);
+    COLOR_MAP.put(GosuElementTypes.TT_annotation, GosuHighlighterColors.KEYWORD);
+    COLOR_MAP.put(GosuElementTypes.TT_structure, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_enum, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_super, GosuHighlighterColors.KEYWORD);
     COLOR_MAP.put(GosuElementTypes.TT_outer, GosuHighlighterColors.KEYWORD);

@@ -69,7 +69,7 @@ abstract class AbstractCodeCompletionTest extends GosuTestCase {
   }
 
   function test(texts: String[]) : LookupElement[] {
-    return test(texts, null)
+    return test(texts, null as String)
   }
 
   function test(texts: String[], stuffToType : String) : LookupElement[] {

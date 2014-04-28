@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.ir.transform.expression;
 
+import gw.internal.gosu.ir.nodes.IRTypeFactory;
 import gw.internal.gosu.ir.nodes.JavaClassIRType;
 import gw.internal.gosu.parser.BeanAccess;
 import gw.internal.gosu.parser.ParserBase;
@@ -14,6 +15,7 @@ import gw.internal.gosu.ir.transform.ExpressionTransformer;
 import gw.internal.gosu.ir.transform.TopLevelTransformationContext;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRSymbol;
+import gw.lang.ir.IRType;
 import gw.lang.ir.expression.IRConditionalAndExpression;
 import gw.lang.ir.expression.IRConditionalOrExpression;
 import gw.lang.ir.expression.IREqualityExpression;
@@ -23,6 +25,7 @@ import gw.lang.reflect.IType;
 import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -56,6 +59,11 @@ public class EqualityExpressionTransformer extends AbstractExpressionTransformer
     }
     else if( lhsType == rhsType )
     {
+      if( lhsType.isArray() )
+      {
+        return compareArrays();
+      }
+
       if( (JavaTypes.NUMBER().isAssignableFrom( lhsType ) ||
            JavaTypes.IDIMENSION().isAssignableFrom( lhsType )) &&
           JavaTypes.COMPARABLE().isAssignableFrom( lhsType ) )
@@ -74,6 +82,29 @@ public class EqualityExpressionTransformer extends AbstractExpressionTransformer
     {
       return compareDynamically();
     }
+  }
+
+  private IRExpression compareArrays() {
+    IRExpression lhs = ExpressionTransformer.compile( _expr().getLHS(), _cc() );
+    IRExpression rhs = ExpressionTransformer.compile( _expr().getRHS(), _cc() );
+
+    IType lhsType = _expr().getLHS().getType();
+    IType rhsType = _expr().getRHS().getType();
+
+    if( isBytecodeType( lhsType ) )
+    {
+      IRType arrayType;
+      if( lhsType.getComponentType().isPrimitive() )
+      {
+        arrayType = IRTypeFactory.get(lhsType);
+      }
+      else
+      {
+        arrayType = JavaClassIRType.get( Object.class ).getArrayType();
+      }
+      return buildMethodCall(JavaClassIRType.get( Arrays.class ), "equals", false, JavaClassIRType.get( boolean.class ), Arrays.asList( arrayType, arrayType ), null, Arrays.asList( lhs, rhs ) );
+    }
+    return compareDynamically();
   }
 
   private IRExpression comparePrimitives()

@@ -121,6 +121,11 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
     }
     _blocks.add(block);
   }
+  public void removeBlock( IBlockClass block ) {
+    if( !_blocks.isEmpty() ) {
+      _blocks.remove( block );
+    }
+  }
 
   @Override
   public IGosuClass getBlock(int i) {
@@ -422,24 +427,12 @@ public class GosuFragment extends AbstractType implements IGosuFragment, ICompil
   }
 
   @Override
-  public String getInterfaceMethodsClassName()
-  {
-    return null;
-  }
-
-  @Override
   public int getAnonymousInnerClassCount() {
     return 0;
   }
 
   @Override
   public List<? extends IGosuAnnotation> getGosuAnnotations() {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public List<StatementList> getAnnotationInitialization()
-  {
     return Collections.emptyList();
   }
 

@@ -33,6 +33,8 @@ public class Modifier extends java.lang.reflect.Modifier
    */
   public static final int ENUM = 0x00004000; // Match the Java value for the enum modifier
 
+  public static final int ANNOTATION  = 0x00002000; // Match the Java value for the annotation modifier
+
   public static int getModifiersFrom( IAttributedFeatureInfo afi )
   {
     int iModifiers = 0;
@@ -109,8 +111,14 @@ public class Modifier extends java.lang.reflect.Modifier
    * @return <tt>true</tt> if <code>mod</code> includes the
    *         <tt>enum</tt> modifier; <tt>false</tt> otherwise.
    */
-  public static boolean isEnum( int mod ) {
+  public static boolean isEnum( int mod )
+  {
     return (mod & ENUM) != 0;
+  }
+
+  public static boolean isAnnotation( int mod )
+  {
+    return (mod & ANNOTATION) != 0;
   }
 
   public static int setPublic( int mod, boolean bValue )

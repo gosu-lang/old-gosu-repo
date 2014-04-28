@@ -86,7 +86,7 @@ public class BlockCoercer extends BaseCoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return 2;
   }
 
   public static BlockCoercer instance()

@@ -14,6 +14,8 @@ import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IModule;
 import gw.util.concurrent.LockingLazyVar;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -23,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class ClassCache {
+  private static final Logger logger = LoggerFactory.getLogger(ClassCache.class);
+
   @SuppressWarnings({"unchecked"})
   private final Map<String, Class> _classMap = new HashMap<String, Class>();
   private Set<CharSequence> _packages = new HashSet<CharSequence>();
@@ -57,7 +61,9 @@ public class ClassCache {
   }
 
   private Class tryToLoadClass(CharSequence name) {
+    logger.trace("Trying to load class {}", name);
     if (_packages.contains(name)) {
+      logger.trace("Detected package name {}", name);
       // A package name, valid or not, is never a Class, so fail immediately
       return ClassNotFoundMarkerClass.class;
     }
@@ -67,11 +73,14 @@ public class ClassCache {
       try {
         cls = _module.getModuleClassLoader().loadClass(name.toString());
       } catch (ClassNotFoundException cnfe) {
+        logger.trace("ClassNotFoundException caught for name {} in class loader of module {}", name, _module.getName());
         return ClassNotFoundMarkerClass.class;
       }
       if (cls == null) {
+        logger.trace("Null class loaded for name {} in class loader of module {}", name, _module.getName());
         return ClassNotFoundMarkerClass.class;
       }
+      logger.trace("Found class for name {} in class loader of module {}", cls.getName(), _module.getName());
       if (!cls.isArray() && !cls.isPrimitive()) {
         addFoundPackages(cls);
       }
@@ -147,11 +156,18 @@ public class ClassCache {
     StringBuilder s = new StringBuilder(className);
     int i;
     do {
-      if (ignoreTheCache || _classPathCache.get().contains(className)) {
+      boolean isInClassPathCache = _classPathCache.get().contains(className);
+      if (ignoreTheCache || isInClassPathCache) {
+        logger.trace("Going to load class {}. ignoreTheCache = {}, isInClassPathCache = {}",
+                className, ignoreTheCache, isInClassPathCache);
+
         Class aClass = loadClassImplImpl(className);
         if (aClass != null) {
           return aClass;
         }
+      } else if (logger.isTraceEnabled()) {
+        logger.trace("Skip loading class {}. ignoreTheCache = {}, isInClassPathCache = {}",
+                className, ignoreTheCache, isInClassPathCache);
       }
       i = s.lastIndexOf(".");
       if (i >= 0) {
@@ -183,6 +199,7 @@ public class ClassCache {
     try {
       String maybePackage = s.substring( 0, i );
       if( getPackageMethod().invoke( _module.getModuleClassLoader(), maybePackage ) != null ) {
+        logger.trace("Name {} is a package", maybePackage);
         return true;
       }
     }

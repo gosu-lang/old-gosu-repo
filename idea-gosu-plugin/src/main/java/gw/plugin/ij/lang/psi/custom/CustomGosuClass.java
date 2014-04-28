@@ -108,9 +108,6 @@ public class CustomGosuClass extends UserDataHolderBase implements PsiClass {
   }
 
   private boolean isClassValid() {
-    if ("".equals(namespace) && "displaykey".equals(getName())) {
-      return false;
-    }
     return true;
   }
 

@@ -29,7 +29,7 @@ public class TypeVariableCoercer implements ICoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return 2;
   }
 
   public static TypeVariableCoercer instance()

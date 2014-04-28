@@ -9,10 +9,12 @@ import gw.lang.IAnnotation;
 import gw.lang.IDimension;
 import gw.lang.InternalAPI;
 import gw.lang.Param;
+import gw.lang.Params;
 import gw.lang.Throws;
 import gw.lang.annotation.AnnotationUsage;
 import gw.lang.annotation.AnnotationUsages;
 import gw.lang.annotation.IInherited;
+import java.lang.annotation.Repeatable;
 import gw.lang.function.IBlock;
 import gw.lang.parser.expressions.IBlockExpression;
 import gw.lang.reflect.FunctionType;
@@ -35,6 +37,7 @@ import gw.lang.reflect.interval.LongInterval;
 import gw.lang.reflect.interval.NumberInterval;
 import gw.lang.reflect.interval.SequenceableInterval;
 import gw.lang.reflect.module.IExecutionEnvironment;
+import gw.lang.reflect.module.IProject;
 
 import javax.xml.namespace.QName;
 import java.lang.annotation.Annotation;
@@ -52,11 +55,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
 public class JavaTypes {
-  private static Map<Class, IJavaType> CACHE = new ConcurrentHashMap<Class, IJavaType>();
+  private static final Map<IProject, Map<Class, IJavaType>> CACHE = new WeakHashMap<IProject, Map<Class, IJavaType>>();
 
   static {
     TypeSystem.addShutdownListener(new TypeSystemShutdownListener() {
@@ -262,6 +266,10 @@ public class JavaTypes {
     return getJreType(Annotation.class);
   }
 
+  public static IJavaType REPEATABLE() {
+    return getJreType(Repeatable.class);
+  }
+
   public static IJavaType INHERITED() {
     return getJreType(Inherited.class);
   }
@@ -326,6 +334,9 @@ public class JavaTypes {
 
   public static IType PARAM() {
     return getGosuType(Param.class);
+  }
+  public static IType PARAMS() {
+    return getGosuType(Params.class);
   }
 
   public static IType IQUERY_RESULT_SET() {
@@ -404,11 +415,12 @@ public class JavaTypes {
   }
 
   private static IJavaType getCachedType( Class c, boolean bFromJre ) {
-    IJavaType type = CACHE.get( c );
+    Map<Class, IJavaType> cache = getCACHE();
+    IJavaType type = cache.get( c );
     if( type == null ) {
       TypeSystem.lock();
       try {
-        type = CACHE.get( c );
+        type = cache.get( c );
         if( type == null ) {
           if( bFromJre ) {
             type = findTypeFromJre( c );
@@ -416,7 +428,7 @@ public class JavaTypes {
           else {
             type = findTypeFromProject( c );
           }
-          CACHE.put( c, type );
+          cache.put( c, type );
         }
       }
       finally {
@@ -424,6 +436,22 @@ public class JavaTypes {
       }
     }
     return type;
+  }
+
+  private static Map<Class, IJavaType> getCACHE() {
+    IExecutionEnvironment execEnv = TypeSystem.getExecutionEnvironment();
+    IProject project = execEnv.getProject();
+    Map<Class, IJavaType> cache = CACHE.get( project );
+    if( cache == null ) {
+      synchronized( CACHE ) {
+        cache = CACHE.get( project );
+        if( cache == null ) {
+          cache = new ConcurrentHashMap<Class, IJavaType>();
+          CACHE.put( project, cache );
+        }
+      }
+    }
+    return cache;
   }
 
   public static IJavaType getJreType(final Class<?> c) {
@@ -439,6 +467,6 @@ public class JavaTypes {
   }
 
   public static void flushCache() {
-    CACHE.clear();
+    getCACHE().clear();
   }
 }

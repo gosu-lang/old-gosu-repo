@@ -13,7 +13,6 @@ import gw.internal.xml.ws.server.marshal.MarshalContext;
 import gw.internal.xml.ws.server.marshal.UnmarshalContext;
 import gw.lang.parser.IParsedElement;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.ReflectUtil;
 import gw.util.ILogger;
 import gw.util.SystemOutLogger;
 import gw.xml.XmlElement;
@@ -129,7 +128,7 @@ public class XmlServices extends ServiceKernel {
    */
   public static String createTargetNamespace( IType type ) {
     @SuppressWarnings( {"deprecation"} )
-    IWsiWebService clsAnnot = (IWsiWebService) ReflectUtil.evaluateAnnotation( type.getTypeInfo().getAnnotationsOfType( WsiUtilities.WSI_WEB_SERVICE_ANNOTATION_TYPE.get() ).get( 0 ) );
+    IWsiWebService clsAnnot = (IWsiWebService)type.getTypeInfo().getAnnotationsOfType( WsiUtilities.WSI_WEB_SERVICE_ANNOTATION_TYPE.get() ).get( 0 ).getInstance();
     if ( clsAnnot.getTargetNamespace() == null ) {
       return getInstance().getService( IMarshaller.class ).createTargetNamespace( null, type );
     }

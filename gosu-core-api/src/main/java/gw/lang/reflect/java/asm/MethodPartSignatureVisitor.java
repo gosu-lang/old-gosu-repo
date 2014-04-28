@@ -4,21 +4,23 @@
 
 package gw.lang.reflect.java.asm;
 
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.ext.org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  */
-public class MethodPartSignatureVisitor implements SignatureVisitor {
+public class MethodPartSignatureVisitor extends SignatureVisitor {
   private AsmType _currentType;
   private AsmType _typeArg;
   private int _iDims;
   private Boolean _variance; // null = none, true = covariant, false = contravariant
 
   MethodPartSignatureVisitor( AsmType type ) {
+    super( Opcodes.ASM5 );
     _currentType = type;
   }
   MethodPartSignatureVisitor( AsmType type, char wildcardVariance ) {
-    _currentType = type;
+    this( type );
     _typeArg = type;
     _variance = wildcardVariance == '=' ? null : wildcardVariance == '+';
   }

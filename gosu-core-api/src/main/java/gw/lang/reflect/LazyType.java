@@ -8,23 +8,21 @@ import gw.internal.gosu.parser.StringCache;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.Keyword;
 import gw.lang.parser.TypeVarToTypeMap;
-import gw.util.concurrent.LockingLazyVar;
+import gw.util.concurrent.LocklessLazyVar;
 
-public class LazyType extends LockingLazyVar<IType>
+public class LazyType extends LocklessLazyVar<IType>
 {
   private final CharSequence _typeName;
   private final ITypeUsesMap _typeUsesMap;
 
   public LazyType( String typeName )
   {
-    super();
     _typeName = StringCache.get(typeName);
     _typeUsesMap = null;
   }
 
   public LazyType( CharSequence typeName, ITypeUsesMap typeUsesMap )
   {
-    super();
     _typeName = typeName instanceof String ? StringCache.get((String)typeName) : typeName;
     _typeUsesMap = typeUsesMap;
   }
@@ -82,7 +80,12 @@ public class LazyType extends LockingLazyVar<IType>
   private static IType getType(String strType, ITypeUsesMap _typeUsesMap) throws ClassNotFoundException {
     if( strType.contains( "<" ) || strType.startsWith( Keyword.KW_block.toString() )  )
     {
-      return TypeSystem.parseType(strType, new TypeVarToTypeMap(), _typeUsesMap);
+      TypeSystem.lock();
+      try {
+        return TypeSystem.parseType(strType, new TypeVarToTypeMap(), _typeUsesMap);
+      } finally {
+        TypeSystem.unlock();
+      }
     }
     else if ( strType.startsWith( "entity." ) )
     {

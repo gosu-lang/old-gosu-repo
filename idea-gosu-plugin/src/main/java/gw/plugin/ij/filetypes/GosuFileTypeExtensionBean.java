@@ -8,10 +8,12 @@ import com.intellij.openapi.extensions.AbstractExtensionPointBean;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.util.LazyInstance;
 import com.intellij.util.xmlb.annotations.Attribute;
+import gw.plugin.ij.core.GosuAppComponent;
 import org.jetbrains.annotations.NotNull;
 
 public class GosuFileTypeExtensionBean extends AbstractExtensionPointBean {
-  public static final ExtensionPointName<GosuFileTypeExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.gosuFileTypeProvider");
+  public static final ExtensionPointName<GosuFileTypeExtensionBean> EP_NAME =
+          new ExtensionPointName<>(GosuAppComponent.EDITOR_PLUGIN_ID.getIdString() + ".gosuFileTypeProvider");
 
   @Attribute("extension")
   public String extension;

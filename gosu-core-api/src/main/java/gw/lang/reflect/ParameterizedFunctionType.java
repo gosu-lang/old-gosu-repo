@@ -70,9 +70,13 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
     if( _signature == null )
     {
       String strParams = _genericFuncType.getName() + "(";
-      for( int i = 0; i < _paramTypes.length; i++ )
+      IType[] parameterTypes = getParameterTypes();
+      if( parameterTypes != null )
       {
-        strParams += (i == 0 ? "" : ", " ) + (_paramTypes[i] == null ? "" : _paramTypes[i].getName());
+        for( int i = 0; i < parameterTypes.length; i++ )
+        {
+          strParams += (i == 0 ? "" : ", " ) + (parameterTypes[i] == null ? "" : parameterTypes[i].getName());
+        }
       }
       strParams += ")";
 
@@ -87,9 +91,10 @@ public class ParameterizedFunctionType extends AbstractType implements IFunction
     if( _signature == null )
     {
       String strParams = _genericFuncType.getName() + "(";
-      for( int i = 0; i < _paramTypes.length; i++ )
+      IType[] parameterTypes = getParameterTypes();
+      for( int i = 0; i < parameterTypes.length; i++ )
       {
-        strParams += (i == 0 ? "" : ", " ) + (_paramTypes[i] == null ? "" : FunctionType.getParamTypeNameFromJavaBackedType(_paramTypes[i]));
+        strParams += (i == 0 ? "" : ", " ) + (parameterTypes[i] == null ? "" : FunctionType.getParamTypeNameFromJavaBackedType( parameterTypes[i]));
       }
       strParams += ")";
 

@@ -10,7 +10,7 @@ import gw.util.concurrent.LockingLazyVar;
 
 /**
  */
-public class DynamicType extends TypeBase implements IPlaceholder
+public class DynamicType extends TypeBase implements IDynamicType
 {
   public static final String PKG = "dynamic";
   public static final String RNAME = "Dynamic";

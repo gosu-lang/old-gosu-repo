@@ -27,14 +27,12 @@ import java.util.Map;
  */
 public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
 {
-  public static final String ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS = "_annotation_methods_";
-
   void copyGenericState( boolean bCopyHierarchy );
   void copyHierarchyInfo();
 
   void assignTypeUsesMap( GosuParser parser );
 
-  List<IFunctionType> getUnimplementedMethods( List<IFunctionType> unimpled, IGosuClassInternal implClass );
+  List<IFunctionType> getUnimplementedMethods( List<IFunctionType> unimpled, IGosuClassInternal implClass, boolean bAcceptAbstract );
 
   void setJavaType( IJavaType javaType );
 
@@ -49,8 +47,6 @@ public interface IGosuClassInternal extends IGosuClass, ICompilableTypeInternal
   void setAnnotations(List<IGosuAnnotation> annotations);
 
   IType getEnclosingNonBlockType();
-
-  Map<String, List> getRuntimeFeatureAnnotationMap();
 
   List<? extends IGosuAnnotation> getGosuAnnotations();
 

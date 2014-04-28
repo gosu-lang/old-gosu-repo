@@ -99,6 +99,8 @@ public class GosuSpacingNonConfigured extends GosuElementTypes {
         psiElement(TT_uses),
         psiElement(TT_class),
         psiElement(TT_interface),
+        psiElement(TT_annotation),
+        psiElement(TT_structure),
         psiElement(TT_enhancement),
         psiElement(TT_enum),
         psiElement(TT_function),

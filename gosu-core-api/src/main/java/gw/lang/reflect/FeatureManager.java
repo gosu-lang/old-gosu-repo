@@ -99,7 +99,6 @@ public class FeatureManager<T extends CharSequence> {
     return whosAskin != null && ownersClass != null &&
            (isInHierarchy(ownersClass, whosAskin) ||
             isInEnhancedTypesHierarchy(ownersClass, whosAskin) ||
-            isInEnclosingClassHierarchy(ownersClass.getEnclosingType(), whosAskin) ||
             isInEnclosingClassHierarchy(ownersClass, whosAskin.getEnclosingType()));
   }
 

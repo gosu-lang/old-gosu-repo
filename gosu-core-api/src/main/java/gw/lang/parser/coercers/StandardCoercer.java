@@ -20,6 +20,6 @@ public abstract class StandardCoercer extends BaseCoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0; // lowest priority
+    return 1; // lowest priority
   }
 }

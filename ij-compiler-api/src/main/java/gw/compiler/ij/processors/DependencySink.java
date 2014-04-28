@@ -109,11 +109,7 @@ public class DependencySink {
   }
 
   public void addDisplayKey(String key) {
-    final int beginIndex = key.indexOf("displaykey.");
-    if (beginIndex == -1) {
-      System.out.println(key);
-    }
-    displayKeys.add(beginIndex == -1 ? key : key.substring("displaykey.".length()));
+    displayKeys.add(key);
   }
 
   private List<IFile> getTypeFiles(IType type) {

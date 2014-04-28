@@ -32,6 +32,7 @@ public class ParserOptions
   private Object _ctxInferenceMgr;
   private Set<ResourceKey> _ignoreWarnings = new HashSet<ResourceKey>();
   private boolean _allowUses;
+  private boolean _bAnon;
 
   public ParserOptions withParser( IGosuParser parser )
   {
@@ -108,6 +109,12 @@ public class ParserOptions
   public ParserOptions asThrowawayProgram()
   {
     _throwawayProgram = true;
+    return this;
+  }
+
+  public ParserOptions asAnonymous()
+  {
+    _bAnon = true;
     return this;
   }
 
@@ -233,6 +240,11 @@ public class ParserOptions
   public boolean isThrowawayProgram()
   {
     return _throwawayProgram;
+  }
+
+  public boolean isAnonymous()
+  {
+    return _bAnon;
   }
 
   public boolean allowUses() {

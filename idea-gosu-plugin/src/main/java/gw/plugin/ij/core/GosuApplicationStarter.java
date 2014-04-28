@@ -29,7 +29,7 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
 
   public static final String COM_GUIDEWIRE = "com.guidewire.";
   public static final String COM_GUIDEWIRE_GOSU = COM_GUIDEWIRE + "gosu";
-  public static final String COM_GUIDEWIRE_GUNIT = COM_GUIDEWIRE + "gunit";
+  public static final String COM_GUIDEWIRE_GOSU_INTERNAL = COM_GUIDEWIRE + "gosu";
 
   private ApplicationStarter defaultStarter;
 
@@ -90,10 +90,17 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
       PluginClassLoader mainClassLoader = (PluginClassLoader) mainPlugin.getPluginClassLoader();
       for (IdeaPluginDescriptor plugin : PluginManager.getPlugins()) {
         String id = plugin.getPluginId().getIdString();
-        if (id.startsWith(COM_GUIDEWIRE) && !id.equals(COM_GUIDEWIRE_GOSU)) {
+        if (id.startsWith(COM_GUIDEWIRE) && !id.equals(COM_GUIDEWIRE_GOSU_INTERNAL)) {
+          if (id.equals(COM_GUIDEWIRE_GOSU)) {
+            LOG.warn(
+                    String.format(
+                            "Loading open-source Gosu plugin (id=%s). " +
+                                    "In Ferrite we expect to use \"internal\" Gosu plugin with Studio instead." +
+                                    "Are you sure IDEA is configured properly?",
+                            COM_GUIDEWIRE_GOSU));
+          }
           recoverParents(plugin, mainClassLoader);
           recoverClasspath(plugin, mainClassLoader);
-  //        recoverDependencies(plugin, (IdeaPluginDescriptorImpl) mainPlugin);
           ((IdeaPluginDescriptorImpl)plugin).setLoader(mainClassLoader, false);
         }
       }
@@ -117,18 +124,19 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
     }
   }
 
-  private void recoverDependencies(IdeaPluginDescriptor plugin, IdeaPluginDescriptorImpl mainPlugin) {
-    HashSet<PluginId> existingPlugins = new HashSet<>(Arrays.asList(mainPlugin.getDependentPluginIds()));
-    for (PluginId id : plugin.getDependentPluginIds()) {
-      if (!existingPlugins.contains(id) && !id.equals(mainPlugin.getPluginId())) {
-        mainPlugin.insertDependency(PluginManager.getPlugin(id));
-      }
-    }
-  }
-
   private static void recoverClasspath(@NotNull IdeaPluginDescriptor plugin, @NotNull PluginClassLoader mainClassLoader) {
     HashSet<URL> existingURLs = new HashSet<>(mainClassLoader.getUrls());
-    for (URL url : ((PluginClassLoader) plugin.getPluginClassLoader()).getUrls()) {
+    PluginClassLoader pluginClassLoader;
+    try {
+      pluginClassLoader = (PluginClassLoader) plugin.getPluginClassLoader();
+    } catch (ClassCastException e) {
+      LOG.error(String.format(
+              "Provided plugin %s (%s) has class loader of type %s, but PluginClassLoader is expected",
+              plugin.getName(), plugin.getPluginId().toString(), plugin.getPluginClassLoader().getClass().toString()
+      ));
+      throw e;
+    }
+    for (URL url : pluginClassLoader.getUrls()) {
       if (!existingURLs.contains(url)) {
         mainClassLoader.addURL(url);
       }

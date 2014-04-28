@@ -13,6 +13,7 @@ import gw.internal.gosu.parser.TypeLord;
 import gw.internal.gosu.parser.TypeVariableType;
 import gw.lang.parser.exceptions.ParseWarningForDeprecatedMember;
 import gw.lang.parser.expressions.ITypeLiteralExpression;
+import gw.lang.reflect.IMetaType;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.ITypeInfo;
 import gw.lang.reflect.TypeSystem;
@@ -125,7 +126,16 @@ public class TypeLiteral extends Literal implements ITypeLiteralExpression
     }
 
     IType parameterizedType = getType().getType().getParameterizedType( types );
-    setType( MetaType.getLiteral( parameterizedType ) );
+    setType( ensureLiteral( parameterizedType ) );
+  }
+
+  private IType ensureLiteral( IType type )
+  {
+    if( type instanceof IMetaType )
+    {
+      return MetaType.getLiteral( ensureLiteral( ((IMetaType)type).getType() ) );
+    }
+    return MetaType.getLiteral( type );
   }
 
   @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneDoesntDeclareCloneNotSupportedException"})

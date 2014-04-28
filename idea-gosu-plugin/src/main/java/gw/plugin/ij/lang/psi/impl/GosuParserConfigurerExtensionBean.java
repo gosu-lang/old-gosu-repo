@@ -8,10 +8,11 @@ import com.intellij.openapi.extensions.AbstractExtensionPointBean;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.util.LazyInstance;
 import com.intellij.util.xmlb.annotations.Attribute;
+import gw.plugin.ij.core.GosuAppComponent;
 import org.jetbrains.annotations.NotNull;
 
 public class GosuParserConfigurerExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<GosuParserConfigurerExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.gosuParserConfigurer");
+  static final ExtensionPointName<GosuParserConfigurerExtensionBean> EP_NAME = new ExtensionPointName<>(GosuAppComponent.EDITOR_PLUGIN_ID.getIdString() + ".gosuParserConfigurer");
 
   @Attribute("class")
   public String className;

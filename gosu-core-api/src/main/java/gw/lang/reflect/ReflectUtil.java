@@ -254,17 +254,4 @@ public class ReflectUtil
     return outer;
   }
 
-  /** This is a stop-gap measure and will be removed in a future release */
-  @Deprecated
-  public static Object evaluateAnnotation( IAnnotationInfo ai )
-  {
-    try
-    {
-      return CommonServices.getGosuIndustrialPark().evaluateAnnotation( ai );
-    }
-    catch( Exception e )
-    {
-      throw GosuExceptionUtil.forceThrow( e, ai.getName() );
-    }
-  }
 }

@@ -8,6 +8,7 @@ import gw.internal.gosu.ir.nodes.IRMethodFactory;
 import gw.internal.gosu.ir.nodes.IRMethodFromMethodInfo;
 import gw.internal.gosu.ir.transform.AbstractElementTransformer;
 import gw.internal.gosu.ir.transform.util.NameResolver;
+import gw.internal.gosu.parser.java.classinfo.CompileTimeExpressionParser;
 import gw.lang.ir.IRType;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IReducedSymbol;
@@ -206,6 +207,23 @@ public class GosuMethodInfo extends AbstractGenericMethodInfo implements IGosuMe
       }
     }
     return super.getGosuAnnotations();
+  }
+
+  @Override
+  public boolean hasAnnotationDefault()
+  {
+    return getDfs().getDefaultValueExpression() != null;
+  }
+
+  @Override
+  public Object getAnnotationDefault()
+  {
+    IExpression annotationDefault = getDfs().getDefaultValueExpression();
+    if( annotationDefault != null )
+    {
+      return CompileTimeExpressionParser.convertValueToInfoFriendlyValue( annotationDefault.evaluate(), getOwnersType().getTypeInfo() );
+    }
+    return null;
   }
 
   //----------------------------------------------------------------------------

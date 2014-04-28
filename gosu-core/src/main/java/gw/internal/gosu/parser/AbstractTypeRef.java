@@ -174,7 +174,11 @@ public abstract class AbstractTypeRef implements Serializable, ITypeRef
   public IModule getModule() {
     IModule envModule = _module.getExecutionEnvironment().getModule( _module.getName() );
     if (_module != null && envModule != _module) {
-      throw new TypeResolveException("This is rather tragic. The module once existed, now it cannot be found.\nOld module: " + _module  + "\nNew module: " + envModule + "\nType: " + _typeName);
+      throw new TypeResolveException("This is rather tragic. The module once existed, now it cannot be found." +
+                                     "\nProject: " + _module.getExecutionEnvironment().getProject().getNativeProject() +
+                                     "\nOld module: " + _module  +
+                                     "\nNew module: " + envModule +
+                                     "\nType: " + _typeName );
     }
     return envModule;
   }

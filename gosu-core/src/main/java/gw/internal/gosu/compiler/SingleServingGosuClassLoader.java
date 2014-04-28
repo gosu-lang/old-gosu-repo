@@ -122,11 +122,6 @@ public class SingleServingGosuClassLoader extends ClassLoader implements IGosuCl
   }
 
   @Override
-  public String getInterfaceMethodsClassName( ICompilableType gsClass ) {
-    return null;
-  }
-
-  @Override
   public void assignParent( ClassLoader classLoader )
   {
     throw new UnsupportedOperationException( "Should not happen" );

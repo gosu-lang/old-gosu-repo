@@ -12,8 +12,6 @@ import gw.util.Stack;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
 
 
 /**
@@ -186,7 +184,12 @@ public class SourceCodeTokenizer implements ISourceCodeTokenizer
 
   public IToken getTokenAt( int iTokenIndex )
   {
-    if( getTokens().size() == 0 )
+    int iTokenCount = getTokens().size();
+    if( iTokenCount == 0 )
+    {
+      return null;
+    }
+    if( iTokenIndex >= iTokenCount )
     {
       return null;
     }
@@ -198,7 +201,7 @@ public class SourceCodeTokenizer implements ISourceCodeTokenizer
     {
       return null;
     }
-    return _internal.getTokens().get( iTokenIndex );
+    return getTokens().get( iTokenIndex );
   }
 
   public int getLineNumber()

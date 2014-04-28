@@ -62,10 +62,21 @@ public class ParameterInfoBuilder {
       assert builder._name != null;
       assert builder._type != null;
       this._container = container;
-      this._name = builder._name;
+      this._name = makeDisplayName( builder._name );
       this._description = builder._description;
       this._type = builder._type;
       this._defValue = builder._defValue;
+    }
+
+    private String makeDisplayName( String name ) {
+      if( name == null ) {
+        return null;
+      }
+      int iParen = name.indexOf( '(' );
+      if( iParen > 0 ) {
+        return name.substring( 0, iParen );
+      }
+      return name;
     }
 
     public IFeatureInfo getContainer() {

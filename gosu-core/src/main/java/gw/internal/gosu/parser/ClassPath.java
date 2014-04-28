@@ -13,8 +13,11 @@ import gw.lang.reflect.gs.TypeName;
 import gw.lang.reflect.module.IClassPath;
 import gw.lang.reflect.module.IFileSystem;
 import gw.lang.reflect.module.IModule;
+import gw.util.Predicate;
 import gw.util.cache.FqnCache;
 import gw.util.cache.FqnCacheNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -26,6 +29,8 @@ import java.util.Set;
 
 public class ClassPath implements IClassPath
 {
+  private static final Logger logger = LoggerFactory.getLogger(ClassPath.class);
+
   private static final String CLASS_FILE_EXT = ".class";
   private IModule _module;
   private ClassPathFilter _filter;
@@ -93,13 +98,27 @@ public class ClassPath implements IClassPath
   {
     List<IDirectory> javaClassPath = _module.getJavaClassPath();
     IDirectory[] paths = javaClassPath.toArray(new IDirectory[javaClassPath.size()]);
-    for (int i = 0; i < paths.length; i++) {
-      addClassNames(paths[i], paths[i], _filter );
+    logger.trace("=>START load classpath info for module {}", _module);
+    for (IDirectory path : paths) {
+      addClassNames(path, path, _filter);
+    }
+    if (logger.isTraceEnabled()) {
+      logger.trace("=>END load classpath info module {}", _module);
+      final StringBuilder sb = new StringBuilder();
+      _cache.visitNodeDepthFirst(new Predicate<FqnCacheNode>() {
+        @Override
+        public boolean evaluate(FqnCacheNode o) {
+          sb.append("\t").append(o.getFqn()).append("\n");
+          return true;
+        }
+      });
+      logger.trace("=>START Classpath loaded for module {}:\n{}\n=>END Classpath loaded for module {}",
+              _module.getName(), sb.toString(), _module.getName());
     }
   }
 
-  private void addClassNames(final IDirectory root, IDirectory dir, final ClassPathFilter filter)
-  {
+  private void addClassNames(final IDirectory root, IDirectory dir, final ClassPathFilter filter) {
+    logger.trace("Adding class names in dir {}", dir);
     for (IFile file : dir.listFiles()) {
       if( isClassFileName( file.getName() ) )
       {
@@ -123,10 +142,9 @@ public class ClassPath implements IClassPath
       // We need to store packages so we can resolve them in the gosu parser
       strClassName = getPlaceholderClassNameForFilteredPackage( strClassName );
     }
-    if( strClassName != null )
-    {
-      // Store the abstract file, not the URL; we compute and recache that lazily, see #get()
-      _cache.add( strClassName, file );
+    if( strClassName != null ) {
+      logger.trace("Adding class entry {}", strClassName);
+      _cache.add(strClassName, file);
     }
   }
 
@@ -167,9 +185,13 @@ public class ClassPath implements IClassPath
     }
     // look for private or anonymous inner classes
     int index = strClassName.lastIndexOf('$');
-    return !(_filter.isIgnoreAnonymous() &&
-             index >= 0 && index < strClassName.length() - 1 &&
-             Character.isDigit( strClassName.charAt( index + 1 ) ));
+    boolean valid = !(
+	    _filter.isIgnoreAnonymous() &&
+            index >= 0 && index < strClassName.length() - 1 &&
+                    Character.isDigit(strClassName.charAt(index + 1))
+    );
+    logger.trace("Class name {} is valid? {}", strClassName, valid);
+    return valid;
   }
 
   public boolean hasNamespace(String namespace) {

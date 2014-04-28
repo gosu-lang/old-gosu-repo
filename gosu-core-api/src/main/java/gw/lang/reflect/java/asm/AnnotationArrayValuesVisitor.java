@@ -5,16 +5,18 @@
 package gw.lang.reflect.java.asm;
 
 import gw.internal.ext.org.objectweb.asm.AnnotationVisitor;
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
 */
-class AnnotationArrayValuesVisitor implements AnnotationVisitor {
+class AnnotationArrayValuesVisitor extends AnnotationVisitor {
   private final List<Object> _values;
 
   public AnnotationArrayValuesVisitor( List<Object> values ) {
+    super( Opcodes.ASM5 );
     _values = values;
   }
 
@@ -40,9 +42,5 @@ class AnnotationArrayValuesVisitor implements AnnotationVisitor {
     List<Object> values = new ArrayList<Object>();
     _values.add( values );
     return new AnnotationArrayValuesVisitor( values );
-  }
-
-  @Override
-  public void visitEnd() {
   }
 }

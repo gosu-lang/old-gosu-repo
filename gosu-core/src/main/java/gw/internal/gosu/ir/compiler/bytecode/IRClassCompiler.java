@@ -4,7 +4,6 @@
 
 package gw.internal.gosu.ir.compiler.bytecode;
 
-import gw.internal.ext.org.objectweb.asm.ClassWriter;
 import gw.internal.ext.org.objectweb.asm.ClassReader;
 import gw.internal.ext.org.objectweb.asm.ClassVisitor;
 import gw.internal.ext.org.objectweb.asm.Opcodes;
@@ -12,20 +11,29 @@ import gw.internal.ext.org.objectweb.asm.FieldVisitor;
 import gw.internal.ext.org.objectweb.asm.MethodVisitor;
 import gw.internal.ext.org.objectweb.asm.Label;
 import gw.internal.ext.org.objectweb.asm.AnnotationVisitor;
+import gw.internal.ext.org.objectweb.asm.Type;
 import gw.internal.ext.org.objectweb.asm.util.TraceClassVisitor;
 import gw.internal.ext.org.objectweb.asm.util.CheckClassAdapter;
 import gw.internal.gosu.compiler.DebugFlag;
+import gw.internal.gosu.ir.nodes.IRTypeFactory;
+import gw.internal.gosu.ir.nodes.JavaClassIRType;
 import gw.lang.ir.IRClass;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRAnnotation;
 import gw.lang.ir.statement.IRFieldDecl;
 import gw.lang.ir.statement.IRMethodStatement;
+import gw.lang.reflect.IAnnotationInfo;
+import gw.lang.reflect.IMethodInfo;
+import gw.lang.reflect.IRelativeTypeInfo;
+import gw.lang.reflect.IType;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.gs.BytecodeOptions;
 
 import java.io.StringWriter;
 import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.util.List;
 
 public class IRClassCompiler extends AbstractBytecodeCompiler
@@ -33,7 +41,7 @@ public class IRClassCompiler extends AbstractBytecodeCompiler
   private static boolean COMPILE_WITH_DEBUG_INFO = true;
 
   //## todo: this s/b configurable
-  public static final int JAVA_VER = Opcodes.V1_6;
+  public static final int JAVA_VER = Opcodes.V1_8;
 
   private ClassVisitor _cv;
   private IRClass _irClass;
@@ -65,7 +73,7 @@ public class IRClassCompiler extends AbstractBytecodeCompiler
 
   private byte[] compile( )
   {
-    ClassWriter writer = new GosuClassWriter();
+    GosuClassWriter writer = new GosuClassWriter();
     StringWriter trace = configClassVisitor( writer );
 
     try
@@ -106,7 +114,7 @@ public class IRClassCompiler extends AbstractBytecodeCompiler
     }
   }
 
-  private StringWriter configClassVisitor( ClassWriter writer )
+  private StringWriter configClassVisitor( ClassVisitor writer )
   {
     _cv = writer;
     StringWriter trace = null;
@@ -229,6 +237,13 @@ public class IRClassCompiler extends AbstractBytecodeCompiler
                                          method.getName(),
                                          getMethodDescriptor( method ),
                                          null, null );
+    Object[] annotationDefault = method.getAnnotationDefault();
+    if( annotationDefault != null )
+    {
+      AnnotationVisitor annotationVisitor = mv.visitAnnotationDefault();
+      visitAnnotationDefaultValue( annotationDefault[0], method.getReturnType(), annotationVisitor );
+      mv.visitEnd();
+    }
     for( IRAnnotation annotation : method.getAnnotations() )
     {
       AnnotationVisitor annotationVisitor = mv.visitAnnotation( annotation.getDescriptor().getDescriptor(), annotation.isInclude() );
@@ -263,6 +278,77 @@ public class IRClassCompiler extends AbstractBytecodeCompiler
       terminateFunction( context );
     }
     mv.visitEnd();
+  }
+
+  private void visitAnnotationDefaultValue( Object value, IRType type, AnnotationVisitor annotationVisitor )
+  {
+    visitAnnotationDefaultValue( value, type, annotationVisitor, null );
+  }
+  private void visitAnnotationDefaultValue( Object value, IRType type, AnnotationVisitor annotationVisitor, String name )
+  {
+    if( value == null )
+    {
+      assert !type.isPrimitive();
+      annotationVisitor.visit( name, value );
+    }
+    else if( JavaClassIRType.get( Enum.class ).isAssignableFrom( type ) )
+    {
+      annotationVisitor.visitEnum( name, type.getDescriptor(), (String)value );
+    }
+    else
+    {
+      Class cls = value.getClass();
+
+      if( cls == Boolean.class ||
+          cls == Byte.class ||
+          cls == Character.class ||
+          cls == Short.class ||
+          cls == Integer.class ||
+          cls == Long.class ||
+          cls == Float.class ||
+          cls == Double.class ||
+          cls == String.class )
+      {
+        assert type.isPrimitive() || type == JavaClassIRType.get( String.class );
+        annotationVisitor.visit( name, value );
+      }
+      else if( cls.isArray() )
+      {
+        assert type.isArray();
+
+        AnnotationVisitor nestedVisitor = annotationVisitor.visitArray( name );
+
+        int length = Array.getLength( value );
+        for( int i = 0; i < length; i++ )
+        {
+          visitAnnotationDefaultValue( Array.get( value, i ), type.getComponentType(), nestedVisitor );
+          nestedVisitor.visitEnd();
+        }
+      }
+      else if( JavaClassIRType.get( Class.class ).isAssignableFrom( type ) )
+      {
+        annotationVisitor.visit( name, Type.getType( IRTypeFactory.get( (IType)value ).getDescriptor() ) );
+      }
+      else if( JavaClassIRType.get( Annotation.class ).isAssignableFrom( type ) )
+      {
+        IAnnotationInfo ai = (IAnnotationInfo)value;
+        AnnotationVisitor nestedVisitor = annotationVisitor.visitAnnotation( name, IRTypeFactory.get( ai.getType() ).getDescriptor() );
+
+        for( IMethodInfo mi: ((IRelativeTypeInfo)ai.getType().getTypeInfo()).getDeclaredMethods() )
+        {
+          if( !mi.isStatic() )
+          {
+            Object argValue = ai.getFieldValue( mi.getDisplayName() );
+            visitAnnotationDefaultValue( argValue, IRTypeFactory.get( mi.getReturnType() ), nestedVisitor, mi.getName() );
+          }
+        }
+        nestedVisitor.visitEnd();
+      }
+      else
+      {
+        throw new IllegalStateException();
+      }
+    }
   }
 
   private void terminateFunction( IRBytecodeContext context )

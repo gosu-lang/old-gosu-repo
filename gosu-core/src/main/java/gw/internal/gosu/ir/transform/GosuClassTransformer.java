@@ -5,7 +5,6 @@
 package gw.internal.gosu.ir.transform;
 
 import gw.internal.ext.org.objectweb.asm.Opcodes;
-import gw.internal.gosu.annotations.AnnotationMap;
 import gw.internal.gosu.ir.nodes.GosuClassIRType;
 import gw.internal.gosu.ir.nodes.IRMethod;
 import gw.internal.gosu.ir.nodes.IRMethodFactory;
@@ -16,7 +15,6 @@ import gw.internal.gosu.ir.transform.util.AccessibilityUtil;
 import gw.internal.gosu.ir.transform.util.IRTypeResolver;
 import gw.internal.gosu.ir.transform.util.NameResolver;
 import gw.internal.gosu.parser.AbstractDynamicSymbol;
-import gw.internal.gosu.parser.AnnotationBuilder;
 import gw.internal.gosu.parser.BlockClass;
 import gw.internal.gosu.parser.DynamicFunctionSymbol;
 import gw.internal.gosu.parser.EnumCodePropertySymbol;
@@ -25,7 +23,6 @@ import gw.internal.gosu.parser.EnumNamePropertySymbol;
 import gw.internal.gosu.parser.EnumValueOfFunctionSymbol;
 import gw.internal.gosu.parser.EnumValuesFunctionSymbol;
 import gw.internal.gosu.parser.GosuAnnotationInfo;
-import gw.internal.gosu.parser.GosuClass;
 import gw.internal.gosu.parser.ICompilableTypeInternal;
 import gw.internal.gosu.parser.IGosuClassInternal;
 import gw.internal.gosu.parser.IGosuEnhancementInternal;
@@ -33,11 +30,12 @@ import gw.internal.gosu.parser.IGosuTemplateInternal;
 import gw.internal.gosu.parser.IJavaTypeInternal;
 import gw.internal.gosu.parser.MemberFieldSymbol;
 import gw.internal.gosu.parser.ParameterizedDynamicFunctionSymbol;
+import gw.internal.gosu.parser.RepeatableContainerAnnotationInfo;
 import gw.internal.gosu.parser.Symbol;
 import gw.internal.gosu.parser.TemplateRenderFunctionSymbol;
 import gw.internal.gosu.parser.TypeLord;
+import gw.internal.gosu.parser.java.classinfo.CompileTimeExpressionParser;
 import gw.internal.gosu.parser.statements.ClassStatement;
-import gw.internal.gosu.parser.statements.StatementList;
 import gw.internal.gosu.parser.statements.VarStatement;
 import gw.internal.gosu.runtime.GosuRuntimeMethods;
 import gw.lang.ir.IRAnnotation;
@@ -47,18 +45,22 @@ import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
 import gw.lang.ir.IRTypeConstants;
-import gw.lang.ir.SyntheticIRType;
 import gw.lang.ir.expression.IRMethodCallExpression;
+import gw.lang.ir.statement.IRCatchClause;
 import gw.lang.ir.statement.IRFieldDecl;
 import gw.lang.ir.statement.IRMethodCallStatement;
 import gw.lang.ir.statement.IRMethodStatement;
 import gw.lang.ir.statement.IRNoOpStatement;
 import gw.lang.ir.statement.IRReturnStatement;
 import gw.lang.ir.statement.IRStatementList;
+import gw.lang.ir.statement.IRTryCatchFinallyStatement;
 import gw.lang.parser.ICapturedSymbol;
 import gw.lang.parser.IDynamicFunctionSymbol;
 import gw.lang.parser.IDynamicPropertySymbol;
+import gw.lang.parser.IExpression;
 import gw.lang.parser.IProgramClassFunctionSymbol;
+import gw.lang.parser.IReducedDynamicFunctionSymbol;
+import gw.lang.parser.IScriptPartId;
 import gw.lang.parser.IStatement;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.Keyword;
@@ -70,6 +72,7 @@ import gw.lang.reflect.IModifierInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.MethodList;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.BytecodeOptions;
@@ -77,7 +80,9 @@ import gw.lang.reflect.gs.GosuClassPathThing;
 import gw.lang.reflect.gs.IExternalSymbolMap;
 import gw.lang.reflect.gs.IGenericTypeVariable;
 import gw.lang.reflect.gs.IGosuClass;
+import gw.lang.reflect.gs.IGosuMethodInfo;
 import gw.lang.reflect.gs.IGosuProgram;
+import gw.lang.reflect.gs.IManagedProgramInstance;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassMethod;
 import gw.lang.reflect.java.IJavaMethodInfo;
@@ -91,11 +96,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  */
@@ -113,12 +117,6 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   {
     GosuClassTransformer cc = new GosuClassTransformer( gsClass );
     return cc.compile();
-  }
-
-  public static IRClass compileInterfaceMethodsClass( IGosuClassInternal gsClass )
-  {
-    GosuClassTransformer cc = new GosuClassTransformer( gsClass );
-    return cc.compileInterfaceMethodsClass();
   }
 
   private GosuClassTransformer( IGosuClassInternal gsClass )
@@ -159,43 +157,16 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     return _irClass;
   }
 
-  public IRClass compileInterfaceMethodsClass()
-  {
-    if( getGosuClass().isInterface() )
-    {
-      _irClass = new IRClass();
-
-      //simplified header
-      _irClass.setName( _gsClass.getInterfaceMethodsClassName() );
-      _irClass.setThisType( new SyntheticIRType( Object.class,
-                                                 _gsClass.getInterfaceMethodsClassName(),
-                                                 GosuClass.ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS ) );
-      _irClass.setModifiers( Opcodes.ACC_PUBLIC );
-      _irClass.setSuperType( getDescriptor( Object.class ) );
-
-      addSourceFileRef();
-
-      addEvalAnnotationMethod( _irClass );
-
-      return _irClass;
-    }
-    else
-    {
-      throw new IllegalStateException( "Cannot create an interface methods class for a non-interface" );
-    }
-  }
-
-
   private void addAnnotations()
   {
-    List<IRAnnotation> annotations = getIRAnnotations( (List)_gsClass.getTypeInfo().getAnnotations() );
+    List<IRAnnotation> annotations = getIRAnnotations( _gsClass.getTypeInfo().getAnnotations() );
     _irClass.setAnnotations( annotations );
   }
 
   private List<IRAnnotation> getIRAnnotations( List<? extends IAnnotationInfo> gosuAnnotations )
   {
     List<IRAnnotation> annotations = new ArrayList<IRAnnotation>();
-    Set<IType> alreadyCreated = new HashSet<IType>();
+    Map<IType, List<IAnnotationInfo>> repeats = new LinkedHashMap<IType, List<IAnnotationInfo>>();
     for( IAnnotationInfo ai : gosuAnnotations )
     {
       if( ai instanceof GosuAnnotationInfo )
@@ -203,11 +174,29 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         GosuAnnotationInfo gai = (GosuAnnotationInfo)ai;
         IType type = ai.getType();
         if( BytecodeOptions.isGenerateAnnotationsToClassFiles() &&
-            !alreadyCreated.contains(type) &&
             gai.getRawAnnotation().shouldPersistToClass() )
         {
-          alreadyCreated.add( ai.getType() );
-          annotations.add( new IRAnnotation( getDescriptor( ai.getType() ),
+          IType container = gai.getRepeatableContainer();
+          if( container == null )
+          {
+            if( repeats.containsKey( ai.getType() ) )
+            {
+              continue;
+            }
+            repeats.put( ai.getType(), null );
+          }
+          else
+          {
+            List<IAnnotationInfo> repeatedAnnos = repeats.get( container );
+            if( repeatedAnnos == null )
+            {
+              repeatedAnnos = new ArrayList<IAnnotationInfo>();
+              repeats.put( container, repeatedAnnos );
+            }
+            repeatedAnnos.add( ai );
+            continue;
+          }
+          annotations.add( new IRAnnotation( getDescriptor( type ),
                                              gai.getRawAnnotation().shouldRetainAtRuntime(), ai ) );
         }
       }
@@ -215,13 +204,24 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       {
         IType type = ai.getType();
         if( BytecodeOptions.isGenerateAnnotationsToClassFiles() &&
-            !alreadyCreated.contains( type ) &&
+            !repeats.containsKey( type ) &&
             hasRetentionPolicy( ai, RetentionPolicy.SOURCE ) )
         {
-          alreadyCreated.add( ai.getType() );
+          repeats.put( ai.getType(), null );
           annotations.add( new IRAnnotation( getDescriptor( ai.getType() ),
                                              hasRetentionPolicy( ai, RetentionPolicy.RUNTIME ), ai ) );
         }
+      }
+    }
+
+    for( IType key: repeats.keySet() )
+    {
+      List<IAnnotationInfo> repeatedAnnos = repeats.get( key );
+      if( repeatedAnnos != null )
+      {
+        // Package up all @Repeatable annotations in designated container annotation
+        RepeatableContainerAnnotationInfo repeatable = new RepeatableContainerAnnotationInfo( repeatedAnnos.toArray( new IAnnotationInfo[repeatedAnnos.size()] ), key, getGosuClass() );
+        annotations.add( new IRAnnotation( getDescriptor( key ), repeatable.retainInBytecode(), repeatable ) );
       }
     }
     return annotations;
@@ -302,7 +302,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     for( IVarStatement field : getOrderedFields() )
     {
       IRFieldDecl fieldDecl = new IRFieldDecl( getModifiers( (AbstractDynamicSymbol)field.getSymbol() ),
-                                               field.getIdentifierName().toString(),
+                                               field.getIdentifierName(),
                                                getDescriptor( field.getType() ),
                                                null );
       fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getAnnotations(), getGosuClass().getTypeInfo() ) ) );
@@ -315,7 +315,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     for( IVarStatement field : _gsClass.getStaticFields() )
     {
       IRFieldDecl fieldDecl = new IRFieldDecl( getModifiers( (Symbol)field.getSymbol() ),
-                                               field.getIdentifierName().toString(),
+                                               field.getIdentifierName(),
                                                getDescriptor( field.getType() ),
                                                null );
       fieldDecl.setAnnotations( getIRAnnotations( makeAnnotationInfos( ((VarStatement)field).getAnnotations(), getGosuClass().getTypeInfo() ) ) );
@@ -527,10 +527,19 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     if( ((_cc().getGosuClass() instanceof IGosuProgram) ||
          (dfs.isStatic() && isProgramOrEnclosedInProgram( _cc().getGosuClass() ))) &&
         !(dfs instanceof IProgramClassFunctionSymbol) &&
-        !(dfs instanceof TemplateRenderFunctionSymbol) )
+        !(dfs instanceof TemplateRenderFunctionSymbol) &&
+        !isOverrideForSuperClass( dfs ) )
     {
       parameters.add( new IRSymbol( GosuFragmentTransformer.SYMBOLS_PARAM_NAME, getDescriptor( IExternalSymbolMap.class ), false ) );
     }
+  }
+
+  private boolean isOverrideForSuperClass( DynamicFunctionSymbol dfs ) {
+    IDynamicFunctionSymbol superDfs = dfs.getSuperDfs();
+    if( superDfs == null ) {
+      return false;
+    }
+    return !superDfs.getScriptPart().equals( dfs.getScriptPart() );
   }
 
   private void maybeGetTypeVarSymbolTypes( DynamicFunctionSymbol dfs, List<IRSymbol> parameters )
@@ -642,13 +651,8 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       }
       else
       {
-        do
-        {
-//          _mv.visitVarInsn( Opcodes.ALOAD, 1 );
-//          callStaticMethod(
-//            outerType, getAccessibilityForOuter(), OUTER_ACCESS, outerType.getEnclosingType(), outerType );
-          outerType = outerType.getEnclosingType();
-        } while( outerType != typeToPass );
+        // Assume the super type must be in the enclosing chain e.g., _gsClass must be an anonymous class or contained therein
+        arguments.add( pushOuter( typeToPass ) );
       }
     }
   }
@@ -691,7 +695,6 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     }
 
     compileMainMethod();
-    compileAnnotationGetter();
   }
 
   /**
@@ -708,9 +711,22 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       return;
     }
 
-    while( dfs.isOverride() )
+    while( true )
     {
-      DynamicFunctionSymbol superDfs = dfs.getSuperDfs();
+      DynamicFunctionSymbol superDfs;
+      if( dfs.isOverride() )
+      {
+        superDfs = dfs.getSuperDfs();
+      }
+      else
+      {
+        superDfs = maybeGetSuperDfsFromJavaProxy( dfs );
+        if( superDfs == null )
+        {
+          break;
+        }
+      }
+
       while( superDfs instanceof ParameterizedDynamicFunctionSymbol )
       {
         superDfs = ((ParameterizedDynamicFunctionSymbol)superDfs).getBackingDfs();
@@ -788,12 +804,64 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         IGosuClassInternal gsProxyClass = superDfs.getGosuClass();
         if( gsProxyClass != null && gsProxyClass.isProxy() )
         {
-          addCovarientProxyBridgeMethods( superDfs );
-          break;
+          if( addCovarientProxyBridgeMethods( superDfs ) ) {
+            break;
+          }
         }
       }
       dfs = superDfs;
     }
+  }
+
+  private DynamicFunctionSymbol maybeGetSuperDfsFromJavaProxy( DynamicFunctionSymbol dfs )
+  {
+    IScriptPartId scriptPart = dfs.getScriptPart();
+    if( scriptPart == null )
+    {
+      return null;
+    }
+    IType gsClass = scriptPart.getContainingType();
+    if( gsClass == null )
+    {
+      return null;
+    }
+    if( !IGosuClass.ProxyUtil.isProxy( gsClass ) )
+    {
+      return null;
+    }
+    IJavaType javaSuperType = (IJavaType)((IGosuClass)gsClass).getJavaType().getSupertype();
+    if( javaSuperType == null )
+    {
+      return null;
+    }
+    IGosuClassInternal gosuSuperType = IGosuClassInternal.Util.getGosuClassFrom( javaSuperType );
+    if( gosuSuperType == null )
+    {
+      return null;
+    }
+    gosuSuperType.isValid();
+    DynamicFunctionSymbol superDfs = gosuSuperType.getParseInfo().getMemberFunctions().get( dfs.getName() );
+    if( superDfs != null )
+    {
+      return superDfs;
+    }
+    MethodList methods = gosuSuperType.getTypeInfo().getMethods( gsClass );
+    for( IMethodInfo mi: methods )
+    {
+      if( mi instanceof IGosuMethodInfo )
+      {
+        IReducedDynamicFunctionSymbol csr = ((IGosuMethodInfo)mi).getDfs();
+        if( csr.getName().equals( dfs.getName() ) )
+        {
+          if( csr.getBackingDfs() != null )
+          {
+            csr = csr.getBackingDfs();
+            return gosuSuperType.getParseInfo().getMemberFunctions().get( csr.getName() );
+          }
+        }
+      }
+    }
+    return null;
   }
 
   private int makeModifiersForBridgeMethod( int modifiers )
@@ -820,19 +888,19 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
    * </pre>
    * Here we need for this class to define a bridge method implementing JavaBase#makeText() : CharSequence
    */
-  private void addCovarientProxyBridgeMethods( DynamicFunctionSymbol dfs )
+  private boolean addCovarientProxyBridgeMethods( DynamicFunctionSymbol dfs )
   {
     IGosuClassInternal gsProxyClass = dfs.getGosuClass();
     if( gsProxyClass == null || !gsProxyClass.isProxy() )
     {
       // Not a proxy class so no java method to override
-      return;
+      return false;
     }
 
     if( dfs.getReturnType().isPrimitive() )
     {
       // Void or primitive return means no covariant override possible
-      return;
+      return false;
     }
 
     IJavaTypeInternal javaType = (IJavaTypeInternal)gsProxyClass.getJavaType();
@@ -841,9 +909,10 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       IJavaClassMethod m = getMethodOverridableFromDfs( dfs, javaType.getBackingClassInfo() );
       if( m != null && Modifier.isAbstract( m.getModifiers() ) )
       {
-        genInterfaceProxyBridgeMethod( m, javaType.getBackingClassInfo() );
+        return genInterfaceProxyBridgeMethod( m, javaType.getBackingClassInfo() );
       }
     }
+    return false;
   }
 
   private IJavaClassMethod getMethodOverridableFromDfs( DynamicFunctionSymbol dfs, IJavaClassInfo declaringClass )
@@ -883,8 +952,9 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     return m;
   }
 
-  private void genInterfaceProxyBridgeMethod( IJavaClassMethod m, IJavaClassInfo iJavaClassInfo )
+  private boolean genInterfaceProxyBridgeMethod( IJavaClassMethod m, IJavaClassInfo iJavaClassInfo )
   {
+    boolean bRet = false;
     for( IJavaClassInfo iface : iJavaClassInfo.getInterfaces() )
     {
       try
@@ -892,7 +962,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         IJavaClassMethod bridge = iface.getDeclaredMethod( m.getName(), m.getParameterTypes() );
         if( !bridge.getReturnType().equals( m.getReturnType() ) )
         {
-          genBridgeMethod( bridge, m );
+          bRet = genBridgeMethod( bridge, m ) || bRet;
           m = bridge;
         }
       }
@@ -900,11 +970,12 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       {
         // ignore
       }
-      genInterfaceProxyBridgeMethod( m, iface );
+      bRet = genInterfaceProxyBridgeMethod( m, iface ) || bRet;
     }
+    return bRet;
   }
 
-  private void genBridgeMethod( IJavaClassMethod bridge, IJavaClassMethod m )
+  private boolean genBridgeMethod( IJavaClassMethod bridge, IJavaClassMethod m )
   {
     IRType superRetDescriptor = getDescriptor( bridge.getReturnType() );
     IRType overrideRetDescriptor = getDescriptor( m.getReturnType() );
@@ -953,7 +1024,9 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         superRetDescriptor,
         parameters );
       _irClass.addMethod( bridgeMethod );
+      return true;
     }
+    return false;
   }
 
   /**
@@ -1161,6 +1234,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
         setUpFunctionContext( dfs, !dfs.isStatic() && !isCompilingEnhancement(), parameters );
         FunctionStatementTransformer funcStmtCompiler = new FunctionStatementTransformer( dfs, _context );
         methodBody = funcStmtCompiler.compile();
+        methodBody = maybeWrapProgramEvaluateForManangedProgram( dfs, methodBody );
       }
       else
       {
@@ -1176,13 +1250,75 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       methodBody = null;
     }
 
+    IExpression annotationDefault = dfs.getAnnotationDefault();
+    Object[] annotationDefaultValue = null;
+    if( annotationDefault != null )
+    {
+      annotationDefaultValue = new Object[] {CompileTimeExpressionParser.convertValueToInfoFriendlyValue( annotationDefault.evaluate(), getGosuClass().getTypeInfo() )};
+    }
     IRMethodStatement method = new IRMethodStatement( methodBody,
                                                       NameResolver.getFunctionName( dfs ),
                                                       getModifiers( dfs ),
                                                       getDescriptor( dfs.getReturnType() ),
-                                                      parameters );
+                                                      parameters,
+                                                      annotationDefaultValue );
     method.setAnnotations( getIRAnnotations( makeAnnotationInfos( dfs.getModifierInfo().getAnnotations(), getGosuClass().getTypeInfo() ) ) );
     _irClass.addMethod( method );
+  }
+
+  /**
+   * If this is:
+   * <ul>
+   * <li> a Gosu program and
+   * <li> it has a superclass that implements IManagedProgramInstance and
+   * <li> this method is <code>evaluate( IExternalSymbolMap )</code>
+   * </ul>
+   * Generate the evaluate() method like so:
+   * <pre>
+   *   function evaluate( map: IExternalSymbolMap ) : Object {
+   *     var $failure : Throwable
+   *     if( this.beforeExecution() ) {
+   *       try {
+   *         [method-body] // returns result
+   *       }
+   *       catch( $catchFailure: Throwable ) {
+   *         $failure = $catchFailure
+   *       }
+   *       finally {
+   *         this.afterExecution( $failure )
+   *       }
+   *     }
+   *     return null // only get here if exception not rethrown in afterExecution()
+   *   }
+   * </pre>
+   */
+  private IRStatement maybeWrapProgramEvaluateForManangedProgram( DynamicFunctionSymbol dfs, IRStatement methodBody )
+  {
+    if( dfs.getDisplayName().equals( "evaluate" ) )
+    {
+      IType[] argTypes = dfs.getArgTypes();
+      if( argTypes.length == 1 && argTypes[0] == JavaTypes.IEXTERNAL_SYMBOL_MAP() )
+      {
+        IType declaringType = dfs.getDeclaringTypeInfo().getOwnersType();
+        if( declaringType instanceof IGosuProgram &&
+            TypeSystem.get( IManagedProgramInstance.class ).isAssignableFrom( declaringType ) )
+        {
+          IRSymbol exceptionId = new IRSymbol( "$failure", getDescriptor( Throwable.class ), true );
+          _cc().putSymbol( exceptionId );
+          IRStatement exceptionIdInit = buildAssignment( exceptionId, pushNull() );
+
+          methodBody =
+            new IRStatementList( true,
+              exceptionIdInit,
+              buildIf( buildMethodCall( IManagedProgramInstance.class, "beforeExecution", boolean.class, new Class[0], pushThis(), Collections.<IRExpression>emptyList() ),
+                       new IRTryCatchFinallyStatement( methodBody,
+                                                       Collections.singletonList( new IRCatchClause( exceptionId, new IRNoOpStatement() ) ),
+                                                       buildMethodCall( buildMethodCall( IManagedProgramInstance.class, "afterExecution", void.class, new Class[]{Throwable.class}, pushThis(), Collections.<IRExpression>singletonList( identifier( exceptionId ) ) ) ) ) ),
+              new IRReturnStatement( null, nullLiteral() ) );
+        }
+      }
+    }
+    return methodBody;
   }
 
   private boolean isStaticEnumMethod( DynamicFunctionSymbol dfs )
@@ -1265,49 +1401,6 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
       Collections.singletonList( new IRSymbol( "args", getDescriptor( String[].class ), false ) )
     );
     _irClass.addMethod( method );
-  }
-
-  private void compileAnnotationGetter()
-  {
-    if( !getGosuClass().isInterface() )
-    {
-      addEvalAnnotationMethod( _irClass );
-    }
-  }
-
-  private void addEvalAnnotationMethod( IRClass irClass )
-  {
-    List<StatementList> annotationInitMethods = getGosuClass().getAnnotationInitialization();
-    IRType annMapIRClass = JavaClassIRType.get( AnnotationMap.class );
-    IRSymbol builderSymbol = new IRSymbol( AnnotationBuilder.BUILDER_SYMBOL.get().getName(), annMapIRClass, false );
-    for( int i = 0; i < annotationInitMethods.size(); i++ )
-    {
-      StatementList initMethod = annotationInitMethods.get( i );
-      List<IRSymbol> args = new ArrayList<IRSymbol>();
-      String ending = "";
-      if( i != 0 )
-      {
-        ending = "" + i;
-        args.add( builderSymbol );
-      }
-      setUpFunctionContext( false, args );
-      IRStatementList statement = (IRStatementList)StatementTransformer.compile( _context, initMethod );
-      if( i < annotationInitMethods.size() - 1 )
-      {
-        IRMethod method = IRMethodFactory.createIRMethod( getGosuClass(),
-                                                          GosuClass.EVAL_ANNOTATIONS_METHOD + (i + 1),
-                                                          JavaClassIRType.get( Map.class ),
-                                                          Arrays.asList( annMapIRClass ),
-                                                          IRelativeTypeInfo.Accessibility.PUBLIC,
-                                                          true );
-        statement.addStatement( new IRReturnStatement( null, callMethod( method, null, exprList( identifier( builderSymbol ) ) ) ) );
-      }
-      IRMethodStatement method = new IRMethodStatement(
-        statement,
-        GosuClass.EVAL_ANNOTATIONS_METHOD + ending, Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, getDescriptor( Map.class ),
-        args );
-      irClass.addMethod( method );
-    }
   }
 
   private void compileEnumValuesMethod()
@@ -1441,7 +1534,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileEnumNamePropertyGetter()
   {
     // Don't bother if the class already has the property defined
-    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( (String)"Name" );
+    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( "Name" );
     if( existingProperty != null && !(existingProperty instanceof EnumNamePropertySymbol) )
     {
       return;
@@ -1463,7 +1556,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
   private void compileEnumDisplayNamePropertyGetter()
   {
     // Don't bother if the class already has the property defined
-    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( (String)"DisplayName" );
+    IDynamicPropertySymbol existingProperty = getGosuClass().getMemberProperty( "DisplayName" );
     if( existingProperty != null && !(existingProperty instanceof EnumDisplayNamePropertySymbol) )
     {
       return;
@@ -1570,7 +1663,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     {
       if( field.isEnumConstant() )
       {
-        _enumCounter.increment( field.getIdentifierName().toString() );
+        _enumCounter.increment( field.getIdentifierName() );
       }
       else if( needToCompileEnumValuesField && !field.isEnumConstant() )
       {
@@ -1615,7 +1708,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     for( int i = 0; i < enumFields.size(); i++ )
     {
       values.add( getStaticField( _gsClass,
-                                  enumFields.get( i ).getIdentifierName().toString(),
+                                  enumFields.get( i ).getIdentifierName(),
                                   getDescriptor( enumFields.get( i ).getType() ),
                                   IRelativeTypeInfo.Accessibility.PUBLIC ) );
     }
@@ -1639,7 +1732,7 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     List<IVarStatement> fieldStmts = new ArrayList<IVarStatement>( fields.size() );
     for( MemberFieldSymbol field : fields )
     {
-      fieldStmts.add( _gsClass.getMemberField( (String)field.getName() ) );
+      fieldStmts.add( _gsClass.getMemberField( field.getName() ) );
     }
     return fieldStmts;
   }
@@ -1667,18 +1760,8 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
 
   private String getParameterDescriptors( IJavaClassInfo[] iJavaClassInfos )
   {
-    StringBuffer sb = new StringBuffer();
-    for( IJavaClassInfo type : iJavaClassInfos )
-    {
-      sb.append( getDescriptor( type ).getName() );
-    }
-    return sb.toString();
-  }
-
-  private String getParameterDescriptors( Class[] types )
-  {
     StringBuilder sb = new StringBuilder();
-    for( Class type : types )
+    for( IJavaClassInfo type : iJavaClassInfos )
     {
       sb.append( getDescriptor( type ).getName() );
     }
@@ -1764,6 +1847,12 @@ public class GosuClassTransformer extends AbstractElementTransformer<ClassStatem
     {
       iModifiers |= Opcodes.ACC_STATIC;
     }
+
+    if( Modifier.isAnnotation( iGsModifiers ) )
+    {
+      iModifiers |= Opcodes.ACC_ANNOTATION;
+    }
+
     return iModifiers;
   }
 

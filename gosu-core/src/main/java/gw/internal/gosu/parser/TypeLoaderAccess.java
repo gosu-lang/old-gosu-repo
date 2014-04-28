@@ -42,6 +42,7 @@ import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.TypeSystemShutdownListener;
 import gw.lang.reflect.gs.GosuClassTypeLoader;
 import gw.lang.reflect.gs.IGenericTypeVariable;
+import gw.lang.reflect.gs.IGosuClass;
 import gw.lang.reflect.gs.IGosuClassLoader;
 import gw.lang.reflect.gs.IGosuEnhancement;
 import gw.lang.reflect.java.IJavaClassInfo;
@@ -1292,27 +1293,36 @@ public class TypeLoaderAccess extends BaseService implements ITypeSystem
     return TypeLord.getDefaultParameterizedTypeWithTypeVars(type);
   }
 
-  public boolean canCast(IType lhsType, IType rhsType) {
-    if (lhsType instanceof TypeVariableType) {
+  public boolean canCast( IType lhsType, IType rhsType ) {
+    if( lhsType instanceof TypeVariableType ) {
       // Support casting from a type variable
-      lhsType = ((TypeVariableType) lhsType).getBoundingType();
+      lhsType = ((TypeVariableType)lhsType).getBoundingType();
     }
 
-    // Support explicit downcast
-    if (lhsType != null) {
-      if (lhsType.isAssignableFrom(rhsType)) {
-        return true;
-      } else if (rhsType.isInterface() && lhsType.isInterface()) {
+    if( lhsType != null ) {
+      // Support explicit downcast
+
+      if( lhsType.isAssignableFrom( rhsType ) ) {
         return true;
       }
-      // Support cross-casting to an interface
-      else if (rhsType.isInterface() && (!lhsType.isFinal() && !lhsType.isPrimitive() && !(lhsType instanceof IFunctionType) && !(lhsType.isArray()))) {
+      else if( rhsType.isInterface() && lhsType.isInterface() ) {
         return true;
-      } else if (lhsType.isInterface() && (!rhsType.isFinal() && !rhsType.isPrimitive() && !(rhsType instanceof IFunctionType) && !(rhsType.isArray()))) {
+      }
+      else if( rhsType.isInterface() && ((!lhsType.isFinal() && !lhsType.isPrimitive() && !(lhsType instanceof IFunctionType) && !(lhsType.isArray())) || canCastMetaType( lhsType, rhsType )) ) {
+        // Support cross-casting to an interface
+        return true;
+      }
+      else if( lhsType.isInterface() && ((!rhsType.isFinal() && !rhsType.isPrimitive() && !(rhsType instanceof IFunctionType) && !(rhsType.isArray())) || canCastMetaType( lhsType, rhsType )) ) {
         return true;
       }
     }
     return false;
+  }
+
+  private boolean canCastMetaType( IType lhsType, IType rhsType ) {
+    return rhsType instanceof IGosuClass && ((IGosuClass)rhsType).isStructure() &&
+           (lhsType instanceof IMetaType && canCast( ((IMetaType)lhsType).getType(), rhsType ) ||
+            JavaTypes.CLASS().isAssignableFrom( lhsType ) && (lhsType.isParameterizedType() || canCast( lhsType.getTypeParameters()[0], rhsType )));
   }
 
   public IJavaType getPrimitiveType(String name) {

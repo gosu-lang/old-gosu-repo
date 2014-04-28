@@ -25,6 +25,8 @@ import gw.util.DynamicArray;
 import gw.util.Pair;
 import gw.util.StreamUtil;
 import gw.util.cache.FqnCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +46,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class FileSystemGosuClassRepository implements IFileSystemGosuClassRepository
 {
+  private static final Logger logger = LoggerFactory.getLogger(FileSystemGosuClassRepository.class);
+
   private final Map<String, FqnCache> _missCaches = new HashMap<String, FqnCache>();
   public static final String RESOURCE_LOCATED_W_CLASSES = "gw/config/default.xml";
 
@@ -343,11 +347,13 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
     {
       child = parent.getChild( strRelativeName );
     }
+    logger.trace("Got child package {} for parent {} and relative name {}", child, parent, strRelativeName);
     return child;
   }
 
   private PackageToClassPathEntryTreeMap loadPackageRoots()
   {
+    logger.trace("=>START load package roots for module {}", _module);
     PackageToClassPathEntryTreeMap root = new PackageToClassPathEntryTreeMap( null, "", _module );
     PackageToClassPathEntryTreeMap gw = root.createChildForDir( null, "gw" );
     gw.createChildForDir( null, "lang" );
@@ -358,6 +364,7 @@ public class FileSystemGosuClassRepository implements IFileSystemGosuClassReposi
       root.addClassPathEntry( dir );
       processDirectory( root, dir, dir.getPath() );
     }
+    logger.trace("=>END load package roots for module {}", _module);
     return root;
   }
 

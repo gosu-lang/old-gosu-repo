@@ -45,6 +45,10 @@ public class ReducedSymbol implements IReducedSymbol {
     _symClass = sym.getClass();
     _bValueBoxed = sym.isValueBoxed();
     _iIndex = sym.getIndex();
+    if( sym instanceof DynamicFunctionSymbol )
+    {
+      _defValue = ((DynamicFunctionSymbol)sym).getAnnotationDefault();
+    }
     if( sym instanceof ScopedDynamicSymbol )
     {
       _globalScope = sym.getScope();

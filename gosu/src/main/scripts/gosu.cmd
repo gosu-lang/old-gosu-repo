@@ -39,4 +39,19 @@ if "%_JAVACMD%" == "" set _JAVACMD=%JAVA_HOME%\bin\java.exe
 if "%_JAVACMD%" == "" set _JAVACMD=java.exe
 
 :runGosu
-call "%_JAVACMD%" %_DEBUG% %GOSU_OPTS% -classpath "%_G_CLASSPATH%" gw.lang.launch.impl.GosuLauncher -Dlauncher.properties.file="%_G_ROOT_DIR%gosulaunch.properties" %_CMD_LINE_ARGS%
+"%_JAVACMD%" %_DEBUG% %GOSU_OPTS% -classpath "%_G_CLASSPATH%" gw.lang.launch.impl.GosuLauncher -Dlauncher.properties.file="%_G_ROOT_DIR%gosulaunch.properties" %_CMD_LINE_ARGS%
+goto end
+
+:end
+
+rem Check the error code of the execution
+set GOSU_ERROR=%ERRORLEVEL%
+
+set _JAVACMD=
+set _CMD_LINE_ARGS=
+set _DEBUG=
+set _G_CLASSPATH=
+set _L_AUNCHER_AETHER_JAR=
+set _LAUNCHER_JAR=
+set _LAUNCHER_VERSION=
+set _G_ROOT_DIR=

@@ -10,6 +10,7 @@ import gw.internal.ext.org.objectweb.asm.ClassReader;
 import gw.internal.ext.org.objectweb.asm.ClassVisitor;
 import gw.internal.ext.org.objectweb.asm.FieldVisitor;
 import gw.internal.ext.org.objectweb.asm.MethodVisitor;
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.ext.org.objectweb.asm.signature.SignatureReader;
 import gw.lang.reflect.Modifier;
 import gw.lang.reflect.TypeSystem;
@@ -235,7 +236,11 @@ public class AsmClass implements IAsmType, IGeneric {
     return null;
   }
 
-  private class AsmClassVisitor implements ClassVisitor {
+  private class AsmClassVisitor extends ClassVisitor {
+    public AsmClassVisitor() {
+      super( Opcodes.ASM5 );
+    }
+
     @Override
     public void visit( int version, int access, String name, String signature, String superName, String[] interfaces ) {
       _type = AsmUtil.makeType( name );

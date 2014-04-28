@@ -603,7 +603,7 @@ class JavaType extends AbstractType implements IJavaTypeInternal
             throw new NullPointerException("notParameterizedInterface java type is null for " + notParameterizedInterfaces[i]);
           }
           _tempInterfaces.add( notParameterizedInterface );
-          if( !isParameterizedType() && interfaceType instanceof IJavaClassInfo )
+          if( !isParameterizedType() && interfaceType instanceof IJavaClassInfo && !notParameterizedInterface.isGenericType() )
           {
             interfaces.add( notParameterizedInterface );
           }
@@ -615,6 +615,9 @@ class JavaType extends AbstractType implements IJavaTypeInternal
               actualParamByVarName = TypeLord.mapTypeByVarName( notParameterizedInterface, notParameterizedInterface, true );
             }
             IType parameterizedIface = interfaceType.getActualType( actualParamByVarName, true );
+            if( parameterizedIface.isGenericType() && !parameterizedIface.isParameterizedType() ) {
+              parameterizedIface = TypeLord.getDefaultParameterizedType( parameterizedIface );
+            }
             interfaces.add( parameterizedIface );
             _tempInterfaces.remove( notParameterizedInterface );
             _tempInterfaces.add( parameterizedIface );
@@ -703,7 +706,10 @@ class JavaType extends AbstractType implements IJavaTypeInternal
     if (TypeSystem.isDeleted(_superType)) {
       _superType = TypeSystem.getErrorType();
     }
-    return _superType;
+    // Ensure we return a non-raw generic type here
+    return _superType.isGenericType() && !_superType.isParameterizedType()
+           ? TypeLord.getDefaultParameterizedType( _superType )
+           : _superType;
   }
 
   public List<IJavaType> getInnerClasses()

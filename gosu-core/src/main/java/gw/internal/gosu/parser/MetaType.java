@@ -4,6 +4,7 @@
 
 package gw.internal.gosu.parser;
 
+import gw.lang.parser.StandardCoercionManager;
 import gw.lang.reflect.*;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
@@ -235,7 +236,8 @@ public class MetaType extends AbstractType implements IMetaType
             ((IMetaType)type).getType().equals( DEFAULT_TYPE.get() ) ||
             getType().equals( ROOT_TYPE.get() ) ||
             ((IMetaType)type).getType().equals( ROOT_TYPE.get() ) ||
-            getType().isAssignableFrom( ((IMetaType)type).getType() ));
+            getType().isAssignableFrom( ((IMetaType)type).getType() ) ||
+            StandardCoercionManager.isStructurallyAssignable( getType(), ((IMetaType)type).getType() ));
   }
 
   /**

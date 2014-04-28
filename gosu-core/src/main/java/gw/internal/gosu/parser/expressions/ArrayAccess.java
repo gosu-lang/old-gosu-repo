@@ -1,9 +1,10 @@
 /*
- * Copyright 2013 Guidewire Software, Inc.
+ * Copyright 2014 Guidewire Software, Inc.
  */
 
 package gw.internal.gosu.parser.expressions;
 
+import gw.internal.gosu.dynamic.IDynamicType;
 import gw.internal.gosu.parser.Expression;
 import gw.internal.gosu.parser.TypeLoaderAccess;
 import gw.internal.gosu.parser.TypeLord;
@@ -272,7 +273,7 @@ public final class ArrayAccess extends Expression implements IArrayAccessExpress
            (JavaTypes.LIST().isAssignableFrom(type) &&
             !JavaTypes.LINKED_LIST().isAssignableFrom( type )) ||
            JavaTypes.CHAR_SEQUENCE().isAssignableFrom(type) ||
-           (type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder());
+           (type instanceof IDynamicType);
   }
 
   private static Object getElementFromIterator( Iterator iter, int iIndex )

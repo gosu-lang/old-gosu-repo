@@ -21,9 +21,8 @@ import gw.internal.gosu.parser.expressions.MemberAccess;
 import gw.internal.gosu.parser.expressions.MemberExpansionAccess;
 import gw.internal.gosu.parser.optimizer.SinglePropertyMemberAccessRuntime;
 import gw.internal.gosu.runtime.GosuRuntimeMethods;
-import gw.lang.IAutocreate;
+import gw.lang.Autocreate;
 import gw.lang.ShortCircuitingProperty;
-import gw.lang.function.IBlock;
 import gw.lang.ir.IRElement;
 import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRStatement;
@@ -59,6 +58,7 @@ import gw.lang.reflect.java.JavaTypes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 /**
  */
@@ -609,15 +609,20 @@ public class MemberAccessTransformer extends AbstractExpressionTransformer<Membe
     if( usingAutoCreateAnnotation )
     {
       IAnnotationInfo annotation = annotationInfoList.get( 0 );
-      IAutocreate o = (IAutocreate)annotation.getInstance();
-      IBlock block = (IBlock)o.getBlock();
-      if( block == null )
+      Autocreate o = (Autocreate)annotation.getInstance();
+      Class<? extends Callable> block = o.value();
+      if( block == null || block.isInterface() )
       {
         value = property.getFeatureType().getTypeInfo().getConstructor().getConstructor().newInstance();
       }
       else
       {
-        value = block.invokeWithArgs();
+        try {
+          value = block.newInstance().call();
+        }
+        catch( Exception e ) {
+          throw new RuntimeException( e );
+        }
       }
     }
     else

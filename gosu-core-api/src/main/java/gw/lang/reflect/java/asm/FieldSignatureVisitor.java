@@ -4,11 +4,12 @@
 
 package gw.lang.reflect.java.asm;
 
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.ext.org.objectweb.asm.signature.SignatureVisitor;
 
 /**
  */
-public class FieldSignatureVisitor implements SignatureVisitor {
+public class FieldSignatureVisitor extends SignatureVisitor {
   private AsmField _asmField;
   private AsmType _currentType;
   private AsmType _typeArg;
@@ -16,15 +17,15 @@ public class FieldSignatureVisitor implements SignatureVisitor {
   private Boolean _variance; // null = none, true = covariant, false = contravariant
 
   FieldSignatureVisitor( AsmField field ) {
+    super( Opcodes.ASM5 );
     _asmField = field;
   }
   FieldSignatureVisitor( AsmField field, AsmType type ) {
-    _asmField = field;
+    this( field );
     _currentType = type;
   }
   FieldSignatureVisitor( AsmField field, AsmType type, char wildcardVariance ) {
-    _asmField = field;
-    _currentType = type;
+    this( field, type );
     _variance = wildcardVariance == '+';
   }
 

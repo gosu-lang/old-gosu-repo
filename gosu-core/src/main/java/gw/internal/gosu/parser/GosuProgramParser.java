@@ -179,6 +179,7 @@ public class GosuProgramParser implements IGosuProgramParser
       program.setAdditionalDFSDecls( options.getAdditionalDFSDecls() );
       program.setStatementsOnly( options.isStatementsOnly() );
       program.setThrowaway( options.isThrowawayProgram() );
+      program.setAnonymous( program.isAnonymous() || options.isAnonymous() );
       program.setAllowUses( options.allowUses() );
       program.setCtxInferenceMgr( options.getCtxInferenceMgr() );
       if( options.getScriptPartId() != null )

@@ -9,10 +9,11 @@ import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.util.LazyInstance;
 import com.intellij.util.xmlb.annotations.Attribute;
 import gw.plugin.ij.lang.psi.api.IFileShadowingResolver;
+import gw.plugin.ij.core.GosuAppComponent;
 import org.jetbrains.annotations.NotNull;
 
 public class FileShadowingResolverExtensionBean extends AbstractExtensionPointBean {
-  static final ExtensionPointName<FileShadowingResolverExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.fileShadowingResolver");
+  static final ExtensionPointName<FileShadowingResolverExtensionBean> EP_NAME = new ExtensionPointName<>(GosuAppComponent.EDITOR_PLUGIN_ID.getIdString() + ".fileShadowingResolver");
 
   @Attribute("class")
   public String className;

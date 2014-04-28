@@ -6,9 +6,8 @@ package gw.lang.parser.coercers;
 
 import gw.lang.parser.IResolvingCoercer;
 import gw.lang.reflect.IHasJavaClass;
+import gw.lang.reflect.IMetaType;
 import gw.lang.reflect.IType;
-import gw.lang.reflect.java.IJavaType;
-import gw.lang.reflect.java.JavaTypes;
 import gw.lang.reflect.java.JavaTypes;
 
 public class MetaTypeToClassCoercer extends BaseCoercer implements IResolvingCoercer
@@ -17,8 +16,14 @@ public class MetaTypeToClassCoercer extends BaseCoercer implements IResolvingCoe
 
   public Object coerceValue( IType typeToCoerceTo, Object value )
   {
-    IHasJavaClass  javaIntrinsicType = (IHasJavaClass )value;
-    return javaIntrinsicType.getBackingClass();
+    if( value instanceof IHasJavaClass )
+    {
+      return ((IHasJavaClass)value).getBackingClass();
+    }
+    else
+    {
+      return coerceValue( typeToCoerceTo, ((IMetaType)value).getType() );
+    }
   }
 
   public boolean isExplicitCoercion()
@@ -33,9 +38,15 @@ public class MetaTypeToClassCoercer extends BaseCoercer implements IResolvingCoe
 
   public IType resolveType( IType target, IType source )
   {
+    IType type = source.getTypeParameters()[0];
+    if( type instanceof IMetaType )
+    {
+      type = ((IMetaType)type).getType();
+    }
+
     if( target.getGenericType() == JavaTypes.CLASS() )
     {
-      return JavaTypes.CLASS().getParameterizedType(source.getTypeParameters()[0]);
+      return JavaTypes.CLASS().getParameterizedType( type );
     }
     else
     {
@@ -45,7 +56,7 @@ public class MetaTypeToClassCoercer extends BaseCoercer implements IResolvingCoe
 
   public int getPriority( IType to, IType from )
   {
-    return 1;
+    return 2;
   }
 
   public static MetaTypeToClassCoercer instance()

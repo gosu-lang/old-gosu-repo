@@ -4,7 +4,6 @@
 
 package gw.internal.xml.ws.server;
 
-import gw.config.CommonServices;
 import gw.internal.schema.gw.xsd.w3c.wsdl.Definitions;
 import gw.internal.schema.gw.xsd.w3c.wsdl.anonymous.elements.TBindingOperation_Fault;
 import gw.internal.schema.gw.xsd.w3c.wsdl.anonymous.elements.TBindingOperation_Input;
@@ -133,13 +132,14 @@ public class WsiUtilities {
     Definitions wsdl = new Definitions();
     wsdl.setComment( "Generated WSDL for " + type.getName() + " web service" );
     try {
+      type.isValid();
       Set<IType> exposeEnumAsStringTypes = new HashSet<IType>();
       for ( IAnnotationInfo wsiExposeEnumAsStringAnnotationInfo : type.getTypeInfo().getAnnotationsOfType( WSI_EXPOSE_ENUM_AS_STRING_ANNOTATION_TYPE.get() ) ) {
-        IWsiExposeEnumAsString exposeEnumAsStringAnnotation = (IWsiExposeEnumAsString) CommonServices.getGosuIndustrialPark().evaluateAnnotation( wsiExposeEnumAsStringAnnotationInfo );
+        IWsiExposeEnumAsString exposeEnumAsStringAnnotation = (IWsiExposeEnumAsString)wsiExposeEnumAsStringAnnotationInfo.getInstance();
         exposeEnumAsStringTypes.add( exposeEnumAsStringAnnotation.getType() );
       }
       IAnnotationInfo wsiWebServiceAnnotationInfo = type.getTypeInfo().getAnnotationsOfType( WSI_WEB_SERVICE_ANNOTATION_TYPE.get() ).get( 0 );
-      IWsiWebService clsAnnot = (IWsiWebService) CommonServices.getGosuIndustrialPark().evaluateAnnotation( wsiWebServiceAnnotationInfo );
+      IWsiWebService clsAnnot = (IWsiWebService)wsiWebServiceAnnotationInfo.getInstance();
       wsdl.declareNamespace( gw.internal.schema.gw.xsd.gw.gw_pl_wsdl_additions.Address.$QNAME );
       String namespace = XmlServices.createTargetNamespace( type );
       QName serviceName = new QName(namespace, clsAnnot.getServiceNameLocalPart() == null ? type.getRelativeName() : clsAnnot.getServiceNameLocalPart());
@@ -160,7 +160,7 @@ public class WsiUtilities {
       List<IAnnotationInfo> parseOptionsAnnotations = type.getTypeInfo().getAnnotationsOfType( WSI_ADDITIONAL_SCHEMAS_ANNOTATION_TYPE.get() );
       if ( ! parseOptionsAnnotations.isEmpty() ) {
         IAnnotationInfo parseOptionsAnnotationInfo = parseOptionsAnnotations.get( 0 );
-        IWsiAdditionalSchemas additionalSchemasAnnotation = (IWsiAdditionalSchemas) CommonServices.getGosuIndustrialPark().evaluateAnnotation( parseOptionsAnnotationInfo );
+        IWsiAdditionalSchemas additionalSchemasAnnotation = (IWsiAdditionalSchemas)parseOptionsAnnotationInfo.getInstance();
         for ( XmlSchemaAccess additionalSchema : additionalSchemasAnnotation.getAdditionalSchemas() ) {
           XmlSchemaAccessImpl impl = (XmlSchemaAccessImpl) additionalSchema;
           XmlMarshaller.findOrImportSchema( impl.getSchemaIndex(), serviceInfo, null );
@@ -233,7 +233,7 @@ public class WsiUtilities {
 
       // Processing this annotation needs to be the last thing that occurs before the WSDL is returned
       for ( IAnnotationInfo wsiSchemaTransformAnnotationInfo : type.getTypeInfo().getAnnotationsOfType( WSI_SCHEMA_TRANSFORM_ANNOTATION_TYPE.get() ) ) {
-        Object schemaTransformAnnotation = CommonServices.getGosuIndustrialPark().evaluateAnnotation( wsiSchemaTransformAnnotationInfo );
+        Object schemaTransformAnnotation = wsiSchemaTransformAnnotationInfo.getInstance();
         Function3 transform3 = (Function3) WSI_SCHEMA_TRANSFORM_ANNOTATION_TYPE.get().getTypeInfo().getProperty( "GWTransform" ).getAccessor().getValue( schemaTransformAnnotation );
         if (transform3 != null ) {
           transform3.invoke( wsdl, schema, servlet.postConfigureWebservicePath(type, xsdRootURL) );

@@ -6,6 +6,7 @@ package gw.lang.ir.statement;
 
 import gw.lang.UnstableAPI;
 import gw.lang.ir.IRAnnotation;
+import gw.lang.ir.IRExpression;
 import gw.lang.ir.IRStatement;
 import gw.lang.ir.IRSymbol;
 import gw.lang.ir.IRType;
@@ -22,8 +23,12 @@ public class IRMethodStatement extends IRStatement {
   private List<IRSymbol> _parameters;
   private IRType _returnType;
   private List<IRAnnotation> _annotations;
+  private Object[] _annotationDefault;
 
   public IRMethodStatement(IRStatement methodBody, String name, int modifiers, IRType returnType, List<IRSymbol> parameters) {
+    this( methodBody, name, modifiers, returnType, parameters, null );
+  }
+  public IRMethodStatement(IRStatement methodBody, String name, int modifiers, IRType returnType, List<IRSymbol> parameters, Object[] annotationDefault) {
     _methodBody = methodBody;
     _name = name;
     _modifiers = modifiers;
@@ -31,6 +36,7 @@ public class IRMethodStatement extends IRStatement {
     _parameters = maybeEraseStructuralSymbolTypes( parameters );
     _annotations = Collections.emptyList();
     setParentToThis( methodBody );
+    _annotationDefault = annotationDefault;
   }
 
   public IRStatement getMethodBody() {
@@ -72,5 +78,9 @@ public class IRMethodStatement extends IRStatement {
   public List<IRAnnotation> getAnnotations()
   {
     return _annotations;
+  }
+
+  public Object[] getAnnotationDefault() {
+    return _annotationDefault;
   }
 }

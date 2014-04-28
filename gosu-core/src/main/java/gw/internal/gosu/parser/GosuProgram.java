@@ -45,7 +45,6 @@ public class GosuProgram extends GosuClass implements IGosuProgramInternal
   private ContextInferenceManager _ctxInferenceMgr;
   private boolean _bParsingExecutableProgramStmts;
   private boolean _allowUses;
-  private boolean _reloadable = true;
 
   public GosuProgram( String strNamespace, String strRelativeName, 
                       GosuClassTypeLoader classTypeLoader, ISourceFileHandle sourceFile, ITypeUsesMap typeUsesMap,
@@ -128,9 +127,9 @@ public class GosuProgram extends GosuClass implements IGosuProgramInternal
       return;
     }
 
-    //External symbols are not allowed if there is an explicit super type
-    if ( !Util.getGosuClassFrom( JavaTypes.OBJECT() ).equals( getSupertype() ) )
+    if( !JavaTypes.OBJECT().equals( getSupertype() ) )
     {
+      // External symbols are not allowed if there is an explicit super type
       return;
     }
 
@@ -146,7 +145,7 @@ public class GosuProgram extends GosuClass implements IGosuProgramInternal
     {
       if( !(sym instanceof CommonSymbolsScope.LockedDownSymbol) && sym != null )
       {
-        externalSymbolsMap.put( (String)sym.getName(), sym );
+        externalSymbolsMap.put( sym.getName(), sym );
       }
     }
   }

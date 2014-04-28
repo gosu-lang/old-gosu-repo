@@ -203,7 +203,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "//JAVA\n" +
       "package pkg;\n" +
       "public class JavaClass {\n" +
-      "  public void foo(m:java.util.Map) {\n" +
+      "  public void foo(java.util.Map m) {\n" +
       "  }\n" +
       "}",
       "package pkg\n" +
@@ -212,7 +212,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "  var x = JavaClass#f^^\n" +
       "}"},
     {
-      "foo()"
+      "foo(java.util.Map)"
     } )
   }
 
@@ -221,7 +221,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "//JAVA\n" +
       "package pkg;\n" +
       "public class JavaClass {\n" +
-      "  public void foo(m:java.util.Map, d:java.sql.Date) {\n" +
+      "  public void foo(java.util.Map m, java.sql.Date d) {\n" +
       "  }\n" +
       "}",
       "package pkg\n" +
@@ -230,7 +230,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "  var x = JavaClass#f^^\n" +
       "}"},
     {
-      "foo()"
+      "foo(java.util.Map, java.sql.Date)"
     } )
   }
 
@@ -239,7 +239,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "//JAVA\n" +
       "package pkg;\n" +
       "public class JavaClass {\n" +
-      "  public void foo(m:String) {\n" +
+      "  public void foo(String m) {\n" +
       "  }\n" +
       "}",
       "package pkg\n" +
@@ -248,7 +248,7 @@ class FeatureLiteralCompletionTest extends AbstractCodeCompletionTest {
       "  var x = JavaClass#f^^\n" +
       "}"},
     {
-      "foo()"
+      "foo(String)"
     } )
   }
 

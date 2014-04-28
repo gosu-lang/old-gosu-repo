@@ -361,12 +361,6 @@ public class GosuIndustrialParkImpl extends BaseService implements IGosuShop
   public IRClassCompiler getIRClassCompiler() {
     return SimpleCompiler.INSTANCE;
   }
-  
-  @Override
-  public Object evaluateAnnotation( IAnnotationInfo ai )
-  {
-    return CompileTimeAnnotationHandler.eval( ai );
-  }
 
   @Override
   public IPropertyAccessor getLengthAccessor()

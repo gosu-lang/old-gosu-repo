@@ -470,16 +470,7 @@ public abstract class ParserBase implements IParserPart
         sb.append( '.' );
       }
       Token T = new Token();
-      boolean consume = match( T, null, SourceCodeTokenizer.TT_WORD, true );
-      if( consume )
-      {
-        match( T, SourceCodeTokenizer.TT_WORD ); //eat it
-      }
-      else
-      {
-        consume = maybeConsumeKeywordInDotPath( T, consume );
-      }
-      if( consume )
+      if( match( T, null, SourceCodeTokenizer.TT_WORD ) || match( T, null, SourceCodeTokenizer.TT_KEYWORD ) )
       {
         if( sb != null )
         {
@@ -491,57 +482,6 @@ public abstract class ParserBase implements IParserPart
     {
       t._strValue = sb.toString();
     }
-  }
-
-  // Uh-oh, we've done got ourselves a keyword in our dot path.  Is it real:
-  //
-  //    import java.lang.[Class]
-  //
-  //    class MyClass { ...
-  //
-  //  or
-  //
-  //    import my.public.package.*
-  //
-  //    class MyClass { ...
-  //
-  // Or is the code in a bad state, like so:
-  //
-  //    import java.
-  //
-  //    [class] MyClass { ...
-  //
-  // To differentiate, we do two tests:
-  //
-  // * If the keyword in the dot path is a different case than the canonical keyword, we consume it;
-  // * If it is the same case then we look ahead to see if the keyword is followed by a '.'. If it is we consume it
-  // * Otherwise we do not consume the keyword and it is not considered part of the dot path
-
-  private boolean maybeConsumeKeywordInDotPath( Token t, boolean consume )
-  {
-    boolean keywordMatch = match( t, null, SourceCodeTokenizer.TT_KEYWORD, true );
-    if( keywordMatch )
-    {
-      if( !Keyword.isExactKeywordMatch( t._strValue ) )
-      {
-        match( t, null, SourceCodeTokenizer.TT_KEYWORD ); //eat it
-        consume = true;
-      }
-      else
-      {
-        int state = getTokenizer().mark();
-        match( t, null, SourceCodeTokenizer.TT_KEYWORD ); //eat it
-        if( match( null, null, '.', true ) )
-        {
-          consume = true;
-        }
-        else
-        {
-          getTokenizer().restoreToMark( state );
-        }
-      }
-    }
-    return consume;
   }
 
   /**
@@ -1208,12 +1148,12 @@ public abstract class ParserBase implements IParserPart
     {
       // Ensure a symbol defined with a null type is marked with a parse exception
       SymbolNotFoundException pe = new SymbolNotFoundException(makeFullParserState(), strName);
-      List<IType> contextTypes = getOwner().getContextTypes();
-      if( contextTypes.size() == 1 )
+      IType ctxType = getOwner().getContextType().getType();
+      if( ctxType != null )
       {
-        pe.setExpectedType( contextTypes.get( 0 ) );
+        pe.setExpectedType( ctxType );
       }
-      e.addParseException(pe);
+      e.addParseException( pe );
     }
 
     if( sym == null )
@@ -1279,11 +1219,11 @@ public abstract class ParserBase implements IParserPart
     {
       maybeAddLocalsOfEnclosingType();
 
-      List<IType> contextTypes = getOwner().getContextTypes();
+      IType ctxType = getOwner().getContextType().getType();
       SymbolNotFoundException pe = new SymbolNotFoundException(makeFullParserStateWithSymbols(), strName);
-      if( contextTypes.size() == 1 )
+      if( ctxType != null )
       {
-        pe.setExpectedType( contextTypes.get( 0 ) );
+        pe.setExpectedType( ctxType );
       }
       e.addParseException(pe);
       sym = new Symbol( strName, ErrorType.getInstance(), null );
@@ -1608,7 +1548,7 @@ public abstract class ParserBase implements IParserPart
         try
         {
           Object valueLiteral = rhs.evaluate();
-          List<IType> inferringTypes = getCurrentlyInferringTypes();
+          List<IType> inferringTypes = getCurrentlyInferringFunctionTypeVars();
           IType verifyType;
           if( !inferringTypes.isEmpty() )
           {
@@ -1650,11 +1590,17 @@ public abstract class ParserBase implements IParserPart
   {
     try
     {
-      CommonServices.getCoercionManager().verifyTypesComparable( lhsType, rhsType, bBiDirectional );
+      final ICoercionManager coercionManager = CommonServices.getCoercionManager();
+      coercionManager.verifyTypesComparable(lhsType, rhsType, bBiDirectional);
 
+      boolean isImplicit = coercionManager.coercionRequiresWarningIfImplicit(lhsType, rhsType);
+      if( isImplicit && bBiDirectional )
+      {
+        isImplicit = coercionManager.coercionRequiresWarningIfImplicit(rhsType, lhsType);
+      }
       if( bWarnOnCoercion &&
           CommonServices.getEntityAccess().isWarnOnImplicitCoercionsOn() &&
-          CommonServices.getCoercionManager().coercionRequiresWarningIfImplicit( lhsType, rhsType ) )
+          isImplicit )
       {
         if( CommonServices.getEntityAccess().getLanguageLevel().allowAllImplicitCoercions() )
         {
@@ -1964,9 +1910,7 @@ public abstract class ParserBase implements IParserPart
       {
         for( Expression arg : ae.getArgs() )
         {
-          verifyOrWarn( arg, arg.isCompileTimeConstant(),
-                        JavaTypes.IANNOTATION().isAssignableFrom( e.getType() ) && CommonServices.getEntityAccess().getLanguageLevel().allowNonLiteralArgsForJavaAnnotations(),
-                        Res.MSG_NON_LITERAL_ARG_TO_JAVA_ANNOTATION );
+          verify( arg, arg.isCompileTimeConstant(), Res.MSG_COMPILE_TIME_CONSTANT_REQUIRED );
         }
       }
     }
@@ -2214,6 +2158,10 @@ public abstract class ParserBase implements IParserPart
     IType type = getOwner().getScriptPart() != null
                  ? getOwner().getScriptPart().getContainingType()
                  : null;
+    while( type instanceof IGosuClassInternal && !((IGosuClassInternal)type).isAnonymous() )
+    {
+      type = type.getEnclosingType();
+    }
     return type instanceof IGosuClassInternal && ((IGosuClassInternal)type).isAnonymous()
            ? (IGosuClassInternal)type
            : null;
@@ -2235,8 +2183,13 @@ public abstract class ParserBase implements IParserPart
       return expressionToCoerce;
     }
 
+//    if( isMethodScoring() )
+//    {
+//      return expressionToCoerce;
+//    }
+
     IType resolvedTypeToCoerceTo;
-    List<IType> inferringTypes = getCurrentlyInferringTypes();
+    List<IType> inferringTypes = getCurrentlyInferringFunctionTypeVars();
     if( inferringTypes.size() > 0 )
     {
       resolvedTypeToCoerceTo = TypeLord.boundTypes( typeToCoerceTo, inferringTypes );
@@ -2250,11 +2203,11 @@ public abstract class ParserBase implements IParserPart
     ICoercionManager cocerionManager = CommonServices.getCoercionManager();
     ICoercer coercer = cocerionManager.resolveCoercerStatically( resolvedTypeToCoerceTo, typeToCoerceFrom );
 
-    if(coercer == null)
+    if( coercer == null )
     {
       return expressionToCoerce;
     }
-    else if((JavaTypes.pVOID().equals(typeToCoerceFrom) && !(expressionToCoerce instanceof NullExpression)))
+    else if( JavaTypes.pVOID().equals( typeToCoerceFrom ) && !(expressionToCoerce instanceof NullExpression) )
     {
       return expressionToCoerce;
     }
@@ -2361,17 +2314,16 @@ public abstract class ParserBase implements IParserPart
     return _offsetShift;
   }
 
-  protected void pushInferredTypeVars( List<IType> typeVariableTypes )
+  protected void pushInferringFunctionTypeVars( List<IType> typeVariableTypes )
   {
     _inferringFunctionTypes.push( typeVariableTypes );
   }
-
-  protected void popInferredFunctionTypeVariableTypes()
+  protected void popInferringFunctionTypeVariableTypes()
   {
     _inferringFunctionTypes.pop();
   }
 
-  public List<IType> getCurrentlyInferringTypes()
+  public List<IType> getCurrentlyInferringFunctionTypeVars()
   {
     List<IType> types = Collections.emptyList();
     if( _inferringFunctionTypes.size() != 0 )
@@ -2393,16 +2345,29 @@ public abstract class ParserBase implements IParserPart
 
   public static boolean matchDeclarationKeyword( Token T, boolean bPeek, SourceCodeTokenizer tokenizer )
   {
-    return
-      match( T, Keyword.KW_construct.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_function.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_property.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_var.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_delegate.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_class.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_interface.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_structure.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
-      match( T, Keyword.KW_enum.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer );
+    boolean bMatch =
+    (match( T, Keyword.KW_construct.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_function.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_property.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_var.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_delegate.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_class.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_interface.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_annotation.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_structure.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ) ||
+     match( T, Keyword.KW_enum.toString(), SourceCodeTokenizer.TT_KEYWORD, bPeek, tokenizer ));
+    if( bMatch )
+    {
+      // We must allow an existing java package to have the same name as a gosu declaration keyword.
+      // We check for that by looking for a following '.' after the package reference...
+
+      int iTokenIndex = tokenizer.getState();
+      IToken followingToken = tokenizer.getTokenAt( iTokenIndex + (bPeek ? 1 : 0) );
+      IToken priorToken = iTokenIndex <= 1 ? null : tokenizer.getTokenAt( iTokenIndex + (bPeek ? -1 : -2) );
+
+      bMatch = (followingToken == null || followingToken.getType() != '.') && (priorToken == null || priorToken.getType() != '.');
+    }
+    return bMatch;
   }
 
   private static final class PlaceholderParserState implements IParserState

@@ -5,6 +5,7 @@
 package gw.internal.gosu.parser.expressions;
 
 import gw.internal.gosu.parser.ParserBase;
+import gw.internal.gosu.parser.TypeLord;
 import gw.lang.parser.IGosuParser;
 import gw.lang.parser.expressions.IConditionalExpression;
 import gw.lang.reflect.IMethodInfo;
@@ -48,9 +49,13 @@ public abstract class ConditionalExpression extends BinaryExpression implements 
   {
     if( JavaTypes.IDIMENSION().isAssignableFrom( lhsType ) && JavaTypes.COMPARABLE().isAssignableFrom( lhsType ) )
     {
-      // The dimension is explicitly comparable. Enable relational operator overloading via compareTo().
-      //noinspection unchecked
-      return ((Comparable)lhsValue).compareTo( rhsValue );
+      IType comparableType = TypeLord.findParameterizedTypeInHierarchy(lhsType, JavaTypes.COMPARABLE());
+      if( comparableType != null && (comparableType.isGenericType() || comparableType.getTypeParameters()[0].isAssignableFrom( rhsType ) ) )
+      {
+        // The dimension is explicitly comparable. Enable relational operator overloading via compareTo().
+        //noinspection unchecked
+        return ((Comparable)lhsValue).compareTo( rhsValue );
+      }
     }
     
     lhsType = ParserBase.resolveType( lhsType, '>', rhsType );

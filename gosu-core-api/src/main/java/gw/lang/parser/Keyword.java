@@ -85,6 +85,7 @@ public class Keyword implements CharSequence
   public static final Keyword KW_readonly = addReservedWord( "readonly", true );
   public static final Keyword KW_class = addReservedWord( "class", false );
   public static final Keyword KW_interface = addReservedWord( "interface", false );
+  public static final Keyword KW_annotation = addReservedWord( "annotation", false );
   public static final Keyword KW_structure = addReservedWord( "structure", false );
   public static final Keyword KW_enum = addReservedWord( "enum", false );
   public static final Keyword KW_super = addReservedWord( "super", false );

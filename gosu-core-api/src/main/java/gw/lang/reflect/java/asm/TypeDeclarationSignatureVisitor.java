@@ -4,11 +4,12 @@
 
 package gw.lang.reflect.java.asm;
 
+import gw.internal.ext.org.objectweb.asm.Opcodes;
 import gw.internal.ext.org.objectweb.asm.signature.SignatureVisitor;
 
 /**
 */
-class TypeDeclarationSignatureVisitor implements SignatureVisitor
+class TypeDeclarationSignatureVisitor extends SignatureVisitor
 {
   private boolean _bOverride;
   private int _iInterfacesVisited;
@@ -18,13 +19,13 @@ class TypeDeclarationSignatureVisitor implements SignatureVisitor
   private IGeneric _asmGenericType;
 
   TypeDeclarationSignatureVisitor( IGeneric asmGenericType, AsmType type ) {
+    super( Opcodes.ASM5 );
     _asmGenericType = asmGenericType;
     _currentType = type;
   }
 
   TypeDeclarationSignatureVisitor( IGeneric asmGenericType, AsmType type, boolean bOverride ) {
-    _asmGenericType = asmGenericType;
-    _currentType = type;
+    this( asmGenericType, type );
     _bOverride = bOverride;
   }
 

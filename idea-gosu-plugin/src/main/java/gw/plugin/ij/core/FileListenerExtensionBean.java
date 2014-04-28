@@ -11,7 +11,7 @@ import com.intellij.util.xmlb.annotations.Attribute;
 import org.jetbrains.annotations.NotNull;
 
 public class FileListenerExtensionBean extends AbstractExtensionPointBean {
-  public static final ExtensionPointName<FileListenerExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu.fileListener");
+  public static final ExtensionPointName<FileListenerExtensionBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.fileListener");
 
   @Attribute("class")
   public String className;

@@ -229,8 +229,8 @@ class ParameterInfoTest extends GosuTestCase {
       "}"
     , {
       "d: double",
-      "a: CharSequence, i: int, j: int^^",
-      "s: char[], i: int, j: int"
+      "a: CharSequence, i: int, j: int",
+      "s: char[], i: int, j: int^^"
     }, 1
     )
   }

@@ -7,6 +7,7 @@ package gw.lang.annotation;
 import gw.lang.GosuShop;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.java.IJavaType;
 import gw.lang.reflect.java.JavaTypes;
 
@@ -40,8 +41,7 @@ public enum UsageModifier {
       return getUsageModifier( targetType, modifier, usageInfos );
     }
     // if it's a java annotation with no explicit annotation usage, translate the java element type information
-    else if( annotationType instanceof IJavaType &&
-             JavaTypes.ANNOTATION().isAssignableFrom( annotationType ) )
+    else if( JavaTypes.ANNOTATION().isAssignableFrom( annotationType ) )
     {
       return translateJavaElementTypeToUsageModifier( targetType, annotationType );
     }
@@ -102,38 +102,39 @@ public enum UsageModifier {
 
   private static UsageModifier translateJavaElementTypeToUsageModifier( UsageTarget targetType, IType annotationType )
   {
-    IAnnotationInfo targetAnnotation = ((IJavaType)annotationType).getBackingClassInfo().getAnnotation(Target.class);
+    IAnnotationInfo targetAnnotation = annotationType.getTypeInfo().getAnnotation( TypeSystem.get( Target.class ) );
+    boolean bRepeatable = annotationType.getTypeInfo().hasAnnotation( JavaTypes.REPEATABLE() );
 
     if( targetAnnotation == null )
     {
-      return UsageModifier.One; // If there are no targets, it can be used everywhere
+      return bRepeatable ? UsageModifier.Many : UsageModifier.One;
     }
     else
     {
-      Object v = targetAnnotation.getFieldValue("value");
+      Object v = targetAnnotation.getFieldValue( "value" );
       String[] value;
-      if (v == null) {
+      if( v == null ) {
         value = null;
-      } else if (v.getClass().isArray()) {
-        value = (String[]) v;
-      } else {
-        value = new String[] {(String) v};
       }
-      if (value == null || value.length == 0) {
-        return UsageModifier.One; // If there are no targets, it can be used everywhere
+      else if( v.getClass().isArray() ) {
+        value = (String[])v;
+      }
+      else {
+        value = new String[]{(String)v};
+      }
+      if( value == null || value.length == 0 ) {
+        return bRepeatable ? UsageModifier.Many : UsageModifier.One; // If there are no targets, it can be used everywhere
       }
 
       // otherwise, look for a target that matches our own UsageTarget
-      for( String elementTypeConst : value )
-      {
+      for( String elementTypeConst : value ) {
         if( elementTypeConst.equals( ElementType.CONSTRUCTOR.name() ) && targetType == UsageTarget.ConstructorTarget ||
             elementTypeConst.equals( ElementType.FIELD.name() ) && targetType == UsageTarget.PropertyTarget ||
             elementTypeConst.equals( ElementType.ANNOTATION_TYPE.name() ) && targetType == UsageTarget.TypeTarget ||
             elementTypeConst.equals( ElementType.TYPE.name() ) && targetType == UsageTarget.TypeTarget ||
             elementTypeConst.equals( ElementType.METHOD.name() ) && (targetType == UsageTarget.MethodTarget || targetType == UsageTarget.PropertyTarget) ||
-            elementTypeConst.equals( ElementType.PARAMETER.name() ) && targetType == UsageTarget.ParameterTarget )
-        {
-          return UsageModifier.One;
+            elementTypeConst.equals( ElementType.PARAMETER.name() ) && targetType == UsageTarget.ParameterTarget ) {
+          return bRepeatable ? UsageModifier.Many : UsageModifier.One;
         }
       }
       return UsageModifier.None;

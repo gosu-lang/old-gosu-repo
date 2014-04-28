@@ -10,8 +10,8 @@ import gw.lang.parser.GosuParserFactory;
 import gw.lang.parser.ICompilationState;
 import gw.lang.parser.IExpression;
 import gw.lang.parser.IGosuParser;
+import gw.lang.parser.IParseResult;
 import gw.lang.parser.IParseTree;
-import gw.lang.parser.IReducedDynamicFunctionSymbol;
 import gw.lang.parser.ISymbol;
 import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.ParserOptions;
@@ -24,9 +24,9 @@ import gw.lang.parser.expressions.IIdentifierExpression;
 import gw.lang.parser.expressions.INewExpression;
 import gw.lang.reflect.BaseFeatureInfo;
 import gw.lang.reflect.IAnnotationInfo;
-import gw.lang.reflect.IAttributedFeatureInfo;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IFeatureInfo;
+import gw.lang.reflect.IHasJavaClass;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IPropertyInfo;
@@ -34,24 +34,25 @@ import gw.lang.reflect.IRelativeTypeInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.reflect.gs.IGosuClassTypeInfo;
 import gw.lang.reflect.gs.IGosuConstructorInfo;
+import gw.lang.reflect.gs.IGosuMethodInfo;
 import gw.lang.reflect.java.IJavaClassInfo;
 import gw.lang.reflect.java.IJavaClassMethod;
 import gw.lang.reflect.java.IJavaType;
+import gw.lang.reflect.java.JavaTypes;
 import gw.util.GosuClassUtil;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class GosuAnnotationInfo implements IAnnotationInfo
 {
   private static final Object NOT_FOUND = new Object() { public String toString() {return "NOT FOUND";} };
 
-  private int _index;
-  private volatile Object _value;
+  private volatile Object _instance;
   private IFeatureInfo  _container;
   private IGosuClassInternal  _owner;
   private String _newExpressionAsString;
@@ -59,12 +60,11 @@ public class GosuAnnotationInfo implements IAnnotationInfo
   private IGosuAnnotation _rawAnnotation;
   private IType _type;
 
-  public GosuAnnotationInfo( IGosuAnnotation rawAnnotation, IFeatureInfo container, IGosuClassInternal owner, int index )
+  public GosuAnnotationInfo( IGosuAnnotation rawAnnotation, IFeatureInfo container, IGosuClassInternal owner )
   {
     _rawAnnotation = rawAnnotation;
     _container = container;
-    _index = index;
-    _value = null;
+    _instance = null;
     _owner = owner;
     _newExpressionAsString = rawAnnotation.getNewExpressionAsString();
     _type = rawAnnotation.getType();
@@ -99,38 +99,36 @@ public class GosuAnnotationInfo implements IAnnotationInfo
 
   public Object getInstance()
   {
-    if( _value == null )
+    //## todo: Should _instance be a WeakReference?
+    if( _instance == null )
     {
       TypeSystem.lock();
-      ICompilationState state = _owner.getCompilationState();
-      if( state.isCompilingHeader() || state.isCompilingDeclarations() || state.isCompilingDefinitions() )
-      {
-        throw new IllegalStateException( "You cannot request Annotation values during compilation phase." );
-      }
+
+      ensureOwnerIsFullyParsedAndValid();
       try
       {
-        if( !_owner.isValid() )
+        if( _instance == null )
         {
-          throw new ErrantGosuClassException( _owner );
-        }
-        if( _value == null )
-        {
-          Map<String, List> featureMap = _owner.getRuntimeFeatureAnnotationMap();
-          List annotations = featureMap.get( getFeatureName() );
-          if( annotations == null )
+          if( _owner != null && _owner.isProxy() )
           {
-            if( _owner.isProxy() )
-            {
-              return getFromJavaType();
-            }
-            throw new IllegalStateException( "Could not resolve feature map for " + getFeatureName() );
+            // Get the annotation from the proxied java class
+            _instance = getFromJavaType();
           }
-          if( _index >= annotations.size() )
+          else if( JavaTypes.ANNOTATION().isAssignableFrom( getType() ) )
           {
-            throw new IllegalStateException( "Index " + _index + " is not a valid index into " + annotations );
+            // Return a proxy implementing Annotation using the field values of this AnnotationInfo
+            _instance = makeAnnotationInfoProxy();
           }
-          Object val = annotations.get( _index );
-          _value = val;
+          else if( JavaTypes.IANNOTATION().isAssignableFrom( getType() ) )
+          {
+            // Execute the NewExpression for the IAnnotation impl class to create a direct instance of the quasi-annotation
+            getOwnersType().isValid();
+            _instance = eval( _newExpressionAsString, getType() );
+          }
+          else
+          {
+            throw new IllegalStateException( "Could not create annotation instance for type: " + getType().getName() );
+          }
         }
       }
       finally
@@ -138,7 +136,30 @@ public class GosuAnnotationInfo implements IAnnotationInfo
         TypeSystem.unlock();
       }
     }
-    return _value;
+    return _instance;
+  }
+
+  private void ensureOwnerIsFullyParsedAndValid() {
+    if( _owner != null )
+    {
+      ICompilationState state = _owner.getCompilationState();
+      if( state.isCompilingHeader() || state.isCompilingDeclarations() )
+      {
+        throw new IllegalStateException( "You cannot request Annotation values during the declaration parsing phase." );
+      }
+      _owner.compileDeclarationsIfNeeded();
+    }
+  }
+
+  private Annotation makeAnnotationInfoProxy()
+  {
+    IType annotationType = getType();
+
+    //## todo: don't load the class if the annotationType doesn't correspond with a Class object i.e., don't load project classes during parsing/compilation of said project!
+    Class annotationClass = ((IHasJavaClass)annotationType).getBackingClass();
+
+    return (Annotation)Proxy.newProxyInstance( annotationClass.getClassLoader(), new Class[] {annotationClass},
+                                               new AnnotationInfoInvocationHandler( this ) );
   }
 
   private Object getFromJavaType()
@@ -153,103 +174,78 @@ public class GosuAnnotationInfo implements IAnnotationInfo
                                BaseFeatureInfo.getParamTypes( ((IMethodInfo)_container).getParameters() ) ).getAnnotation( getType() ).getInstance();
   }
 
-//  @Override
-//  public Object _getFieldValue(String field) {
-//    Object instance = getInstance();
-//    try {
-//      Method method = instance.getClass().getMethod(field);
-//      Object value = method.invoke(instance);
-//      value = CompileTimeExpressionParser.convertValueToInfoFriendlyValue( value, getOwnersType().getTypeInfo() );
-//      return value;
-//    } catch (Exception e) {
-//      throw new RuntimeException(e);
-//    }
-//  }
-
   @Override
   public Object getFieldValue( String field )
   {
-    Object value;
-    if( _type instanceof IJavaType )
-    {
-      value = getJavaFieldValue( (IJavaType)_type, field );
-    }
-    else
-    {
-      value = getGosuFieldValue( (IGosuClassInternal)_type, field );
-    }
-    return CompileTimeExpressionParser.convertValueToInfoFriendlyValue( value, _container );
-  }
-
-  private Object getGosuFieldValue( IGosuClassInternal type, String field )
-  {
-    Object value = getValueFromCallSite( type, field );
+    Object value = getValueFromCallSite( field );
     if( value == NOT_FOUND )
     {
-      value = getValueFromDeclaredDefaultValueAtDeclSite( type, field );
+      value = getValueFromDeclaredDefaultValueAtDeclSite( _type, field );
       if( value == NOT_FOUND )
       {
-        throw new RuntimeException( "Annotation field, " + field + ", not found in " + type.getName() );
+        throw new RuntimeException( "Annotation field, " + field + ", not found in " + _type.getName() );
       }
+      value = CompileTimeExpressionParser.convertValueToInfoFriendlyValue( value, _container );
     }
     return value;
   }
 
-  private Object getValueFromDeclaredDefaultValueAtDeclSite( IGosuClassInternal type, String field )
+  private Object getValueFromDeclaredDefaultValueAtDeclSite( IType type, String field )
   {
-    List<? extends IConstructorInfo> ctors = type.getTypeInfo().getConstructors( type );
-    for( IConstructorInfo ctor: ctors )
+    if( type instanceof IJavaType )
     {
-      if( ctor instanceof IGosuConstructorInfo )
+      IJavaClassInfo classInfo = ((IJavaType)type).getBackingClassInfo();
+      try
       {
-        String[] paramNames = ((IGosuConstructorInfo)ctor).getParameterNames();
-        for( int i = 0; i < paramNames.length; i++ )
+        IJavaClassMethod m = classInfo.getDeclaredMethod( field );
+        Object value = m.getDefaultValue();
+        if( value instanceof JavaSourceDefaultValue )
         {
-          String paramName = paramNames[i];
-          if( paramName != null && paramName.equals( field ) )
+          value = ((JavaSourceDefaultValue) value).evaluate();
+        }
+        return value;
+      }
+      catch( NoSuchMethodException e )
+      {
+        return NOT_FOUND;
+      }
+    }
+    else if( type instanceof IGosuClass )
+    {
+      IGosuClass gsClass = (IGosuClass)type;
+      IGosuMethodInfo method = (IGosuMethodInfo)gsClass.getTypeInfo().getMethod( gsClass, field );
+      if( method != null )
+      {
+        IExpression annotationDefault = method.getDfs().getDefaultValueExpression();
+        if( annotationDefault != null )
+        {
+          return CompileTimeExpressionParser.convertValueToInfoFriendlyValue( annotationDefault.evaluate(), gsClass.getTypeInfo() );
+        }
+      }
+
+      //## todo: delete this chunk of code after we kill old Gosu annotations (IAnnotation ones)
+      List<? extends IConstructorInfo> ctors = gsClass.getTypeInfo().getConstructors( gsClass );
+      for( IConstructorInfo ctor: ctors )
+      {
+        if( ctor instanceof IGosuConstructorInfo )
+        {
+          String[] paramNames = ((IGosuConstructorInfo)ctor).getParameterNames();
+          for( int i = 0; i < paramNames.length; i++ )
           {
-            return ((IGosuConstructorInfo)ctor).getDefaultValueExpressions()[i].evaluate();
+            String paramName = paramNames[i];
+            if( paramName != null && paramName.equals( field ) )
+            {
+              return ((IGosuConstructorInfo)ctor).getDefaultValueExpressions()[i].evaluate();
+            }
           }
         }
       }
+
     }
     return NOT_FOUND;
   }
 
-  private Object getJavaFieldValue( IJavaType type, String field )
-  {
-    Object value = getValueFromCallSite( type, field );
-    if( value == NOT_FOUND )
-    {
-      value = getValueFromDeclaredDefaultValueAtDeclSite( type, field );
-      if( value == NOT_FOUND )
-      {
-        throw new RuntimeException( "Annotation field, " + field + ", not found in " + type.getName() );
-      }
-    }
-    return value;
-  }
-
-  private Object getValueFromDeclaredDefaultValueAtDeclSite( IJavaType type, String field )
-  {
-    IJavaClassInfo classInfo = type.getBackingClassInfo();
-    try
-    {
-      IJavaClassMethod m = classInfo.getDeclaredMethod( field );
-      Object value = m.getDefaultValue();
-      if( value instanceof JavaSourceDefaultValue )
-      {
-        value = ((JavaSourceDefaultValue) value).evaluate();
-      }
-      return value;
-    }
-    catch( NoSuchMethodException e )
-    {
-      return NOT_FOUND;
-    }
-  }
-
-  private Object getValueFromCallSite( IType type, String field )
+  private Object getValueFromCallSite( String field )
   {
     List<IIdentifierExpression> ids = new ArrayList<IIdentifierExpression>();
     getExpr().getContainedParsedElementsByType( IIdentifierExpression.class, ids );
@@ -268,7 +264,7 @@ public class GosuAnnotationInfo implements IAnnotationInfo
           if( nextSibling != null )
           {
             Expression expr = (Expression)nextSibling.getParsedElement();
-            return expr.evaluate();
+            return evaluate( expr );
           }
           return NOT_FOUND;
         }
@@ -289,7 +285,7 @@ public class GosuAnnotationInfo implements IAnnotationInfo
           IParameterInfo param = parameters[i];
           if( field.equalsIgnoreCase( param.getDisplayName() ) )
           {
-            return args[i].evaluate();
+            return evaluate( args[i] );
           }
         }
         if( getType() instanceof IJavaType ) {
@@ -301,7 +297,7 @@ public class GosuAnnotationInfo implements IAnnotationInfo
               Field f = fields[i];
               if( field.equalsIgnoreCase( f.getName() ) )
               {
-                return args[i].evaluate();
+                return evaluate( args[i] );
               }
             }
           }
@@ -314,10 +310,15 @@ public class GosuAnnotationInfo implements IAnnotationInfo
       IExpression[] args = getExpr().getArgs();
       if( args != null && args.length == 1 )
       {
-        return args[0].evaluate();
+        return evaluate( args[0] );
       }
     }
     return NOT_FOUND;
+  }
+
+  private Object evaluate( IExpression expr )
+  {
+    return CompileTimeExpressionParser.convertValueToInfoFriendlyValue( expr.evaluate(), _container );
   }
 
   private INewExpression getExpr()
@@ -380,37 +381,59 @@ public class GosuAnnotationInfo implements IAnnotationInfo
     }
   }
 
+  private Object eval( String strExprSource, IType type )
+  {
+    IGosuClassInternal ownersType = (IGosuClassInternal)_container.getOwnersType();
+    ITypeUsesMap usesMap;
+    IType outerMostEnclosingType = TypeLord.getOuterMostEnclosingClass( ownersType );
+    if( outerMostEnclosingType instanceof IGosuClass )
+    {
+      usesMap = ((IGosuClass)outerMostEnclosingType).getTypeUsesMap();
+    }
+    else
+    {
+      usesMap = ownersType.getTypeUsesMap();
+    }
+    if( usesMap != null )
+    {
+      usesMap = usesMap.copy();
+      usesMap.addToDefaultTypeUses( "gw.lang." );
+    }
+    else
+    {
+      usesMap = new TypeUsesMap();
+    }
+    addEnclosingPackages( usesMap, ownersType );
+    IType enclType = TypeLord.getPureGenericType( outerMostEnclosingType instanceof IGosuClass ? outerMostEnclosingType : ownersType );
+    ParserOptions options = new ParserOptions()
+    .withTypeUsesMap( usesMap )
+    .withEnclosingType( enclType.getName() )
+    .withExpectedType(type)
+    .asThrowawayProgram()
+    .asAnonymous();
+
+    StandardSymbolTable symTable = new StandardSymbolTable( true );
+    TypeSystem.pushSymTableCtx( symTable );
+    try
+    {
+      IParseResult res = GosuParserFactory.createProgramParser().parseExpressionOnly( strExprSource, symTable, options );
+      return res.evaluate();
+    }
+    catch( ParseResultsException e )
+    {
+      throw new RuntimeException( e );
+    }
+    finally
+    {
+      TypeSystem.popSymTableCtx();
+    }
+  }
+
   private static void addEnclosingPackages( ITypeUsesMap map, IType type )
   {
     type = TypeLord.getPureGenericType( type );
     type = TypeLord.getOuterMostEnclosingClass( type );
     map.addToDefaultTypeUses( GosuClassUtil.getPackage( type.getName() ) + "." );
-  }
-
-  private String getFeatureName()
-  {
-    return _container instanceof IGosuClassTypeInfo ? GosuClass.CLASS_ANNOTATION_SLOT : resolveFeatureName();
-  }
-
-  private String resolveFeatureName()
-  {
-    if( _container instanceof AbstractGenericMethodInfo )
-    {
-      AbstractGenericMethodInfo gmi = (AbstractGenericMethodInfo)_container;
-
-      IReducedDynamicFunctionSymbol fs = gmi.getDfs();
-      IAttributedFeatureInfo actualFeatureInfo = gmi;
-      while( fs instanceof ReducedParameterizedDynamicFunctionSymbol )
-      {
-        fs = ((ReducedParameterizedDynamicFunctionSymbol) fs).getBackingDfs();
-      }
-      //IAttributedFeatureInfo actualFeatureInfo = fs.getMethodOrConstructorInfo();
-      return actualFeatureInfo.getName();
-    }
-    else
-    {
-      return _container.getName();
-    }
   }
 
   public IType getType()
@@ -434,5 +457,21 @@ public class GosuAnnotationInfo implements IAnnotationInfo
   public IGosuAnnotation getRawAnnotation()
   {
     return _rawAnnotation;
+  }
+
+  public IType getRepeatableContainer() {
+
+    IType repeatable = JavaTypes.REPEATABLE();
+    if( getType().getTypeInfo().hasAnnotation( repeatable ) )
+    {
+      IAnnotationInfo anno = getType().getTypeInfo().getAnnotation( repeatable );
+      Object type = anno.getFieldValue( "value" );
+      if( type instanceof String )
+      {
+        type = TypeSystem.getByFullNameIfValid( (String)type );
+      }
+      return (IType)type;
+    }
+    return null;
   }
 }

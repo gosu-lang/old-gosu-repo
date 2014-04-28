@@ -27,7 +27,9 @@ import gw.lang.parser.expressions.IImplicitTypeAsExpression;
 import gw.lang.parser.expressions.IMemberAccessExpression;
 import gw.lang.reflect.IPlaceholder;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.TypeSystem;
 import gw.lang.reflect.gs.IGosuProgram;
+import gw.lang.reflect.module.IModule;
 import gw.plugin.ij.intentions.varInferenceFix;
 import gw.plugin.ij.lang.psi.api.expressions.IGosuExpression;
 import gw.plugin.ij.lang.psi.api.statements.IGosuField;
@@ -115,50 +117,60 @@ public class GosuInferTypeInDeclarationInspection extends BaseLocalInspectionToo
   }
 
   private boolean isFixable(VarStatement varStmt, Expression expr) {
-    TypeLiteral typeLiteral = varStmt.getTypeLiteral();
-    boolean fixable = false;
-    if (expr != null && typeLiteral != null && varStmt.getType().isAssignableFrom(expr.getType()))
-    {
-      fixable = true;
-      if( expr instanceof InferredNewExpression &&
-          expr.getLocation().getTextFromTokens().startsWith("{"))
+    IModule module = varStmt.getModule();
+    if( module == null ) {
+      return false;
+    }
+    TypeSystem.pushModule( module );
+    try {
+      TypeLiteral typeLiteral = varStmt.getTypeLiteral();
+      boolean fixable = false;
+      if (expr != null && typeLiteral != null && varStmt.getType().isAssignableFrom(expr.getType()))
       {
-        // prevent fix in cases like this: var a : Integer[] = {1,2} or
-        //                                 var a : Set<String> = {}
-        fixable = false;
-      } else if( expr instanceof NumericLiteral &&
-                !((NumericLiteral) expr).isExplicitlyTyped())
-      {
-        // prevent fix in cases like this: var a : float = 10
-        //                                 var a : BigDecimal = 1
-        fixable = false;
-      } else if(expr instanceof NullExpression)
-      {
-        // prevent fix in cases like this: var a : String = null
-        fixable = false;
-      } else if(expr instanceof IImplicitTypeAsExpression)
-      {
-        // prevent fix in cases like this: var _subtype : typekey.State = "CA"
-        fixable = false;
-      } else if(expr instanceof IMemberAccessExpression && !expr.getLocation().getTextFromTokens().contains("."))
-      {
-        // prevent fix in cases like this: var c : Currency = TC_USD
-        fixable = false;
-      } else if(varStmt.hasProperty())
-      {
-        // prevent fix in cases like this: var x : String as Name = "Gosu"
-        fixable = false;
-      }
-      else {
-        IType type = typeLiteral.getType().getType();
-        if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() &&
-            !(expr.getType() instanceof IPlaceholder && ((IPlaceholder)expr.getType()).isPlaceholder()) ) {
-          // prevent fix in cases like this:  var dyn : Dynamic = foo
+        fixable = true;
+        if( expr instanceof InferredNewExpression &&
+            expr.getLocation().getTextFromTokens().startsWith("{"))
+        {
+          // prevent fix in cases like this: var a : Integer[] = {1,2} or
+          //                                 var a : Set<String> = {}
+          fixable = false;
+        } else if( expr instanceof NumericLiteral &&
+                  !((NumericLiteral) expr).isExplicitlyTyped())
+        {
+          // prevent fix in cases like this: var a : float = 10
+          //                                 var a : BigDecimal = 1
+          fixable = false;
+        } else if(expr instanceof NullExpression)
+        {
+          // prevent fix in cases like this: var a : String = null
+          fixable = false;
+        } else if(expr instanceof IImplicitTypeAsExpression)
+        {
+          // prevent fix in cases like this: var _subtype : typekey.State = "CA"
+          fixable = false;
+        } else if(expr instanceof IMemberAccessExpression && !expr.getLocation().getTextFromTokens().contains("."))
+        {
+          // prevent fix in cases like this: var c : Currency = TC_USD
+          fixable = false;
+        } else if(varStmt.hasProperty())
+        {
+          // prevent fix in cases like this: var x : String as Name = "Gosu"
           fixable = false;
         }
+        else {
+          IType type = typeLiteral.getType().getType();
+          if( type instanceof IPlaceholder && ((IPlaceholder)type).isPlaceholder() &&
+              !(expr.getType() instanceof IPlaceholder && ((IPlaceholder)expr.getType()).isPlaceholder()) ) {
+            // prevent fix in cases like this:  var dyn : Dynamic = foo
+            fixable = false;
+          }
+        }
       }
+      return fixable;
     }
-    return fixable;
+    finally {
+      TypeSystem.popModule( module );
+    }
   }
 
   @Override

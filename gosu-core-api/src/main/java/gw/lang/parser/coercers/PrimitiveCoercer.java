@@ -40,6 +40,6 @@ public class PrimitiveCoercer extends BaseCoercer
 
   public int getPriority( IType to, IType from )
   {
-    return 0;
+    return MAX_PRIORITY;
   }
 }

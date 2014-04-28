@@ -15,15 +15,12 @@ import gw.internal.gosu.parser.statements.ClassStatement;
 import gw.internal.gosu.parser.statements.FunctionStatement;
 import gw.internal.gosu.parser.statements.PropertyStatement;
 import gw.lang.parser.IDeclarationSiteValidator;
+import gw.lang.parser.ILanguageLevel;
 import gw.lang.parser.IParseTree;
 import gw.lang.parser.IParsedElement;
 import gw.lang.parser.ISymbol;
-import gw.lang.parser.ITypeUsesMap;
 import gw.lang.parser.IUsageSiteValidator;
 import gw.lang.parser.IUsageSiteValidatorReference;
-import gw.lang.parser.ParserOptions;
-import gw.lang.parser.StandardSymbolTable;
-import gw.lang.parser.exceptions.ParseResultsException;
 import gw.lang.parser.resources.Res;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IAttributedFeatureInfo;
@@ -33,10 +30,7 @@ import gw.lang.reflect.IMethodInfoDelegate;
 import gw.lang.reflect.IPropertyInfo;
 import gw.lang.reflect.IType;
 import gw.lang.reflect.gs.IGosuClass;
-import gw.lang.reflect.gs.IGosuFragment;
 import gw.lang.reflect.java.JavaTypes;
-import gw.util.GosuClassUtil;
-import gw.util.GosuExceptionUtil;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
@@ -45,61 +39,10 @@ public class CompileTimeAnnotationHandler
 {
   public static void postDefinitionVerification( IParsedElement elt )
   {
-    postDefinitionVerification( elt, true );
-  }
-
-  public static Object eval( IAnnotationInfo ai )
-  {
-    if( ai instanceof GosuAnnotationInfo )
+    if( !ILanguageLevel.Util.STANDARD_GOSU() && !CommonServices.getPlatformHelper().isInIDE() )
     {
-      GosuAnnotationInfo info = (GosuAnnotationInfo) ai;
-      return evalGosuAnnotation(info.getNewExpressionAsString(), info.getOwnersType());
-    }
-    else
-    {
-      return ai.getInstance();
-    }
-  }
-
-  private static Object evalGosuAnnotation( String newExpressionString, IGosuClass ownersType )
-  {
-    if( newExpressionString != null )
-    {
-      ITypeUsesMap usesMap;
-      IType outerMostEnclosingType = TypeLord.getOuterMostEnclosingClass( ownersType );
-      if( outerMostEnclosingType instanceof IGosuClass )
-      {
-        usesMap = ((IGosuClass)outerMostEnclosingType).getTypeUsesMap();
-      }
-      else
-      {
-        usesMap = ownersType.getTypeUsesMap();
-      }
-      if( usesMap != null )
-      {
-        usesMap = usesMap.copy();
-        usesMap.addToDefaultTypeUses( "gw.lang." );
-      }
-      else
-      {
-        usesMap = new TypeUsesMap();
-      }
-      addEnclosingPackages( usesMap, ownersType );
-      ParserOptions parserOptions = new ParserOptions().withTypeUsesMap( usesMap );
-      IGosuFragment fragment;
-      try
-      {
-        fragment = GosuFragmentParser.getInstance().parseExpressionOnly( newExpressionString, new StandardSymbolTable( true ), parserOptions );
-      }
-      catch( ParseResultsException e )
-      {
-        throw GosuExceptionUtil.forceThrow( e );
-      }
-      return fragment.evaluate( null );
-    }
-    else
-    {
-      return null;
+      // Only support this insanity in gw gosu
+      postDefinitionVerification( elt, true );
     }
   }
 
@@ -108,7 +51,7 @@ public class CompileTimeAnnotationHandler
     // Usage Sites
     if( elt instanceof BeanMethodCallExpression )
     {
-      verifyBeanMethodCallExpression( (BeanMethodCallExpression) elt );
+      verifyBeanMethodCallExpression( (BeanMethodCallExpression)elt );
     }
     else if( elt instanceof MethodCallExpression )
     {
@@ -242,11 +185,7 @@ public class CompileTimeAnnotationHandler
     for( IAnnotationInfo ai : featureAnnotations )
     {
       IUsageSiteValidator mcv = null;
-      if(JavaTypes.getGosuType( IUsageSiteValidator.class ).isAssignableFrom( ai.getType() ) )
-      {
-        mcv = (IUsageSiteValidator)evalAndHandleError( ai, expr );
-      }
-      else if( JavaTypes.getGosuType( IUsageSiteValidatorReference.class ).isAssignableFrom( ai.getType() ) )
+      if( JavaTypes.getGosuType( IUsageSiteValidatorReference.class ).isAssignableFrom( ai.getType() ) )
       {
         IUsageSiteValidatorReference ref = (IUsageSiteValidatorReference)evalAndHandleError( ai, expr );
         if(ref != null) {
@@ -296,19 +235,12 @@ public class CompileTimeAnnotationHandler
         // Force bytecode compilation ahead of unholy annotation evaluation
         ((IGosuClass)gsClass).getBackingClass();
       }
-      return eval( ai );
+      return ai.getInstance();
     }
     catch( Exception e )
     {
       elt.addParseException( Res.MSG_COMPILE_TIME_ANNOTATION_FAILED_TO_EXECUTE, e.getMessage() );
       return null;
     }
-  }
-
-  private static void addEnclosingPackages( ITypeUsesMap map, IType type )
-  {
-    type = TypeLord.getPureGenericType( type );
-    type = TypeLord.getOuterMostEnclosingClass( type );
-    map.addToDefaultTypeUses( GosuClassUtil.getPackage( type.getName() ) + "." );
   }
 }

@@ -269,24 +269,6 @@ public class GosuClassLoader implements IGosuClassLoader
     return false;
   }
 
-  public byte[] maybeDefineInterfaceMethodsClass( ICompilableType gsClass )
-  {
-    return maybeDefineInterfaceMethodsClass( gsClass, false );
-  }
-  public byte[] maybeDefineInterfaceMethodsClass( ICompilableType gsClass, boolean bSaveBytes )
-  {
-    if( gsClass.isInterface() && gsClass instanceof IGosuClassInternal )
-    {
-      return TransformingCompiler.compileInterfaceMethodsClass( (IGosuClassInternal)gsClass, shouldDebugClass( gsClass ) );
-    }
-    return null;
-  }
-
-  public String getInterfaceMethodsClassName( ICompilableType gsClass )
-  {
-    return getJavaName( gsClass ) + "." + IGosuClassInternal.ANNOTATION_METHODS_FOR_INTERFACE_INNER_CLASS;
-  }
-
   boolean shouldDebugClass( ICompilableType gsClass )
   {
     return BytecodeOptions.shouldDebug( gsClass.getName() );

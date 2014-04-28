@@ -454,7 +454,7 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
     {
       return (IType)_scriptPart;
     }
-    final IMethodInfo methodInfo = getMethodInfo();
+    final IFeatureInfo methodInfo = getMethodOrConstructorInfo();
     if( methodInfo != null )
     {
       return methodInfo.getOwnersType();
@@ -565,7 +565,9 @@ public class FunctionType extends AbstractType implements IFunctionType, IGeneri
         //try to infer type from context type
         TypeVarToTypeMap returnTypeVars = new TypeVarToTypeMap();
         TypeSystem.inferTypeVariableTypesFromGenParamTypeAndConcreteType( getReturnType(), ctxType, returnTypeVars );
-        inferredType = returnTypeVars.get( typeVars[i].getTypeVariableDefinition().getType() );
+        ITypeVariableType typeVarType = typeVars[i].getTypeVariableDefinition().getType();
+        inferredType = returnTypeVars.get( typeVarType );
+        inferredType = (inferredType != null && typeVarType.getBoundingType().isAssignableFrom( inferredType )) ? inferredType : typeVarType.getBoundingType();
       }
       typeParams[i] = inferredType;
       if( typeParams[i] == null )

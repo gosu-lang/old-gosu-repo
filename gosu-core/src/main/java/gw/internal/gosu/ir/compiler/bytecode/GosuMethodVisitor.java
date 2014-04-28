@@ -8,13 +8,14 @@ package gw.internal.gosu.ir.compiler.bytecode;
 import gw.internal.ext.org.objectweb.asm.*;
 
 
-public class GosuMethodVisitor implements MethodVisitor
+public class GosuMethodVisitor extends MethodVisitor
 {
   private boolean _bJumpOrReturnOrThrow;
   private MethodVisitor _mv;
 
   public GosuMethodVisitor( MethodVisitor methodVisitor )
   {
+    super( Opcodes.ASM5 );
     _mv = methodVisitor;
   }
 

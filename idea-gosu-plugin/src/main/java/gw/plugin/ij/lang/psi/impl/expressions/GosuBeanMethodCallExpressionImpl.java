@@ -95,51 +95,6 @@ public class GosuBeanMethodCallExpressionImpl extends GosuReferenceExpressionImp
     });
   }
 
-  //TODO-dp consider adding an extension point for these kinds of special cases
-
-  public TextRange getRangeInElement() {
-    if (isDisplayKey()) {
-      int startOffset = getTextRange().getStartOffset();
-      PsiElement referenceNameElement = getReferenceNameElement();
-      if (referenceNameElement != null) {
-        int endOffset = referenceNameElement.getTextRange().getEndOffset();
-        return new TextRange(0, endOffset - startOffset);
-      }
-    }
-    return super.getRangeInElement();
-  }
-
-  private boolean isDisplayKey() {
-    return GosuPropertyMemberAccessExpressionImpl.isDisplayKey(getParsedElement());
-  }
-
-  protected PsiElement handleElementRenameInner(String newElementName) throws IncorrectOperationException {
-    if (isDisplayKey()) {
-      GosuIdentifierImpl childOfType = PsiTreeUtil.findChildOfType(this, GosuIdentifierImpl.class);
-      GosuPropertyMemberAccessExpressionImpl parent = (GosuPropertyMemberAccessExpressionImpl) childOfType.getParent().getParent();
-      PsiElement referenceNameElement = parent.getReferenceNameElement();
-      int textOffset = getTextOffset();
-      int startOffset = referenceNameElement.getTextRange().getStartOffset() - textOffset;
-      int endOffset = getReferenceNameElement().getTextRange().getEndOffset() - textOffset;
-      String oldText = getText();
-      String newText = oldText.substring(0, startOffset) + newElementName + oldText.substring(endOffset);
-
-      PsiElement element = GosuPsiParseUtil.createReferenceNameFromText(this, newText);
-      ASTNode newNode = new PsiMatcherImpl(element.getContainingFile())
-          .descendant(PsiMatchers.hasClass(GosuSyntheticClassDefinitionImpl.class))
-          .descendant(new ElementTypeMatcher(GosuElementTypes.ELEM_TYPE_ReturnStatement))
-          .descendant(PsiMatchers.hasClass(GosuBeanMethodCallExpressionImpl.class))
-          .getElement().getNode();
-
-      CodeEditUtil.setOldIndentation((TreeElement) newNode, 0); // this is to avoid a stupid exception
-      GosuCompositeElement oldNode = this.getNode();
-      oldNode.getTreeParent().replaceChild(oldNode, newNode);
-      return this;
-    } else {
-      return super.handleElementRenameInner(newElementName);
-    }
-  }
-
   @Override
   public void accept( @NotNull PsiElementVisitor visitor ) {
     if( visitor instanceof JavaElementVisitor && !(visitor instanceof HighlightVisitorImpl) ) {

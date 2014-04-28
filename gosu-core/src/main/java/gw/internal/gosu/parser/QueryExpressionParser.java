@@ -329,14 +329,14 @@ class QueryExpressionParser extends ParserBase
         WhereClauseEqualityExpression e = new WhereClauseEqualityExpression();
         verify( e, lhs instanceof QueryPathExpression, Res.MSG_EXPECTING_QUERY_PATH );
         IType type = lhs.getType();
-        getOwner().pushContextType( type );
+        getOwner().pushInferredContextTypes( new ContextType( type ) );
         try
         {
           getOwner().parseRelationalExpression();
         }
         finally
         {
-          getOwner().popContextType();
+          getOwner().popInferredContextTypes();
         }
 
         Expression rhs = popExpression();

@@ -13,10 +13,11 @@ import gw.lang.reflect.IGenericMethodInfo;
 import gw.lang.reflect.IMethodInfo;
 import gw.lang.reflect.IParameterInfo;
 import gw.lang.reflect.IType;
+import gw.lang.reflect.gs.ICanHaveAnnotationDefault;
 
 import java.lang.reflect.Method;
 
-public interface IJavaMethodInfo extends IAttributedFeatureInfo, IMethodInfo, IGenericMethodInfo, JavaHasParams
+public interface IJavaMethodInfo extends IAttributedFeatureInfo, IMethodInfo, IGenericMethodInfo, JavaHasParams, ICanHaveAnnotationDefault
 {
   IParameterInfo[] getGenericParameters();
 

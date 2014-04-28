@@ -4,6 +4,7 @@
 
 package gw.test;
 
+import gw.lang.GosuShop;
 import gw.lang.reflect.IAnnotationInfo;
 import gw.lang.reflect.IConstructorInfo;
 import gw.lang.reflect.IHasJavaClass;
@@ -608,27 +609,27 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
   }
 
   protected Collection<TestMetadata> createMetadata(List<IAnnotationInfo> annotationInfos) {
-    Map<Class<? extends Annotation>, TestMetadata> map = new HashMap<Class<? extends Annotation>, TestMetadata>();
+    Map<IType, TestMetadata> map = new HashMap<IType, TestMetadata>();
     for (IAnnotationInfo ai : annotationInfos) {
       if (isMetaAnnotationInfo(ai)) {
-        Annotation a = (Annotation) ai.getInstance();
-        map.put(a.annotationType(), new TestMetadata(a));
+        map.put(ai.getType(), new TestMetadata(ai));
       }
     }
-    if (map.containsKey(KnownBreak.class)) {
+    if (map.containsKey(TypeSystem.get( KnownBreak.class ))) {
       for (IAnnotationInfo ai : annotationInfos) {
         if (isKnownBreakQualifier(ai)) {
-          Annotation a = (Annotation) ai.getInstance();
-          Predicate<? super Annotation> qualifierPredicate;
+          Predicate<? super IAnnotationInfo> qualifierPredicate;
           try {
-            qualifierPredicate = a.annotationType().getAnnotation(KnownBreakQualifier.class).value().newInstance();
+            Object t = ai.getType().getTypeInfo().getAnnotation( TypeSystem.get( KnownBreakQualifier.class ) ).getFieldValue( "value" );
+            IType type = t instanceof Class ? TypeSystem.get( (Class)t ) : (IType)t;
+            qualifierPredicate = (Predicate<? super IAnnotationInfo>)type.getTypeInfo().getConstructor().getConstructor().newInstance();
           } catch (RuntimeException e) {
             throw e;
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-          if (!qualifierPredicate.evaluate(a)) {
-            map.remove(KnownBreak.class);
+          if (!qualifierPredicate.evaluate(ai)) {
+            map.remove(TypeSystem.get( KnownBreak.class ));
             break;
           }
         }
@@ -663,13 +664,13 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
     Map<Class<? extends Annotation>, TestMetadata> map = new HashMap<Class<? extends Annotation>, TestMetadata>();
     for (Annotation a : annotations) {
       if (isMetaAnnotation(a)) {
-        map.put(a.annotationType(), new TestMetadata(a));
+        map.put(a.annotationType(), new TestMetadata( GosuShop.getAnnotationInfoFactory().createJavaAnnotation( a, getType().getTypeInfo() ) ) );
       }
     }
     if (map.containsKey(KnownBreak.class)) {
       for (Annotation a : annotations) {
         if (isKnownBreakQualifier(a)) {
-          Predicate<? super Annotation> qualifierPredicate;
+          Predicate<? super IAnnotationInfo> qualifierPredicate;
           try {
             qualifierPredicate = a.annotationType().getAnnotation(KnownBreakQualifier.class).value().newInstance();
           } catch (RuntimeException e) {
@@ -677,7 +678,7 @@ public abstract class TestClass extends TestCase implements ITestWithMetadata {
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-          if (!qualifierPredicate.evaluate(a)) {
+          if (!qualifierPredicate.evaluate( GosuShop.getAnnotationInfoFactory().createJavaAnnotation( a, getType().getTypeInfo() ) ) ) {
             map.remove(KnownBreak.class);
             break;
           }

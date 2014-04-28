@@ -9,12 +9,6 @@ import gw.lang.parser.ILanguageLevel;
 public class StandardLanguageLevel implements ILanguageLevel
 {
   @Override
-  public boolean allowNonLiteralArgsForJavaAnnotations()
-  {
-    return false;
-  }
-
-  @Override
   public boolean allowAllImplicitCoercions()
   {
     return false;
@@ -29,11 +23,6 @@ public class StandardLanguageLevel implements ILanguageLevel
   @Override
   public boolean supportsNakedCatchStatements()
   {
-    return true;
-  }
-
-  @Override
-  public boolean supportHistoricalJavaAnnotationConstructors() {
     return true;
   }
 }

@@ -24,17 +24,26 @@ import java.util.concurrent.Callable;
 /**
  */
 public class StructuralTypeProxyGenerator {
-  public static Class makeProxy( String iface, Class<?> rootClass, final String name ) {
+  private final boolean _bStatic;
+  private String _type;
+
+  private StructuralTypeProxyGenerator( boolean bStatic ) {
+    _bStatic = bStatic;
+  }
+
+  public static Class makeProxy( String iface, Class<?> rootClass, final String name, final boolean bStaticImpl ) {
+
     final IType type = TypeLord.getPureGenericType( TypeSystem.get( rootClass ) );
     final IType ifaceType = TypeLord.getPureGenericType( TypeSystem.getByFullName( iface ) );
     final IModule module = ifaceType.getTypeLoader().getModule();
     GosuClassTypeLoader loader = GosuClassTypeLoader.getDefaultClassLoader( module );
+    final StructuralTypeProxyGenerator gen = new StructuralTypeProxyGenerator( bStaticImpl );
     IGosuClass gsProxy = loader.makeNewClass(
-      new LazyStringSourceFileHandle( getNamespace( ifaceType ), name, new Callable<StringBuilder>() {
+      new LazyStringSourceFileHandle( gen.getNamespace( ifaceType ), name, new Callable<StringBuilder>() {
         public StringBuilder call() {
           TypeSystem.pushModule( module );
           try {
-            return generateProxy( ifaceType, type, name );
+            return gen.generateProxy( ifaceType, type, name );
           }
           finally {
             TypeSystem.popModule( module );
@@ -72,14 +81,15 @@ public class StructuralTypeProxyGenerator {
     }
   }
 
-  private static StringBuilder generateProxy( IType ifaceType, IType type, String name ) {
+  private StringBuilder generateProxy( IType ifaceType, IType type, String name ) {
+    _type = type.getName();
     return new StringBuilder()
       .append( "package " ).append( getNamespace( ifaceType ) ).append( "\n" )
       .append( "\n" )
       .append( "class " ).append( name ).append( " implements " ).append( ifaceType.getName() ).append( " {\n" )
-      .append( "  var _root: " ).append( type.getName() ).append( "\n" )
+      .append( "  final var _root: " ).append( _bStatic ? "Type<" + type.getName() + ">" : type.getName() ).append( "\n" )
       .append( "  \n" )
-      .append( "  construct( root: " ).append( type.getName() ).append( " ) {\n" )
+      .append( "  construct( root: " ).append( _bStatic ? "Type<" + type.getName() + ">" : type.getName() ).append( " ) {\n" )
       .append( "    _root = root\n" )
       .append( "  }\n" )
       .append( "  \n" )
@@ -87,7 +97,7 @@ public class StructuralTypeProxyGenerator {
       .append( "}" );
   }
 
-  private static String getNamespace( IType ifaceType ) {
+  private String getNamespace( IType ifaceType ) {
     String nspace = TypeLord.getOuterMostEnclosingClass( ifaceType ).getNamespace();
     if( nspace.startsWith( "java." ) || nspace.startsWith( "javax." ) )
     {
@@ -96,7 +106,7 @@ public class StructuralTypeProxyGenerator {
     return nspace;
   }
 
-  private static String implementIface( IType ifaceType, IType rootType ) {
+  private String implementIface( IType ifaceType, IType rootType ) {
     StringBuilder sb = new StringBuilder();
     ITypeInfo ti = ifaceType.getTypeInfo();
     // Interface properties
@@ -133,7 +143,10 @@ public class StructuralTypeProxyGenerator {
   //     return _root.foo( e )
   //   }
   // }
-  private static void genInterfaceMethodDecl( StringBuilder sb, IMethodInfo mi, IType rootType ) {
+  private void genInterfaceMethodDecl( StringBuilder sb, IMethodInfo mi, IType rootType ) {
+    if( mi.isDefaultImpl() || mi.isStatic() ) {
+      return;
+    }
     if( mi.getOwnersType() instanceof IGosuEnhancement ) {
       return;
     }
@@ -159,7 +172,7 @@ public class StructuralTypeProxyGenerator {
                ? "    "
                : "    return " )
       //## todo: maybe we need to explicitly parameterize if the method is generic for some cases?
-      .append( "_root." ).append( mi.getDisplayName() ).append( "(" );
+      .append( _bStatic ? _type : "_root" ).append( "." ).append( mi.getDisplayName() ).append( "(" );
     for( int i = 0; i < params.length; i++ ) {
       IParameterInfo pi = params[i];
       sb.append( ' ' ).append( "p" ).append( i ).append( maybeCastParamType( mi, TypeLord.replaceTypeVariableTypeParametersWithBoundingTypes( pi.getFeatureType() ), rootType, i ) )
@@ -169,24 +182,27 @@ public class StructuralTypeProxyGenerator {
       .append( "  }\n" );
   }
 
-  private static String maybeCastReturnType( IMethodInfo mi, IType returnType, IType rootType ) {
+  private String maybeCastReturnType( IMethodInfo mi, IType returnType, IType rootType ) {
     //## todo:
     return returnType != JavaTypes.pVOID()
            ? " as " + returnType.getName()
            : "";
   }
 
-  private static String maybeCastParamType( IMethodInfo ifaceMethod, IType paramType, IType rootType, int iParam ) {
+  private String maybeCastParamType( IMethodInfo ifaceMethod, IType paramType, IType rootType, int iParam ) {
     //## todo: find the parameter type in the corresponding method in rootType, and then cast to that type *only* if necessary
     return "";
   }
 
-  private static String maybeCastPropertyAssignment( IPropertyInfo pi, IType rootType ) {
+  private String maybeCastPropertyAssignment( IPropertyInfo pi, IType rootType ) {
     //## todo: find the corresponding property type in rootType, and then cast to that type *only* if necessary
     return " as " + TypeLord.replaceTypeVariableTypeParametersWithBoundingTypes( pi.getFeatureType() ).getName() + "\n";
   }
 
-  private static void genInterfacePropertyDecl( StringBuilder sb, IPropertyInfo pi, IType rootType ) {
+  private void genInterfacePropertyDecl( StringBuilder sb, IPropertyInfo pi, IType rootType ) {
+    if( pi.isDefaultImpl() || pi.isStatic() ) {
+      return;
+    }
     if( pi.isStatic() ) {
       return;
     }
@@ -205,14 +221,14 @@ public class StructuralTypeProxyGenerator {
       sb.append( "\n/** " ).append( pi.getDescription() ).append( " */\n" );
     }
     ITypeInfo rootTypeInfo = rootType.getTypeInfo();
-    // Have to handle private for inner class case e.g., a privagte field on the inner class implements a property on a structure
+    // Have to handle private for inner class case e.g., a private field on the inner class implements a property on a structure
     boolean bPrivate = rootTypeInfo instanceof IRelativeTypeInfo && ((IRelativeTypeInfo) rootTypeInfo).getProperty( rootType, pi.getName() ).isPrivate();
     sb.append( "  property get " ).append( pi.getName() ).append( "() : " ).append( ifacePropertyType.getName() ).append( " {\n" );
     if( bPrivate ) {
       sb.append( "    return _root[\"" ).append( pi.getName() ).append( "\"] as " ).append( ifacePropertyType.getName() ).append( "\n" );
     }
     else {
-      sb.append( "    return _root." ).append( pi.getName() ).append( " as " ).append( ifacePropertyType.getName() ).append( "\n" );
+      sb.append( "    return " ).append( _bStatic ? _type : "_root" ).append( "." ).append( pi.getName() ).append( " as " ).append( ifacePropertyType.getName() ).append( "\n" );
     }
     sb.append( "  }\n" );
     if( pi.isWritable( pi.getOwnersType() ) ) {
@@ -221,7 +237,7 @@ public class StructuralTypeProxyGenerator {
         sb.append( "    _root[\"" ).append( pi.getName() ).append( "\"] = value" ).append( maybeCastPropertyAssignment( pi, rootType ) );
       }
       else {
-        sb.append( "    _root." ).append( pi.getName() ).append( " = value" ).append( maybeCastPropertyAssignment( pi, rootType ) );
+        sb.append( "    " ).append( _bStatic ? _type : "_root" ).append( "." ).append( pi.getName() ).append( " = value" ).append( maybeCastPropertyAssignment( pi, rootType ) );
       }
       sb.append( "  }\n" );
     }

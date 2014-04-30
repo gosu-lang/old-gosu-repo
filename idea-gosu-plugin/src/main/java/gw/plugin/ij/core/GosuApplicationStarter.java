@@ -29,7 +29,7 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
 
   public static final String COM_GUIDEWIRE = "com.guidewire.";
   public static final String COM_GUIDEWIRE_GOSU = COM_GUIDEWIRE + "gosu";
-  public static final String COM_GUIDEWIRE_GOSU_INTERNAL = COM_GUIDEWIRE + "gosu";
+  public static final String COM_GUIDEWIRE_GUNIT = COM_GUIDEWIRE + "gunit";
 
   private ApplicationStarter defaultStarter;
 
@@ -90,15 +90,7 @@ public class GosuApplicationStarter implements ApplicationStarter, ApplicationLo
       PluginClassLoader mainClassLoader = (PluginClassLoader) mainPlugin.getPluginClassLoader();
       for (IdeaPluginDescriptor plugin : PluginManager.getPlugins()) {
         String id = plugin.getPluginId().getIdString();
-        if (id.startsWith(COM_GUIDEWIRE) && !id.equals(COM_GUIDEWIRE_GOSU_INTERNAL)) {
-          if (id.equals(COM_GUIDEWIRE_GOSU)) {
-            LOG.warn(
-                    String.format(
-                            "Loading open-source Gosu plugin (id=%s). " +
-                                    "In Ferrite we expect to use \"internal\" Gosu plugin with Studio instead." +
-                                    "Are you sure IDEA is configured properly?",
-                            COM_GUIDEWIRE_GOSU));
-          }
+        if (id.startsWith(COM_GUIDEWIRE) && !id.equals(COM_GUIDEWIRE_GOSU)) {
           recoverParents(plugin, mainClassLoader);
           recoverClasspath(plugin, mainClassLoader);
           ((IdeaPluginDescriptorImpl)plugin).setLoader(mainClassLoader, false);

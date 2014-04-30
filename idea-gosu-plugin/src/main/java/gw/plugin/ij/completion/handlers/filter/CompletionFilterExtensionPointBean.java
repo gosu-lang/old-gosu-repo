@@ -9,6 +9,7 @@ import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.extensions.Extensions;
 import com.intellij.openapi.util.LazyInstance;
 import com.intellij.util.xmlb.annotations.Attribute;
+import gw.plugin.ij.core.GosuAppComponent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ import java.util.List;
 
 public class CompletionFilterExtensionPointBean extends AbstractExtensionPointBean {
 
-  public static final ExtensionPointName<CompletionFilterExtensionPointBean> EP_NAME = new ExtensionPointName<>("com.guidewire.gosu-internal.completionFilter");
+  public static final ExtensionPointName<CompletionFilterExtensionPointBean> EP_NAME = new ExtensionPointName<>(GosuAppComponent.EDITOR_PLUGIN_ID.getIdString() + ".completionFilter");
 
   @Attribute("class")
   public String className;

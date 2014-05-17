@@ -159,6 +159,10 @@ public class GosuProgramParser implements IGosuProgramParser
         name += "_" + fileContext.getContextString();
       }
 
+      if ( strSource.startsWith("\uFEFF") )
+      {
+        strSource = strSource.substring(1);
+      }
       StringSourceFileHandle sfh = new StringSourceFileHandle( name, strSource, false, ClassType.Program );
       if( fileContext != null )
       {

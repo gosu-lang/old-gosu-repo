@@ -4,12 +4,12 @@
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
     <relativePath>../gosu-parent/pom.xml</relativePath>
-    <version>0.10.J82-SNAPSHOT</version>
+    <version>0.10.J82</version>
   </parent>
 
   <groupId>com.guidewire.studio</groupId>
   <artifactId>idea-gosu-plugin</artifactId>
-  <version>0.10.J82-SNAPSHOT</version>
+  <version>0.10.J82</version>
 
   <name>Gosu :: IntelliJ IDEA Plugin </name>
 
@@ -91,24 +91,24 @@
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-core</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-test-api</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-itcase-utils</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>ij-compiler-api</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
     </dependency>
   </dependencies>
 
@@ -150,7 +150,7 @@
     <connection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</connection>
     <url>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</url>
     <developerConnection>scm:git:git@gh.guidewire.com:gosu-cr/idea-gosu-plugin.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>gosu-proj-0.10.J82</tag>
   </scm>
 
 </project>

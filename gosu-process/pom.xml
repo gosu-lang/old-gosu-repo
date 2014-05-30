@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
-    <version>0.10.J82-SNAPSHOT</version>
+    <version>0.10.J82</version>
     <relativePath>../gosu-parent/pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -15,12 +15,12 @@
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-core-api</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
     </dependency>
     <dependency>
       <groupId>org.gosu-lang.gosu</groupId>
       <artifactId>gosu-core</artifactId>
-      <version>0.10.J82-SNAPSHOT</version>
+      <version>0.10.J82</version>
       <scope>runtime</scope>
     </dependency>
   </dependencies>

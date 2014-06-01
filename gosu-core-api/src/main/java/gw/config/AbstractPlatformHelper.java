@@ -86,6 +86,9 @@ public abstract class AbstractPlatformHelper extends BaseService implements IPla
   }
 
   public boolean isPathIgnored(String relativePath) {
+    if (relativePath == null) {
+      return true;
+    }
 
     final IFile file = CommonServices.getFileSystem().getIFile(new File(relativePath));
     if (file != null && file.exists() && isConfigFile(file)) {

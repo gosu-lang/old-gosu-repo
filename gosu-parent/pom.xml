@@ -3,7 +3,7 @@
 
   <groupId>org.gosu-lang.gosu</groupId>
   <artifactId>gosu-parent</artifactId>
-  <version>0.10.J83</version>
+  <version>0.10.J84</version>
   <packaging>pom</packaging>
 
   <name>Gosu :: Parent POM</name>
@@ -109,11 +109,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
           <version>2.7</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>1.5</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

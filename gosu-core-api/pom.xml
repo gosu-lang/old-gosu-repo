@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.gosu-lang.gosu</groupId>
     <artifactId>gosu-parent</artifactId>
-    <version>0.10.J83</version>
+    <version>0.10.J84</version>
     <relativePath>../gosu-parent/pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -144,27 +144,6 @@
               <Contains-Sources>gs,gsx</Contains-Sources>
             </manifestEntries>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <artifactSet>
-            <excludes>
-              <exclude>org.gosu-lang.gosu:gosu-launcher-api</exclude>
-              <exclude>org.gosu-lang.gosu:gosu-launcher-impl</exclude>
-            </excludes>
-          </artifactSet>
         </configuration>
       </plugin>
     </plugins>
